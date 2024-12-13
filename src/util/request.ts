@@ -2,7 +2,7 @@ import axios from 'axios'
 import router from '@/router/index' // 修改这里
 
 const request = axios.create({
-  baseURL: '/api',
+  baseURL: 'http://129.204.154.232',
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json;charset=UTF-8'
