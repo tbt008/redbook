@@ -175,8 +175,8 @@ import {
 import request from '@/util/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-const userAvatar = new URL('../assets/images/user.png', import.meta.url).href
-const aiAvatar = new URL('../assets/images/b450806e36caa423.jpg', import.meta.url).href
+const userAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
+const aiAvatar = new URL('../views/imgs/bot.jpg', import.meta.url).href
 
 const isCollapse = ref(false) // 侧边栏折叠状态
 const userMessage = ref('') // 用户输入消息
