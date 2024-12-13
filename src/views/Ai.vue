@@ -255,7 +255,7 @@ const sendMessage = async (e?: KeyboardEvent) => {
       timeout:300000
     })as any
 
-    if (response.code === 200) {
+    if (response.data.code === 200) {
       messages.value[currentAI].push({
         role: 'ai',
         content: response.data,
@@ -299,7 +299,7 @@ const deleteChat = async () => {
       data: deleteDto
     })as any
 
-    if (response.code === 200) {
+    if (response.data.code === 200) {
       messages.value[selectedAI.value] = []
       ElMessage.success('聊天记录已清空')
     } else {
