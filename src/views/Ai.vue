@@ -260,10 +260,10 @@ const sendMessage = async (e?: KeyboardEvent) => {
     } else {
       messages.value[currentAI].push({
         role: 'ai',
-        content: `错误: ${response.msg || '未知错误'}`,
+        content: `错误: ${response.data|| '未知错误'}`,
         isNew: true
       })
-      ElMessage.error(response.msg || '请求失败')
+      ElMessage.error(response.data || '请求失败')
     }
   } catch (error) {
     messages.value[currentAI].push({
@@ -299,7 +299,7 @@ const deleteChat = async () => {
       messages.value[selectedAI.value] = []
       ElMessage.success('聊天记录已清空')
     } else {
-      ElMessage.error(response.msg || '删除失败')
+      ElMessage.error(response.data|| '删除失败')
     }
   } catch (error) {
     ElMessage.error('删除请求失败')
