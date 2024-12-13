@@ -4,7 +4,7 @@
     <el-aside :width="isCollapse ? '64px' : '200px'" class="aside">
       <!-- 侧边栏头部 - 包含标题和折叠按钮 -->
       <div class="aside-header">
-        <span v-show="!isCollapse" class="logo-text">AI Chat</span>
+        <span v-show="!isCollapse" class="logo-text" @click="goHome">AI Chat</span>
         <el-icon class="toggle-icon" @click="toggleCollapse">
           <Fold v-if="!isCollapse" />
           <Expand v-else />
@@ -174,7 +174,8 @@ import {
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
-
+import { useRouter } from 'vue-router'
+const router = useRouter()
 const userAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
 const aiAvatar = new URL('../views/imgs/bot.jpg', import.meta.url).href
 
@@ -191,7 +192,10 @@ const messages = ref<{ [key: string]: { role: string; content: string; isNew?: b
   智谱清言: [],
   讯飞星火: []
 })
-
+// 补充点击事件
+const goHome = () => {
+  router.push('/')
+}
 // 初始化暗色模式
 const initDarkMode = () => {
   const savedMode = localStorage.getItem('darkMode')
@@ -337,6 +341,7 @@ const showInfo = () => {
   ElMessageBox.alert(
     `欢迎使用 PTUCODE AI 聊天应用！<br><br>` +
       `使用指南：<br>` +
+      `• 点击左上角的<strong>AI Chat</strong>可快速回到首页<br>`+
       `• 智谱清言和讯飞星火两种对话模型<br>` +
       `• 在左侧可以切换不同的 AI 模型<br>` +
       `• 按 Enter 键快速发送消息<br>` +
@@ -381,6 +386,7 @@ const showInfo = () => {
 }
 
 .logo-text {
+  cursor: pointer; /* 添加鼠标指针样式 */
   font-size: 20px;
   font-weight: bold;
   color: var(--el-text-color-primary);
