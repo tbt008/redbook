@@ -253,7 +253,7 @@ const sendMessage = async (e?: KeyboardEvent) => {
       ai: currentAI
     },{
       timeout:300000
-    })
+    })as any
 
     if (response.code === 200) {
       messages.value[currentAI].push({
@@ -297,7 +297,7 @@ const deleteChat = async () => {
 
     const response = await request.delete('/AI/delete', {
       data: deleteDto
-    })
+    })as any
 
     if (response.code === 200) {
       messages.value[selectedAI.value] = []
