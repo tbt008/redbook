@@ -88,8 +88,15 @@
         </el-table-column>
         
         <!-- 通过率列 -->
-        <el-table-column prop="passRate" label="通过率" width="100">
-          <template #default="{ row }"> {{ row.passRate }}% </template>
+        <el-table-column label="通过率" width="180">
+          <template #default="{ row }">
+            <el-progress 
+              :percentage="Number(row.passRate)" 
+              text-inside
+              :stroke-width="18"
+              :color="getProgressColor(row.passRate)"
+            />
+          </template>
         </el-table-column>
       </el-table>
 
@@ -99,7 +106,7 @@
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :total="total"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[10, , 50]"
           layout="total, sizes, prev, pager, next"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
@@ -193,6 +200,13 @@ const sortOrder = ref('desc')
 const problems = ref<Problem[]>([])
 const allTags = ref<Tag[]>([])
 
+// 根据通过率返回不同的颜色
+const getProgressColor = (rate: number) => {
+  if (rate >= 80) return '#67C23A'  // 深绿色
+  if (rate >= 60) return '#E6A23C'  // 浅绿色
+  return '#F56C6C'  // 最浅绿色
+}
+
 // 计算标签分组
 const groupedTags = computed<TagGroup[]>(() => {
   const groups: { [key: string]: Tag[] } = {}
@@ -251,7 +265,6 @@ const handleSizeChange = async (val: number) => {
   pageSize.value = val
   currentPage.value = 1
   await getTotalCount()
-  // await getProblems()
 }
 
 // 当前页改变处理
@@ -273,12 +286,8 @@ const getTotalCount = async () => {
     if (response.code === 200) {
       total.value = response.data.total
       const allData = response.data.list
-      //优化，刚进来只访问一次
-      // 计算当前页的数据范围
       const start = (currentPage.value - 1) * pageSize.value
       const end = Math.min(start + pageSize.value, allData.length)
-      
-      // 截取当前页的数据
       problems.value = allData.slice(start, end)
     }
   } catch (error) {
@@ -294,7 +303,6 @@ watch(
   async () => {
     currentPage.value = 1
     await getTotalCount()
-    // await getProblems()
   },
   { deep: true }
 )
@@ -303,7 +311,6 @@ watch(
 onMounted(async () => {
   await getTags()
   await getTotalCount()
-  // await getProblems()
 })
 
 // 标签选择相关
