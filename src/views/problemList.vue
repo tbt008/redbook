@@ -251,7 +251,7 @@ const handleSizeChange = async (val: number) => {
   pageSize.value = val
   currentPage.value = 1
   await getTotalCount()
-  await getProblems()
+  // await getProblems()
 }
 
 // 当前页改变处理
@@ -272,9 +272,19 @@ const getTotalCount = async () => {
 
     if (response.code === 200) {
       total.value = response.data.total
+      const allData = response.data.list
+      //优化，刚进来只访问一次
+      // 计算当前页的数据范围
+      const start = (currentPage.value - 1) * pageSize.value
+      const end = Math.min(start + pageSize.value, allData.length)
+      
+      // 截取当前页的数据
+      problems.value = allData.slice(start, end)
     }
   } catch (error) {
     console.error('获取题目总数失败:', error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -293,7 +303,7 @@ watch(
 onMounted(async () => {
   await getTags()
   await getTotalCount()
-  await getProblems()
+  // await getProblems()
 })
 
 // 标签选择相关
