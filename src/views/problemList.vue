@@ -294,7 +294,7 @@ watch(
   async () => {
     currentPage.value = 1
     await getTotalCount()
-    await getProblems()
+    // await getProblems()
   },
   { deep: true }
 )
