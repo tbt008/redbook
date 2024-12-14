@@ -36,7 +36,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import codeEditor from '@/components/codeEditor.vue'
-
+import { debounce } from '@/utils/optimizeUtils';
 const currentTab = ref(0)
 const clickToLike = ref(false)
 const choseLanguage = useStorage('ptuCode_' + window.location.pathname.split('/')[2], 0)
