@@ -66,7 +66,9 @@ const router = createRouter({
       path: '/ai',
       name: 'ai',
       component: () => import('@/views/Ai.vue')
-    }
+    },
+    { path: '/discuss', name: 'discussion', component: () => import('@/views/Discussion.vue') },
+    { path: '/discuss/:id', name: 'discussionDetail', component: () => import('@/views/DiscussionDetail.vue') },
   ]
 })
 

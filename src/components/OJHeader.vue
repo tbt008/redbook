@@ -21,7 +21,7 @@ export default {
         { path: '/', text: '主页' },
         { path: '/problems', text: '题库' },
         { path: '/contest', text: '竞赛' },
-        { path: '/circle', text: '讨论' },
+        { path: '/discuss', text: '讨论' },
         { path: '/about', text: '关于' }
       ],
       controls: false,
