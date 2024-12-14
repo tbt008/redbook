@@ -3,6 +3,7 @@
     <div class="content-wrapper">
       <!-- 筛选区域 -->
       <div class="filter-section">
+        <!-- elementplus el-select: 难度选择下拉框 -->
         <el-select v-model="difficulty" placeholder="难度" class="filter-item">
           <el-option label="全部" :value="null" />
           <el-option label="入门" :value="1" />
@@ -12,25 +13,41 @@
           <el-option label="困难" :value="5" />
         </el-select>
 
-        <el-select
-          v-model="selectedTagIds"
-          multiple
-          placeholder="标签"
-          class="filter-item"
-          @change="(val: number[]) => console.log('标签选择改变:', val)"
-        >
-          <el-option v-for="tag in allTags" :key="tag.id" :label="tag.name" :value="tag.id" />
-        </el-select>
+        <!-- elementplus el-button: 标签选择按钮 -->
+        <el-button class="filter-item" @click="showTagDialog = true">
+          标签
+          <template v-if="selectedTagIds.length">
+            ({{ selectedTagIds.length }})
+          </template>
+        </el-button>
 
+        <!-- elementplus el-input: 搜索输入框 -->
         <el-input v-model="searchKeyword" placeholder="搜索题目" class="filter-item" clearable>
           <template #prefix>
+            <!-- elementplus el-icon: 搜索图标 -->
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
       </div>
 
-      <!-- 题目列表 -->
+      <!-- 已选标签显示区域 -->
+      <div v-if="selectedTagIds.length" class="selected-tags-bar">
+        <!-- elementplus el-tag: 已选标签展示 -->
+        <el-tag
+          v-for="tagId in selectedTagIds"
+          :key="tagId"
+          closable
+          type="primary"
+          class="selected-tag"
+          @close="handleTagChange(false, tagId)"
+        >
+          {{ allTags.find(tag => tag.id === tagId)?.name }}
+        </el-tag>
+      </div>
+
+      <!-- elementplus el-table: 题目列表表格 -->
       <el-table :data="problems" style="width: 100%" v-loading="loading">
+        <!-- 状态列 -->
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <div v-if="row.isPass === 1" class="status-icon success">
@@ -41,12 +58,15 @@
             </div>
           </template>
         </el-table-column>
+        
+        <!-- 题目列 -->
         <el-table-column label="题目" min-width="300">
           <template #default="{ row }">
             <router-link :to="`/question?id=${row.questionId}`" class="problem-title">
               {{ row.questionName }}
             </router-link>
             <div class="problem-tags">
+              <!-- elementplus el-tag: 题目标签 -->
               <el-tag
                 v-for="tag in row.tags"
                 :key="tag"
@@ -59,17 +79,21 @@
             </div>
           </template>
         </el-table-column>
+        
+        <!-- 难度列 -->
         <el-table-column label="难度" width="100">
           <template #default="{ row }">
             {{ row.difficultyName }}
           </template>
         </el-table-column>
+        
+        <!-- 通过率列 -->
         <el-table-column prop="passRate" label="通过率" width="100">
           <template #default="{ row }"> {{ row.passRate }}% </template>
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
+      <!-- elementplus el-pagination: 分页器 -->
       <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
@@ -83,16 +107,81 @@
       </div>
     </div>
   </div>
+
+  <!-- elementplus el-dialog: 标签选择弹窗 -->
+  <el-dialog
+    v-model="showTagDialog"
+    title="选择标签"
+    width="50%"
+    :close-on-click-modal="false"
+  >
+    <div class="tag-dialog-content">
+      <!-- 已选标签区域 -->
+      <div class="selected-tags-section">
+        <div class="section-title">已选标签</div>
+        <div class="tag-group-content">
+          <template v-if="selectedTagIds.length">
+            <!-- elementplus el-check-tag: 可选择的标签 -->
+            <el-check-tag
+              v-for="tagId in selectedTagIds"
+              :key="tagId"
+              :checked="true"
+              class="tag-item"
+              @change="() => handleTagChange(false, tagId)"
+            >
+              {{ allTags.find(tag => tag.id === tagId)?.name }}
+            </el-check-tag>
+          </template>
+          <div v-else class="no-tags-selected">
+            暂未选择标签
+          </div>
+        </div>
+      </div>
+      
+      <!-- elementplus el-divider: 分割线 -->
+      <el-divider />
+      
+      <!-- 标签分组 -->
+      <div v-for="group in groupedTags" :key="group.superName" class="tag-group">
+        <div class="tag-group-title">{{ group.superName }}</div>
+        <div class="tag-group-content">
+          <!-- elementplus el-check-tag: 可选择的标签 -->
+          <el-check-tag
+            v-for="tag in group.tags"
+            :key="tag.id"
+            :checked="selectedTagIds.includes(tag.id)"
+            @change="(checked: boolean) => handleTagChange(checked, tag.id)"
+            class="tag-item"
+          >
+            {{ tag.name }}
+          </el-check-tag>
+        </div>
+      </div>
+    </div>
+    <template #footer>
+      <span class="dialog-footer">
+        <!-- elementplus el-button: 操作按钮 -->
+        <el-button @click="clearTags">清空</el-button>
+        <el-button type="primary" @click="showTagDialog = false">
+          确定
+        </el-button>
+      </span>
+    </template>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
+// Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
+// Element Plus 图标
 import { Search, Check } from '@element-plus/icons-vue'
+// 工具和类型
 import request from '@/util/request'
 import { type Problem } from '@/types/problem'
-import { type Tag } from '@/types/tag'
+import { type Tag, type TagGroup } from '@/types/tag'
 
-const loading = ref(false)
+// 状态变量
+const loading = ref(true)
 const difficulty = ref<number | null>(null)
 const selectedTagIds = ref<number[]>([])
 const searchKeyword = ref('')
@@ -104,9 +193,26 @@ const sortOrder = ref('desc')
 const problems = ref<Problem[]>([])
 const allTags = ref<Tag[]>([])
 
+// 计算标签分组
+const groupedTags = computed<TagGroup[]>(() => {
+  const groups: { [key: string]: Tag[] } = {}
+  
+  allTags.value.forEach(tag => {
+    if (!groups[tag.superName]) {
+      groups[tag.superName] = []
+    }
+    groups[tag.superName].push(tag)
+  })
+  
+  return Object.entries(groups).map(([superName, tags]) => ({
+    superName,
+    tags
+  }))
+})
+
+// 获取题目列表
 const getProblems = async () => {
   loading.value = true
-
   try {
     const response = (await request.post('/question/list', {
       pageStart: currentPage.value,
@@ -128,17 +234,19 @@ const getProblems = async () => {
   }
 }
 
+// 获取所有标签
 const getTags = async () => {
   try {
     const response = (await request.post('/tag/list', {})) as any
     if (response.code === 200) {
-      allTags.value = response.data.records
+      allTags.value = response.data
     }
   } catch (error) {
     console.error('获取标签列表失败:', error)
   }
 }
 
+// 分页大小改变处理
 const handleSizeChange = async (val: number) => {
   pageSize.value = val
   currentPage.value = 1
@@ -146,11 +254,13 @@ const handleSizeChange = async (val: number) => {
   await getProblems()
 }
 
+// 当前页改变处理
 const handleCurrentChange = async (val: number) => {
   currentPage.value = val
   await getProblems()
 }
 
+// 获取题目总数
 const getTotalCount = async () => {
   try {
     const response = (await request.post('/question/list', {
@@ -168,7 +278,7 @@ const getTotalCount = async () => {
   }
 }
 
-// 监听器
+// 监听筛选条件变化
 watch(
   [difficulty, selectedTagIds, searchKeyword],
   async () => {
@@ -179,15 +289,33 @@ watch(
   { deep: true }
 )
 
-// 生命周期钩子
+// 组件挂载时初始化数据
 onMounted(async () => {
   await getTags()
   await getTotalCount()
   await getProblems()
 })
+
+// 标签选择相关
+const showTagDialog = ref(false)
+
+// 标签选择处理
+const handleTagChange = (checked: true | false | undefined, tagId: number) => {
+  if (checked) {
+    selectedTagIds.value.push(tagId)
+  } else {
+    selectedTagIds.value = selectedTagIds.value.filter(id => id !== tagId)
+  }
+}
+
+// 清空所有已选标签
+const clearTags = () => {
+  selectedTagIds.value = []
+}
 </script>
 
 <style scoped>
+/* 容器样式 */
 .problem-list-container {
   padding: 20px;
   max-width: 1200px;
@@ -201,6 +329,7 @@ onMounted(async () => {
   padding: 20px;
 }
 
+/* 筛选区域样式 */
 .filter-section {
   margin-bottom: 20px;
   display: flex;
@@ -211,6 +340,7 @@ onMounted(async () => {
   width: 200px;
 }
 
+/* 题目标题样式 */
 .problem-title {
   color: #409eff;
   text-decoration: none;
@@ -221,6 +351,7 @@ onMounted(async () => {
   text-decoration: underline;
 }
 
+/* 标签样式 */
 .problem-tags {
   margin-top: 8px;
 }
@@ -229,12 +360,14 @@ onMounted(async () => {
   margin-right: 8px;
 }
 
+/* 分页容器样式 */
 .pagination-container {
   margin-top: 20px;
   display: flex;
   justify-content: center;
 }
 
+/* 状态图标样式 */
 .status-icon {
   display: flex;
   justify-content: center;
@@ -268,5 +401,84 @@ onMounted(async () => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+/* 标签对话框样式 */
+.tag-dialog-content {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.tag-group {
+  margin-bottom: 20px;
+}
+
+.tag-group-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #606266;
+}
+
+.tag-group-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-item {
+  cursor: pointer;
+  margin: 2px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* element-plus组件样式覆盖 */
+.el-check-tag {
+  margin: 4px;
+  padding: 0 8px;
+  height: 28px;
+  line-height: 26px;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
+  background-color: #fff;
+  color: #606266;
+}
+
+.el-check-tag.is-checked {
+  background-color: #409eff;
+  border-color: #409eff;
+  color: #fff;
+}
+
+/* 已选标签区域样式 */
+.selected-tags-bar {
+  margin: 0 0 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selected-tag {
+  margin: 0;
+}
+
+.selected-tags-section {
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #606266;
+  margin-bottom: 12px;
+}
+
+.no-tags-selected {
+  color: #909399;
+  font-size: 14px;
 }
 </style>
