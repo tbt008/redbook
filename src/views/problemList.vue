@@ -3,6 +3,7 @@
     <div class="content-wrapper">
       <!-- 筛选区域 -->
       <div class="filter-section">
+        <div style="font-size: 12px;line-height: 32px;">筛选条件</div>
         <!-- elementplus el-select: 难度选择下拉框 -->
         <el-select v-model="difficulty" placeholder="难度" class="filter-item">
           <el-option label="全部" :value="null" />
@@ -32,6 +33,7 @@
 
       <!-- 已选标签显示区域 -->
       <div v-if="selectedTagIds.length" class="selected-tags-bar">
+        <div style="font-size: 12px;line-height: 24px;">已选择：</div>
         <!-- elementplus el-tag: 已选标签展示 -->
         <el-tag
           v-for="tagId in selectedTagIds"
@@ -374,7 +376,7 @@ const clearTags = () => {
 
 .content-wrapper {
   background: white;
-  border-radius: 8px;
+  border-radius: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   padding: 20px;
 }
