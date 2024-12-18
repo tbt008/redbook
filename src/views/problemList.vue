@@ -83,7 +83,16 @@
         <!-- 难度列 -->
         <el-table-column label="难度" width="100">
           <template #default="{ row }">
-            {{ row.difficultyName }}
+            <span :class="[
+              'difficulty-label',
+              row.difficulty === 1 ? 'difficulty-entry' : '',
+              row.difficulty === 2 ? 'difficulty-easy' : '',
+              row.difficulty === 3 ? 'difficulty-medium' : '',
+              row.difficulty === 4 ? 'difficulty-hard' : '',
+              row.difficulty === 5 ? 'difficulty-expert' : ''
+            ]">
+              {{ row.difficultyName }}
+            </span>
           </template>
         </el-table-column>
         
@@ -106,7 +115,7 @@
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :total="total"
-          :page-sizes="[10, , 50]"
+          :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
@@ -242,7 +251,7 @@ const getProblems = async () => {
       problems.value = response.data.list
     }
   } catch (error) {
-    console.error('获取题目列表失败:', error)
+    console.error('获取���目列表失败:', error)
   } finally {
     loading.value = false
   }
@@ -291,7 +300,7 @@ const getTotalCount = async () => {
       problems.value = allData.slice(start, end)
     }
   } catch (error) {
-    console.error('获取题目总数失败:', error)
+    console.error('获取题目���数失败:', error)
   } finally {
     loading.value = false
   }
@@ -368,7 +377,7 @@ const clearTags = () => {
   text-decoration: underline;
 }
 
-/* 标签样式 */
+/* 标��样式 */
 .problem-tags {
   margin-top: 8px;
 }
@@ -497,5 +506,38 @@ const clearTags = () => {
 .no-tags-selected {
   color: #909399;
   font-size: 14px;
+}
+
+/* 难度标签样式 */
+.difficulty-label {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.difficulty-entry {
+  background-color: #95D475;
+  color: white;
+}
+
+.difficulty-easy {
+  background-color: #67C23A;
+  color: white;
+}
+
+.difficulty-medium {
+  background-color: #E6A23C;
+  color: white;
+}
+
+.difficulty-hard {
+  background-color: #409EFF;
+  color: white;
+}
+
+.difficulty-expert {
+  background-color: #F56C6C;
+  color: white;
 }
 </style>
