@@ -5,14 +5,18 @@ import router from './router'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-//引入这两个包
+// 导入中文语言包
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import mavonEditor from 'mavon-editor'
 import 'mavon-editor/dist/css/index.css'
+
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
-app.use(ElementPlus)
-//把他加载到Vue中
+// 配置 Element Plus 使用中文
+app.use(ElementPlus, {
+  locale: zhCn
+})
 app.use(mavonEditor)
 app.mount('#app')
 
