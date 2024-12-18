@@ -128,10 +128,23 @@
   <el-dialog
     v-model="showTagDialog"
     title="选择标签"
-    width="50%"
+    width="45%"
     :close-on-click-modal="false"
+    style="border-radius: 20px;font-weight: 600;"
   >
     <div class="tag-dialog-content">
+      <!-- 添加搜索输入框 -->
+      <el-input
+        v-model="tagSearchKeyword"
+        placeholder="搜索标签"
+        class="tag-search-input"
+        clearable
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+
       <!-- 已选标签区域 -->
       <div class="selected-tags-section">
         <div class="section-title">已选标签</div>
@@ -157,11 +170,10 @@
       <!-- elementplus el-divider: 分割线 -->
       <el-divider />
       
-      <!-- 标签分组 -->
-      <div v-for="group in groupedTags" :key="group.superName" class="tag-group">
+      <!-- 修改标签分组显示逻辑 -->
+      <div v-for="group in filteredGroupedTags" :key="group.superName" class="tag-group">
         <div class="tag-group-title">{{ group.superName }}</div>
         <div class="tag-group-content">
-          <!-- elementplus el-check-tag: 可选择的标签 -->
           <el-check-tag
             v-for="tag in group.tags"
             :key="tag.id"
@@ -211,26 +223,38 @@ const allTags = ref<Tag[]>([])
 
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate: number) => {
-  if (rate >= 80) return '#67C23A'  // 深绿色
-  if (rate >= 60) return '#E6A23C'  // 浅绿色
-  return '#F56C6C'  // 最浅绿色
+  if (rate >= 80) return '#67C23A'
+  if (rate >= 60) return '#E6A23C'
+  return '#F56C6C'
 }
 
-// 计算标签分组
-const groupedTags = computed<TagGroup[]>(() => {
+// 添加标签搜索关键词
+const tagSearchKeyword = ref('')
+
+// 修改计算属性，添加过滤逻辑
+const filteredGroupedTags = computed<TagGroup[]>(() => {
   const groups: { [key: string]: Tag[] } = {}
   
   allTags.value.forEach(tag => {
+    // 如果有搜索关键词，进行过滤
+    if (tagSearchKeyword.value && 
+        !tag.name.toLowerCase().includes(tagSearchKeyword.value.toLowerCase())) {
+      return
+    }
+    
     if (!groups[tag.superName]) {
       groups[tag.superName] = []
     }
     groups[tag.superName].push(tag)
   })
   
-  return Object.entries(groups).map(([superName, tags]) => ({
-    superName,
-    tags
-  }))
+  // 只返回有标签的分组
+  return Object.entries(groups)
+    .filter(([_, tags]) => tags.length > 0)
+    .map(([superName, tags]) => ({
+      superName,
+      tags
+    }))
 })
 
 // 获取题目列表
@@ -251,7 +275,7 @@ const getProblems = async () => {
       problems.value = response.data.list
     }
   } catch (error) {
-    console.error('获取���目列表失败:', error)
+    console.error('获取题目列表失败:', error)
   } finally {
     loading.value = false
   }
@@ -300,7 +324,7 @@ const getTotalCount = async () => {
       problems.value = allData.slice(start, end)
     }
   } catch (error) {
-    console.error('获取题目���数失败:', error)
+    console.error('获取题目总数失败:', error)
   } finally {
     loading.value = false
   }
@@ -377,7 +401,7 @@ const clearTags = () => {
   text-decoration: underline;
 }
 
-/* 标��样式 */
+/* 标签样式 */
 .problem-tags {
   margin-top: 8px;
 }
@@ -517,7 +541,7 @@ const clearTags = () => {
 }
 
 .difficulty-entry {
-  background-color: #95D475;
+  background-color: #abafa8;
   color: white;
 }
 
@@ -539,5 +563,11 @@ const clearTags = () => {
 .difficulty-expert {
   background-color: #F56C6C;
   color: white;
+}
+
+/* 添加搜索输入框样式 */
+.tag-search-input {
+  margin-bottom: 16px;
+  width: 100%;
 }
 </style>
