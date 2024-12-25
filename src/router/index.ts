@@ -69,6 +69,7 @@ const router = createRouter({
     },
     { path: '/discuss', name: 'discussion', component: () => import('@/views/Discussion.vue') },
     { path: '/discuss/:id', name: 'discussionDetail', component: () => import('@/views/DiscussionDetail.vue') },
+    { path: '/files/:id', name: 'ListFile',component: () => import('@/components/ListFiles.vue')  },
   ]
 })
 
