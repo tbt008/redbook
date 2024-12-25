@@ -2,7 +2,7 @@
   <div class="about-body">
     <div class="about">
       <div class="profile">
-        <div class="about-member">
+        <!-- <div class="about-member">
           <div class="about-img">
             <img src="@/views/imgs/about1.jpg" alt="" class="about-img-1" />
           </div>
@@ -10,7 +10,7 @@
           <div class="about-info">
             <span class="about-name">谭冰涛</span>
           </div>
-        </div>
+        </div> -->
 
         <div class="about-member">
           <div class="about-img">
@@ -20,14 +20,14 @@
             <span class="about-name">黄佳威</span>
           </div>
         </div>
-        <div class="about-member">
+        <!-- <div class="about-member">
           <div class="about-img">
             <img src="@/views/imgs/about3.jpg" alt="" class="about-img-1" />
           </div>
           <div class="about-info">
             <span class="about-name">王其彬</span>
           </div>
-        </div>
+        </div> -->
         <div class="about-member">
           <div class="about-img">
             <img src="@/views/imgs/about4.jpg" alt="" class="about-img-1" />
@@ -36,20 +36,16 @@
             <span class="about-name">张俊艺</span>
           </div>
         </div>
-        <div class="about-member">
+        <!-- <div class="about-member">
           <div class="about-img">
             <img src="@/views/imgs/about5.jpg" alt="" class="about-img-1" />
           </div>
           <div class="about-info">
             <span class="about-name">钟宇杰</span>
           </div>
-        </div>
+        </div> -->
       </div>
-      <div class="about-content">
-        <div class="home-title-2">人活着就是为了麻衣学姐</div>
-        <div class="home-title-2">人活着就是为了麻衣学姐</div>
-        <div class="home-title-2">人活着就是为了麻衣学姐</div>
-      </div>
+      <div class="about-content"></div>
     </div>
   </div>
 </template>

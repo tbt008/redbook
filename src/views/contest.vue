@@ -24,13 +24,13 @@
             <div class="contest-item-title">
               {{ item.title }}
               <el-tag v-if="item.isPassword" :type="primary" effect="dark"
-                ><el-icon><Lock /></el-icon>密码</el-tag
+              ><el-icon><Lock /></el-icon>密码</el-tag
               >
               <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="success" effect="dark"
-                ><el-icon><key /></el-icon>邀请</el-tag
+              ><el-icon><key /></el-icon>邀请</el-tag
               >
               <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark"
-                >IOI</el-tag
+              >IOI</el-tag
               >
               <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
             </div>
@@ -52,11 +52,11 @@
           </div>
           <div class="apply-button">
             <el-button
-              type="success"
-              round
-              style="width: 100px; height: 50px"
-              @click="inputInfo(item.id)"
-              >进入</el-button
+                type="success"
+                round
+                style="width: 100px; height: 50px"
+                @click="inputInfo(item.contestId)"
+            >进入</el-button
             >
           </div>
         </div>
@@ -67,13 +67,13 @@
             <div class="contest-item-title">
               {{ item.title }}
               <el-tag v-if="item.isPassword" :type="primary" effect="dark"
-                ><el-icon><Lock /></el-icon>密码</el-tag
+              ><el-icon><Lock /></el-icon>密码</el-tag
               >
               <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="success" effect="dark"
-                ><el-icon><key /></el-icon>邀请</el-tag
+              ><el-icon><key /></el-icon>邀请</el-tag
               >
               <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark"
-                >IOI</el-tag
+              >IOI</el-tag
               >
               <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
             </div>
@@ -87,19 +87,18 @@
                 主办方:ptuCode.com
               </div>
               <div>
-                <el-icon><UserFilled /></el-icon>参与人数：{{ item.userNumber }}
+                <el-icon><UserFilled /></el-icon>参与人数：{{ item.participationNumber }}
               </div>
               <div>语言:{{ item.language }}</div>
-              <!-- <div>赛制:{{ item.contestType }}</div> -->
             </div>
           </div>
           <div class="apply-button">
             <el-button
-              type="info"
-              round
-              style="width: 100px; height: 50px"
-              @click="inputInfo(item.id)"
-              >回顾比赛</el-button
+                type="info"
+                round
+                style="width: 100px; height: 50px"
+                @click="inputInfo(item.contestId)"
+            >回顾比赛</el-button
             >
           </div>
         </div>
@@ -147,11 +146,11 @@ onMounted(async () => {
 })
 
 watch(
-  [searchType, searchKeyword],
-  async () => {
-    getConstestList()
-  },
-  { deep: true }
+    [searchType, searchKeyword],
+    async () => {
+      getConstestList()
+    },
+    { deep: true }
 )
 const inputInfo = (id) => {
   // 进入该比赛详情页

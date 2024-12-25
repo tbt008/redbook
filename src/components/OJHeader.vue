@@ -1,7 +1,7 @@
 <template>
   <div class="head-nav">
     <ul id="nav">
-      <li ref="links" v-for="(link, index) in links" :key="index" class="navbar">
+      <li v-for="(link, index) in links" :key="index" class="navbar">
         <a @click="handleClick(index)">{{ link.text }} </a>
       </li>
     </ul>
@@ -12,86 +12,54 @@
   </div>
 </template>
 
-<script>
-import request from '@/util/request.ts'
-export default {
-  data() {
-    return {
-      links: [
-        { path: '/', text: '主页' },
-        { path: '/problems', text: '题库' },
-        { path: '/contest', text: '竞赛' },
-        { path: '/discuss', text: '讨论' },
-        { path: '/about', text: '关于' }
-      ],
-      controls: false,
-      loop: true,
-      volume: 1,
-      userLogin: false,
-      userImg: ''
-    }
-  },
-  mounted() {
-    // 判断用户是否已登录
-    if (localStorage.getItem('authToken') != null) {
-      // 获取用户基本信息
-      request.get('/user/get/user').then((res) => {
-        if (res.code == 200) {
-          this.userImg = res.data.avatar
-          this.userLogin = true
-        } else {
-          ElMessage.error('用户登录过期！')
-        }
-      })
-    }
-  },
-  methods: {
-    handleClick(index) {
-      this.$router.push(this.links[index])
-    },
-    handleUser() {
-      if (this.userLogin) {
-        // 跳转个人中心
-        this.$router.push('/user')
+<script lang="js" setup>
+import request from '@/util/request'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const links = ref([
+  { path: '/', text: '主页' },
+  { path: '/problems', text: '题库' },
+  { path: '/contest', text: '竞赛' },
+  { path: '/discuss', text: '讨论' },
+  { path: '/about', text: '关于' }
+])
+const userImg = ref(null)
+
+const userLogin = () => {
+  // 判断用户是否已登录
+  if (localStorage.getItem('authToken') != null) {
+    // 获取用户基本信息
+    request.get('/user/get/user').then((res) => {
+      if (res.code == 200) {
+        userImg.value = res.data.avatar
+        return true
       } else {
-        // 跳转登录页
-        this.$router.push('/login')
+        ElMessage.error('用户登录过期！')
+        return false
       }
-    }
+    })
+  } else {
+    return false
   }
-  // created() {
-  //   window.onload = function () {
-  //     document.onkeydown = function () {
-  //       var e = window.event || arguments[0]
-
-  //       if (e.keyCode == 123) {
-  //         // alert('禁止F12')
-  //         ElMessage.error('禁止F12!!!!! ')
-  //         return false
-  //       } else if (e.ctrlKey && e.shiftKey && e.keyCode == 73) {
-  //         // alert('禁止Ctrl+Shift+I')
-
-  //         return false
-  //       } else if (e.ctrlKey && e.keyCode == 85) {
-  //         // alert('禁止Ctrl+u')
-
-  //         return false
-  //       } else if (e.ctrlKey && e.keyCode == 83) {
-  //         // alert('禁止Ctrl+s')
-
-  //         return false
-  //       }
-  //     }
-
-  //     // 屏蔽鼠标右键
-
-  //     document.oncontextmenu = function () {
-  //       // alert('禁止右键')
-
-  //       return false
-  //     }
-  //   }
-  // }
+}
+onMounted(() => {
+  userLogin()
+})
+const handleClick = (index) => {
+  router.push(links.value[index])
+  // this.$router.push(links.value[index])
+}
+const handleUser = () => {
+  if (userImg.value != null) {
+    // 跳转个人中心
+    router.push('/user')
+    // this.$router.push('/user')
+  } else {
+    // 跳转登录页
+    router.push('/login')
+    // this.$router.push('/login')
+  }
 }
 </script>
 
@@ -120,7 +88,7 @@ export default {
 }
 
 .head-nav {
-  height: 50px;
+  height: 6vh;
   /* 优先级 */
   border-bottom: 1px solid var(--el-border-color);
   z-index: 99;
@@ -157,7 +125,7 @@ export default {
 .slide2 {
   position: absolute;
   display: inline-block;
-  height: 50px;
+  height: 6vh;
   /* border-radius: 5em; */
   transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1.05);
 }

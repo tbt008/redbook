@@ -11,10 +11,10 @@
           <el-select v-model="choseLanguage" style="width: 100px">
             <!-- 选择语言 -->
             <el-option
-              v-for="item in languageList"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
+                v-for="item in languageList"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
             />
           </el-select>
         </div>
@@ -25,9 +25,9 @@
     </div>
     <div class="code-region">
       <codeEditor
-        @update:value="_handleDebounce"
-        :value="code"
-        :language="choseLanguage"
+          @update:value="_handleDebounce"
+          :value="code"
+          :language="choseLanguage"
       ></codeEditor>
     </div>
   </div>
@@ -36,7 +36,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import codeEditor from '@/components/codeEditor.vue'
-import { debounce } from '@/utils/optimizeUtils';
+import { debounce } from '@/utils/optimizeUtils'
 const currentTab = ref(0)
 const clickToLike = ref(false)
 const choseLanguage = useStorage('ptuCode_' + window.location.pathname.split('/')[2], 0)
@@ -84,15 +84,15 @@ const changeLanguageFun = () => {
   uploadCode()
 }
 watch(
-  () => code.value,
-  () => uploadCode(),
-  { deep: true }
+    () => code.value,
+    () => uploadCode(),
+    { deep: true }
 )
 
 watch(
-  () => choseLanguage,
-  () => changeLanguageFun(),
-  { deep: true }
+    () => choseLanguage,
+    () => changeLanguageFun(),
+    { deep: true }
 )
 onMounted(() => {
   uploadCode()
@@ -104,6 +104,7 @@ onMounted(() => {
 .code-editor {
   width: 100%;
   height: 100%;
+  z-index: -1;
 }
 .item {
   padding-left: 5px;
@@ -170,38 +171,11 @@ onMounted(() => {
         background-color: #e6e6e6;
       }
     }
-    .middle-right {
-      color: gray;
-      position: relative;
-      top: 5px;
-      display: flex;
-      gap: 15px;
-      padding-right: 5px;
-      width: 120px;
-      height: 100%;
-      align-items: center;
-      .middle-right-item {
-        display: flex;
-        position: relative;
-        width: 30px;
-        height: 90%;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        border-radius: 3px;
-        padding-left: 5px;
-        padding-right: 5px;
-      }
-      .middle-right-item:hover {
-        background-color: #e6e6e6 !important;
-      }
-    }
   }
   .code-region {
-    display: flex;
-    // position: relative;
-    height: auto;
+    z-index: -1;
     width: 100%;
+    overflow: hidden;
   }
 }
 </style>
