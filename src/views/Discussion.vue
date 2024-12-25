@@ -7,8 +7,8 @@
           <el-icon><Plus /></el-icon>发布文章
         </el-button>
         <!-- 文章类型筛选 -->
-        <el-select v-model="filterType" placeholder="筛选类型" clearable>
-          <el-option label="全部" :value="null" />
+        <el-select v-model="filterType" placeholder="筛选类型">
+          <el-option label="全部" value="all" />
           <el-option
             v-for="type in articleTypes"
             :key="type.value"
@@ -320,7 +320,7 @@ const handleLike = async (event: Event, item: Article) => {
 }
 
 // 新增的状态
-const filterType = ref<string | null>(null)
+const filterType = ref('all')
 const sortBy = ref('newest')
 
 // 排序和筛选
@@ -328,7 +328,7 @@ const filteredArticles = computed(() => {
   let result = [...articles.value]
   
   // 类型筛选
-  if (filterType.value !== '' && filterType.value !== null) {
+  if (filterType.value !== 'all') {
     result = result.filter(article => article.articleType === Number(filterType.value))
   }
   
@@ -341,7 +341,32 @@ const filteredArticles = computed(() => {
       result.sort((a, b) => b.likeNum - a.likeNum)
       break
     case 'newest':
-      // DOTO
+      result.sort((a, b) => {
+        // 如果任一时间为空，将其排在最后
+        if (!a.createTime) return 1;
+        if (!b.createTime) return -1;
+        
+        // 创建日期对象进行比较
+        const dateA = new Date(
+          a.createTime[0], 
+          a.createTime[1] - 1, // 月份从0开始
+          a.createTime[2], 
+          a.createTime[3] || 0, 
+          a.createTime[4] || 0, 
+          a.createTime[5] || 0
+        );
+        const dateB = new Date(
+          b.createTime[0], 
+          b.createTime[1] - 1, // 月份从0开始
+          b.createTime[2], 
+          b.createTime[3] || 0, 
+          b.createTime[4] || 0, 
+          b.createTime[5] || 0
+        );
+        
+        return dateB.getTime() - dateA.getTime();
+      });
+      break
     default:
       // result.sort((a, b) => 
       //   new Date(b.createTime[0], b.createTime[1],b.createTime[2],b.createTime[3],b.createTime[4],b.createTime[5]).getTime() -
