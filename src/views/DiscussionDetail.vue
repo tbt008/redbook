@@ -143,7 +143,25 @@
 }
 
 .back-button {
+  width: 80px;
+  height: 32px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 20px;
+  background-color: #f2f3f5;
+  border: none;
+  color: #606266;
+  transition: all 0.3s ease;
+}
+.back-button:hover {
+  background-color: #e4e7ed;
+  color: #409EFF;
+}
+ .back-button .el-icon {
+  margin-right: 4px;
+  font-size: 14px;
 }
 
 .article-header {
