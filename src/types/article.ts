@@ -5,7 +5,7 @@ export interface Article {
     title: string
     likeNum: number
     favourNum: number
-    createTime: string
+    createTime: number[]
     content: string
     articleTypeName: string
     articleType: number

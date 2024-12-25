@@ -143,6 +143,10 @@ function cancel() {
 const handleAvatarSuccess: UploadProps['onSuccess'] = (response, uploadFile) => {
   cover.value = URL.createObjectURL(uploadFile.raw!)
 }
+// DOTO
+const next=()=>{
+  //不清楚干啥的，但是dvdv没写
+}
 const saveQuestion = () => {
   request
       .post('/root/contest/edit/problem', {

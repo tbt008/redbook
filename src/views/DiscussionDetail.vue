@@ -15,7 +15,7 @@
         </div>
         <div class="author-info">
           <span class="author-name">{{ discussion.userId }}</span>
-          <span class="publish-time">发布于 {{ formatDate(discussion.createTime) }}</span>
+          <span class="publish-time">发布于 {{ formatDateArray(discussion.createTime) }}</span>
           <div class="article-stats">
             <span class="stats-item">
               <el-icon><View /></el-icon>
@@ -93,7 +93,9 @@ const isLiked = ref(false)
 const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleString('zh-CN')
 }
-
+const formatDateArray = (dateArray: number[]) => {
+  return `${dateArray[0]}年${dateArray[1]}月${dateArray[2]}日`
+}
 // 获取文章详情
 const getDiscussionDetail = async () => {
   try {

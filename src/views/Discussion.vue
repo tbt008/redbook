@@ -188,8 +188,9 @@ const getArticleTypeLabel = (type: number) => {
 }
 
 // 格式化日期
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('zh-CN')
+const formatDate = (dateArray: number[]) => {
+  if(dateArray==null) return 'error'
+  return `${dateArray[0]}年${dateArray[1]}月${dateArray[2]}日`
 }
 
 // 跳转到详情页
@@ -340,8 +341,12 @@ const filteredArticles = computed(() => {
       result.sort((a, b) => b.likeNum - a.likeNum)
       break
     case 'newest':
+      // DOTO
     default:
-      result.sort((a, b) => new Date(b.createTime).getTime() - new Date(a.createTime).getTime())
+      // result.sort((a, b) => 
+      //   new Date(b.createTime[0], b.createTime[1],b.createTime[2],b.createTime[3],b.createTime[4],b.createTime[5]).getTime() -
+      //   new Date(a.createTime[0], a.createTime[1],a.createTime[2],a.createTime[3],a.createTime[4],a.createTime[5]).getTime()
+      // );
   }
   
   return result
