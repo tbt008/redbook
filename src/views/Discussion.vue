@@ -8,13 +8,21 @@
             <el-icon><Plus /></el-icon>发布文章
           </el-button>
           <!-- 文章类型筛选 -->
-          <el-select v-model="filterType" placeholder="筛选类型">
+          <el-select v-model="filterType" placeholder="标签选择">
+            <!-- 使用 prefix 插槽 添加文字-->
+            <!-- #prefix 插槽：
+            这是 Element Plus 的 el-select 组件提供的一个具名插槽
+            用于自定义选择器前缀区域的内容
+            会始终显示在选择框的左侧 -->
+            <template #prefix>
+              <span style="color: #333;">{{ filterType === 'all' ? '全部文章' : filterType === null ? '标签选择' : getArticleTypeLabel(Number(filterType)) }}</span>
+            </template>
             <el-option label="全部" value="all" />
             <el-option
               v-for="type in articleTypes"
               :key="type.value"
               :label="type.label"
-              :value="type.value"
+              :value="type.value.toString()"
             />
           </el-select>
         </div>
@@ -73,7 +81,12 @@
           </el-form-item>
           
           <el-form-item label="文章类型" prop="articleTypeName">
-            <el-select v-model="newArticle.articleTypeName" placeholder="请选择文章类型" style="width: 100%">
+            <el-select 
+              v-model="newArticle.articleTypeName" 
+              placeholder="请选择文章类型" 
+              style="width: 100%"
+              @change="handleArticleTypeChange"
+            >
               <el-option
                 v-for="type in articleTypes"
                 :key="type.value"
@@ -154,7 +167,7 @@ const articleTypes = [
   { value: 2, label: '经验分享' },
   { value: 3, label: '杂谈' },
   { value: 4, label: '竞赛' },
-  { value: 5, label: '算法板子' },
+  { value: 5, label: '算法模板' },
 ]
 
 // 文章列表
@@ -165,9 +178,11 @@ const newArticle = reactive({
   title: '',
   content: '',
   articleTypeName: '', 
+  articleType: 0,
   likeNum: 0,
   favourNum: 0,
-  articleReads: 0
+  articleReads: 0,
+  sourceId: 0
 })
 
 // 表单验证规则
@@ -219,9 +234,9 @@ const goToDetail = (id: string) => {
 // 分页参数
 const pageParams = reactive({
   pageStart: 1,
-  pageSize: 20,
+  pageSize: 10,
   sortField: 'createTime',
-  sortOrder: 'desc'
+  sortOrder: 'asc'
 })
 
 // 获取文章列表
@@ -280,10 +295,11 @@ const getTotalCount = async () => {
 const submitArticle = async () => {
   try {
     if (!formRef.value) return
-    const response = await request.post('/article/add', {
-      uid: uid,
+    const response = await request.post('/article/add', { 
       title: newArticle.title,
-      content: newArticle.content
+      content: newArticle.content,
+      articleType: newArticle.articleType,
+      sourceId: newArticle.sourceId,
     }, {
       headers: {
         'auth-token': `Bearer ${token}`
@@ -336,16 +352,21 @@ const handleLike = async (event: Event, item: Article) => {
 }
 
 // 新增的状态
-const filterType = ref<string | null>(null)
+const filterType = ref<string | null>("all")
 const sortBy = ref('newest')
 
 // 排序和筛选
 const filteredArticles = computed(() => {
   let result = [...articles.value]
   
-  // 类型筛选
-  if (filterType.value !== '' && filterType.value !== null) {
-    result = result.filter(article => article.articleType === Number(filterType.value))
+  // 类型筛选 - 修改类型比较逻辑
+  if (filterType.value && filterType.value !== 'all') {
+    console.log('当前选择的类型:', filterType.value) // 添加调试日志
+    console.log('文章列表:', result) // 添加调试日志
+    result = result.filter(article => {
+      console.log('比较:', article.articleType, Number(filterType.value)) // 添加调试日志
+      return article.articleType === Number(filterType.value)
+    })
   }
   
   // 排序
@@ -395,6 +416,10 @@ const filteredArticles = computed(() => {
 
 const handleSortChange = () => {
   getArticles()
+}
+
+const handleArticleTypeChange = (value: number) => {
+  newArticle.articleType = value
 }
 </script>
 

@@ -381,7 +381,7 @@ const getArticleTypeTag = (type: string) => {
     "分享文章": 'info',
     "杂谈文章": 'default',
     "竞赛文章": 'danger',
-    "算法板子文章": 'primary'
+    "算法模板": 'primary'
   }
   return types[type] || 'info'
 }
