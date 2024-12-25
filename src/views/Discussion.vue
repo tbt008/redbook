@@ -1,78 +1,15 @@
 <template>
-  <div class="discussion-container">
-    <!-- 顶部操作栏 -->
-    <div class="discussion-header">
-      <div class="left-actions">
-        <el-button type="primary" @click="dialogVisible = true">
-          <el-icon><Plus /></el-icon>发布文章
-        </el-button>
-        <!-- 文章类型筛选 -->
-        <el-select v-model="filterType" placeholder="筛选类型">
-          <el-option label="全部" value="all" />
-          <el-option
-            v-for="type in articleTypes"
-            :key="type.value"
-            :label="type.label"
-            :value="type.value"
-          />
-        </el-select>
-      </div>
-      <!-- 排序选项 -->
-      <div class="sort-options">
-        <el-radio-group v-model="sortBy" @change="handleSortChange">
-          <el-radio-button label="newest">最新</el-radio-button>
-          <el-radio-button label="hot">最热</el-radio-button>
-          <el-radio-button label="likes">最多点赞</el-radio-button>
-        </el-radio-group>
-      </div>
-    </div>
-
-    <!-- 文章列表 -->
-    <div class="discussion-list">
-      <el-card v-for="item in filteredArticles" :key="item.sourceId" class="discussion-item">
-        <div class="article-main" @click="goToDetail(item.id)">
-          <div class="article-meta">
-            <el-tag :type="getArticleTypeTag(item.articleType)" class="article-type-tag">
-              {{ getArticleTypeLabel(item.articleType) }}
-            </el-tag>
-            <h3 class="article-title">{{ item.title }}</h3>
-          </div>
-          <div class="article-brief">{{ item.content.substring(0, 150) }}...</div>
-        </div>
-        <div class="article-footer">
-          <div class="article-stats">
-            <el-button-group>
-              <el-button :type="item.isLiked ? 'primary' : 'default'" @click="handleLike($event, item)">
-                <el-icon><Pointer /></el-icon>
-                <span>{{ item.likeNum }}</span>
-              </el-button>
-              <el-button :type="item.isFavorited ? 'primary' : 'default'" @click="handleFavorite($event, item)">
-                <el-icon><Star /></el-icon>
-                <span>{{ item.favourNum }}</span>
-              </el-button>
-            </el-button-group>
-            <span class="view-count">
-              <el-icon><View /></el-icon>
-              {{ item.articleReads }}次浏览
-            </span>
-          </div>
-          <div class="article-info">
-            <span class="author">作者: {{ item.userId }}</span>
-            <span class="time">发布于 {{ formatDate(item.createTime) }}</span>
-          </div>
-        </div>
-      </el-card>
-    </div>
-
-    <!-- 发布文章对话框 -->
-    <el-dialog v-model="dialogVisible" title="发布文章" width="50%">
-      <el-form :model="newArticle" :rules="rules" ref="formRef">
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="newArticle.title" placeholder="请输入标题"></el-input>
-        </el-form-item>
-        
-        <el-form-item label="文章类型" prop="articleTypeName">
-          <el-select v-model="newArticle.articleTypeName" placeholder="请选择文章类型" style="width: 100%">
+  <div class="page-container">
+    <div class="discussion-container">
+      <!-- 顶部操作栏 -->
+      <div class="discussion-header">
+        <div class="left-actions">
+          <el-button type="primary" @click="dialogVisible = true">
+            <el-icon><Plus /></el-icon>发布文章
+          </el-button>
+          <!-- 文章类型筛选 -->
+          <el-select v-model="filterType" placeholder="筛选类型">
+            <el-option label="全部" value="all" />
             <el-option
               v-for="type in articleTypes"
               :key="type.value"
@@ -80,39 +17,118 @@
               :value="type.value"
             />
           </el-select>
-        </el-form-item>
+        </div>
+        <!-- 排序选项 -->
+        <div class="sort-options">
+          <el-radio-group v-model="sortBy" @change="handleSortChange">
+            <el-radio-button label="newest">最新</el-radio-button>
+            <el-radio-button label="hot">最热</el-radio-button>
+            <el-radio-button label="likes">最多点赞</el-radio-button>
+          </el-radio-group>
+        </div>
+      </div>
 
-        <el-form-item label="内容" prop="content">
-          <el-input
-            v-model="newArticle.content"
-            type="textarea"
-            :rows="6"
-            placeholder="请输入文章内容"
-          ></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitArticle">
-            发布
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
+      <!-- 文章列表 -->
+      <div class="discussion-list">
+        <el-card v-for="item in filteredArticles" :key="item.sourceId" class="discussion-item">
+          <div class="article-main" @click="goToDetail(item.id)">
+            <div class="article-meta">
+              <el-tag :type="getArticleTypeTag(item.articleType)" class="article-type-tag">
+                {{ getArticleTypeLabel(item.articleType) }}
+              </el-tag>
+              <h3 class="article-title">{{ item.title }}</h3>
+            </div>
+            <div class="article-brief">{{ item.content.substring(0, 150) }}...</div>
+          </div>
+          <div class="article-footer">
+            <div class="article-stats">
+              <el-button-group>
+                <el-button :type="item.isLiked ? 'primary' : 'default'" @click="handleLike($event, item)">
+                  <el-icon><Pointer /></el-icon>
+                  <span>{{ item.likeNum }}</span>
+                </el-button>
+                <el-button :type="item.isFavorited ? 'primary' : 'default'" @click="handleFavorite($event, item)">
+                  <el-icon><Star /></el-icon>
+                  <span>{{ item.favourNum }}</span>
+                </el-button>
+              </el-button-group>
+              <span class="view-count">
+                <el-icon><View /></el-icon>
+                {{ item.articleReads }}次浏览
+              </span>
+            </div>
+            <div class="article-info">
+              <span class="author">作者: {{ item.userId }}</span>
+              <span class="time">发布于 {{ formatDate(item.createTime) }}</span>
+            </div>
+          </div>
+        </el-card>
+      </div>
 
-    <!-- 分页组件 -->
-    <div class="pagination-container">
-      <el-pagination
-        v-model:current-page="pageParams.pageStart"
-        v-model:page-size="pageParams.pageSize"
-        :page-sizes="[10, 20, 30, 50]"
-        :total="total"
-        :pager-count="4"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        layout="total, sizes, prev, pager, next, jumper"
-      />
+      <!-- 发布文章对话框 -->
+      <el-dialog v-model="dialogVisible" title="发布文章" width="50%">
+        <el-form :model="newArticle" :rules="rules" ref="formRef">
+          <el-form-item label="标题" prop="title">
+            <el-input v-model="newArticle.title" placeholder="请输入标题"></el-input>
+          </el-form-item>
+          
+          <el-form-item label="文章类型" prop="articleTypeName">
+            <el-select v-model="newArticle.articleTypeName" placeholder="请选择文章类型" style="width: 100%">
+              <el-option
+                v-for="type in articleTypes"
+                :key="type.value"
+                :label="type.label"
+                :value="type.value"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="内容" prop="content">
+            <el-input
+              v-model="newArticle.content"
+              type="textarea"
+              :rows="6"
+              placeholder="请输入文章内容"
+            ></el-input>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="dialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="submitArticle">
+              发布
+            </el-button>
+          </span>
+        </template>
+      </el-dialog>
+
+      <!-- 分页组件 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="pageParams.pageStart"
+          v-model:page-size="pageParams.pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="total"
+          :pager-count="4"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          layout="total, sizes, prev, pager, next, jumper"
+        />
+      </div>
+    </div>
+    
+    <div class="side-panel">
+      <el-card class="side-card">
+        <template #header>
+          <div class="side-card-header">
+            <span>社区公告</span>
+          </div>
+        </template>
+        <div class="announcement-content">
+          <p>欢迎来到讨论区！</p>
+          <p>这里可以分享你的想法和经验。</p>
+        </div>
+      </el-card>
     </div>
   </div>
 </template>
@@ -320,7 +336,7 @@ const handleLike = async (event: Event, item: Article) => {
 }
 
 // 新增的状态
-const filterType = ref('all')
+const filterType = ref<string | null>(null)
 const sortBy = ref('newest')
 
 // 排序和筛选
@@ -328,7 +344,7 @@ const filteredArticles = computed(() => {
   let result = [...articles.value]
   
   // 类型筛选
-  if (filterType.value !== 'all') {
+  if (filterType.value !== '' && filterType.value !== null) {
     result = result.filter(article => article.articleType === Number(filterType.value))
   }
   
@@ -383,10 +399,18 @@ const handleSortChange = () => {
 </script>
 
 <style scoped>
-.discussion-container {
+.page-container {
+  display: flex;
+  gap: 24px;
   padding: 24px;
-  max-width: 1000px;
+  max-width: 1400px;
   margin: 0 auto;
+}
+
+.discussion-container {
+  flex: 1;
+  padding: 24px;
+  margin: 0;
   background-color: #ffffff;
   border-radius: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
@@ -476,5 +500,25 @@ const handleSortChange = () => {
 
 .discussion-list {
   padding: 0 20px;
+}
+
+.side-panel {
+  width: 300px;
+}
+
+.side-card {
+  position: sticky;
+  top: 24px;
+  border-radius: 20px;
+}
+
+.side-card-header {
+  font-weight: bold;
+  color: #333;
+}
+
+.announcement-content {
+  color: #666;
+  line-height: 1.6;
 }
 </style>
