@@ -13,27 +13,25 @@
       </el-form-item>
 
       <el-form-item label="题目标签">
-        <el-tag
-          v-for="tag in dynamicTags"
-          :key="tag"
-          closable
-          :disable-transitions="false"
-          @close="handleClose(tag)"
-        >
-          {{ tag }}
-        </el-tag>
-        <el-input
-          v-if="inputVisible"
-          ref="InputRef"
-          v-model="inputValue"
-          class="w-20"
-          size="small"
-          @keyup.enter="handleInputConfirm"
-          @blur="handleInputConfirm"
-        />
-        <el-button v-else class="button-new-tag" size="small" @click="showInput">
-          + New Tag
+        <!-- elementplus el-button: 标签选择按钮 -->
+        <el-button class="filter-item" @click="showTagDialog = true">
+          标签
+          <template v-if="selectedTagIds.length"> ({{ selectedTagIds.length }}) </template>
         </el-button>
+        <!-- 已选标签显示区域 -->
+        <div v-if="selectedTagIds.length" class="selected-tags-bar">
+          <!-- elementplus el-tag: 已选标签展示 -->
+          <el-tag
+              v-for="tagId in selectedTagIds"
+              :key="tagId"
+              closable
+              type="primary"
+              class="selected-tag"
+              @close="handleTagChange(false, tagId)"
+          >
+            {{ allTags.find((tag) => tag.id === tagId)?.name }}
+          </el-tag>
+        </div>
       </el-form-item>
       <el-form-item label="题目类型">
         <el-radio-group v-model="status">
@@ -41,8 +39,14 @@
           <el-radio value="1" size="large">比赛</el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="题目难度" prop="score">
-        <el-input-number v-model="score" :min="1" :max="1000000" />
+      <el-form-item label="题目难度">
+        <el-radio-group v-model="difficulty">
+          <el-radio value="1" size="large">入门</el-radio>
+          <el-radio value="2" size="large">简单</el-radio>
+          <el-radio value="3" size="large">普及</el-radio>
+          <el-radio value="4" size="large">提高</el-radio>
+          <el-radio value="5" size="large">困难</el-radio>
+        </el-radio-group>
       </el-form-item>
       <el-form-item label="时间限制" prop="timeLimit">
         <el-input-number v-model="timeLimit" :min="1" :max="1000000" />S
@@ -62,35 +66,35 @@
       </div>
       <el-form-item label="题目样例">
         <el-input
-          v-model="input"
-          style="width: 60%"
-          :rows="1"
-          type="textarea"
-          placeholder="输入数据"
+            v-model="input"
+            style="width: 60%"
+            :rows="1"
+            type="textarea"
+            placeholder="输入数据"
         />
         <el-input
-          v-model="output"
-          style="width: 60%"
-          :rows="1"
-          type="textarea"
-          placeholder="输出数据"
+            v-model="output"
+            style="width: 60%"
+            :rows="1"
+            type="textarea"
+            placeholder="输出数据"
         />
         <el-input
-          v-model="explain"
-          style="width: 60%"
-          :rows="1"
-          type="textarea"
-          placeholder="解释"
+            v-model="explain"
+            style="width: 60%"
+            :rows="1"
+            type="textarea"
+            placeholder="解释"
         />
         <el-button type="primary" @click="addExample">添加</el-button>
       </el-form-item>
       <el-form-item label="题目提示">
         <el-input
-          v-model="tip"
-          style="width: 100%"
-          :rows="2"
-          type="textarea"
-          placeholder="Please input"
+            v-model="tip"
+            style="width: 100%"
+            :rows="2"
+            type="textarea"
+            placeholder="Please input"
         />
       </el-form-item>
       <el-form-item label="题目内容" prop="content">
@@ -105,20 +109,72 @@
       </el-form-item>
     </el-form>
   </div>
+  <!-- elementplus el-dialog: 标签选择弹窗 -->
+  <el-dialog v-model="showTagDialog" title="选择标签" width="50%" :close-on-click-modal="false">
+    <div class="tag-dialog-content">
+      <!-- 已选标签区域 -->
+      <div class="selected-tags-section">
+        <div class="section-title">已选标签</div>
+        <div class="tag-group-content">
+          <template v-if="selectedTagIds.length">
+            <!-- elementplus el-check-tag: 可选择的标签 -->
+            <el-check-tag
+                v-for="tagId in selectedTagIds"
+                :key="tagId"
+                :checked="true"
+                class="tag-item"
+                @change="() => handleTagChange(false, tagId)"
+            >
+              {{ allTags.find((tag) => tag.id === tagId)?.name }}
+            </el-check-tag>
+          </template>
+          <div v-else class="no-tags-selected">暂未选择标签</div>
+        </div>
+      </div>
+
+      <!-- elementplus el-divider: 分割线 -->
+      <el-divider />
+
+      <!-- 标签分组 -->
+      <div v-for="group in groupedTags" :key="group.superName" class="tag-group">
+        <div class="tag-group-title">{{ group.superName }}</div>
+        <div class="tag-group-content">
+          <!-- elementplus el-check-tag: 可选择的标签 -->
+          <el-check-tag
+              v-for="tag in group.tags"
+              :key="tag.id"
+              :checked="selectedTagIds.includes(tag.id)"
+              @change="(checked) => handleTagChange(checked, tag.id)"
+              class="tag-item"
+          >
+            {{ tag.name }}
+          </el-check-tag>
+        </div>
+      </div>
+    </div>
+    <template #footer>
+      <span class="dialog-footer">
+        <!-- elementplus el-button: 操作按钮 -->
+        <el-button @click="clearTags">清空</el-button>
+        <el-button type="primary" @click="showTagDialog = false"> 确定 </el-button>
+      </span>
+    </template>
+  </el-dialog>
 </template>
 <script lang="js" setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
 import { useRouter } from 'vue-router'
 import { onMounted } from 'vue'
 const router = useRouter()
-const type = ref(0)
 const timeLimit = ref(1)
 const memoryLimit = ref(1024)
-const status = ref(0)
-const score = ref(0)
+const status = ref('0')
+const difficulty = ref('1')
 const exampleList = ref([])
+
+const selectedTagIds = ref([])
 const tip = ref('')
 const editorType = ref('1')
 const title = ref('')
@@ -139,39 +195,110 @@ const addExample = () => {
   exampleList.value.push(obj)
 }
 
-onMounted(() => {})
+onMounted(() => {
+  getTags()
+})
 const answer = ref()
 const content = ref()
+const allTags = ref([])
+// 计算标签分组
+const groupedTags = computed(() => {
+  const groups = {}
 
+  allTags.value.forEach((tag) => {
+    if (!groups[tag.superName]) {
+      groups[tag.superName] = []
+    }
+    groups[tag.superName].push(tag)
+  })
+
+  return Object.entries(groups).map(([superName, tags]) => ({
+    superName,
+    tags
+  }))
+})
+
+// 标签选择相关
+const showTagDialog = ref(false)
+
+// 标签选择处理
+const handleTagChange = (checked, tagId) => {
+  if (checked) {
+    selectedTagIds.value.push(tagId)
+  } else {
+    selectedTagIds.value = selectedTagIds.value.filter((id) => id !== tagId)
+  }
+}
+
+// 清空所有已选标签
+const clearTags = () => {
+  selectedTagIds.value = []
+}
+// 获取所有标签
+const getTags = async () => {
+  try {
+    const response = await request.post('/tag/list', {})
+    if (response.code === 200) {
+      allTags.value = response.data
+      console.log(allTags.value)
+    }
+  } catch (error) {
+    console.error('获取标签列表失败:', error)
+  }
+}
 function primary() {
   if (editorType.value == '1') {
     if (title.value == '') {
       alert('请输入标题')
       return
     }
-    const data = new FormData()
-    data.append('titleName', title.value)
-    data.append('status', status.value)
-    data.append('score', score.value)
-    data.append('timeLimit', timeLimit.value)
-    data.append('memoryLimit', memoryLimit.value)
-    data.append('example', JSON.stringify(exampleList.value))
-    data.append('tip', tip.value)
-    data.append('content', content.value)
-    data.append('answer', answer.value)
 
     if (router.currentRoute.value.query.id) {
       const id = router.currentRoute.value.query.id
-      data.append('id', id)
+
       // 更新
-      request.post('/question/update', data).then((res) => {
-        ElMessage.success('更新成功！！！')
-      })
+      request
+          .post('/root/question/update', {
+            id: id,
+            title: title.value,
+            status: status.value,
+            difficulty: difficulty.value,
+            timeLimit: timeLimit.value,
+            memoryLimit: memoryLimit.value,
+            examples: JSON.stringify(exampleList.value),
+            tip: tip.value,
+            description: content.value,
+            tagIds: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
+            answer: answer.value
+          })
+          .then((res) => {
+            if (res.code == 200) {
+              ElMessage.success('更新成功！！！')
+            } else {
+              ElMessage.error(res.msg)
+            }
+          })
     } else {
-      request.post('/question/add', data).then((res) => {
-        console.log(res)
-        ElMessage.success('发布成功！！！')
-      })
+      request
+          .post('/root/question/add', {
+            title: title.value,
+            status: status.value,
+            difficulty: difficulty.value,
+            timeLimit: timeLimit.value,
+            memoryLimit: memoryLimit.value,
+            examples: JSON.stringify(exampleList.value),
+            tip: tip.value,
+            description: content.value,
+            tagIds: selectedTagIds.value,
+            answer: answer.value
+          })
+          .then((res) => {
+            if (res.code == 200) {
+              ElMessage.success('更新成功！！！')
+            } else {
+              ElMessage.error(res.msg)
+            }
+          })
     }
   }
 }

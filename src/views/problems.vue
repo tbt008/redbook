@@ -8,6 +8,7 @@ import question from './question.vue'
 import request from '@/util/request'
 import codeTest from './codeTest.vue'
 import codeRegion from './CodeRegion.vue'
+
 const router = useRouter()
 const loading = ref(true)
 const awaitContent = ref({})
@@ -36,14 +37,12 @@ const changeLanuage = (value) => {
   language.value = value
 }
 watch(() => codeNow())
-const qid = ref()
 const rep = ref({})
 onMounted(async () => {
   questionId.value = router.currentRoute.value.query.id
   contestId.value = router.currentRoute.value.query.contest
   request.get(`/question/${questionId.value}`).then((res) => {
     rep.value = res.data
-    qid.value = rep.value.questionId
   })
 })
 </script>
@@ -60,8 +59,28 @@ onMounted(async () => {
         </template>
         <!-- 右边代码区域 -->
         <template #two>
-          <tbSplit>
+          <tbSplit class="right">
             <template #one>
+              <codeRegion
+                  :loading="loading"
+                  :rep="awaitContent"
+                  @submitCode="codeNow"
+                  @changeLanuage="changeLanuage"
+              ></codeRegion>
+            </template>
+            <template #two>
+              <div class="footer">
+                <codeTest
+                    @showACImgfun="showACImgfun"
+                    :language="language"
+                    :code="code"
+                    :rep="rep"
+                    :question-id="questionId"
+                    :contest-id="contestId"
+                ></codeTest>
+              </div>
+            </template>
+            <!-- <template #one>
               <codeRegion
                 :loading="loading"
                 :rep="awaitContent"
@@ -76,11 +95,11 @@ onMounted(async () => {
                   :language="language"
                   :code="code"
                   :rep="rep"
-                  :question-id="qid"
+                  :question-id="questionId"
                   :contest-id="contestId"
                 ></codeTest>
               </div>
-            </template>
+            </template> -->
           </tbSplit>
         </template>
       </lrSplit>
@@ -89,9 +108,8 @@ onMounted(async () => {
 </template>
 <style lang="scss" scoped>
 .containersss {
-  height: 100vh;
   width: 100%;
-  position: relative;
+  height: 94vh;
   display: flex;
   background-color: #f0f0f0;
   flex-direction: column;
@@ -104,13 +122,14 @@ onMounted(async () => {
     .bottom {
       width: 100%;
       display: flex;
-      position: relative;
-      max-width: 1520.8px;
+
       .question-info {
-        height: 100%;
-        // position: relative;
+        height: 94vh;
         display: flex;
       }
+    }
+    .right {
+      height: 94vh;
     }
     .footer {
       overflow-y: hidden;

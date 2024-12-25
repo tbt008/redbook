@@ -6,7 +6,7 @@
         <template #default>
           <div style="margin: auto; width: 70%; flex-wrap: wrap">
             <div
-              style="
+                style="
                 color: rgb(255, 255, 255);
                 padding-top: 50px;
                 font-size: 50px;
@@ -16,25 +16,25 @@
               {{ constestInfo.title }}
             </div>
             <el-tag v-if="constestInfo.isInputPassword" :type="primary" effect="dark"
-              ><el-icon><Lock /></el-icon>密码</el-tag
+            ><el-icon><Lock /></el-icon>密码</el-tag
             >
             <el-tag
-              style="margin-left: 10px"
-              v-if="constestInfo.isInvite"
-              :type="success"
-              effect="dark"
-              ><el-icon><key /></el-icon>邀请</el-tag
+                style="margin-left: 10px"
+                v-if="constestInfo.isInvite"
+                :type="success"
+                effect="dark"
+            ><el-icon><key /></el-icon>邀请</el-tag
             >
             <el-tag
-              style="margin-left: 10px"
-              v-if="constestInfo.contestType == 1"
-              :type="primary"
-              effect="dark"
-              >IOI</el-tag
+                style="margin-left: 10px"
+                v-if="constestInfo.contestType == 1"
+                :type="primary"
+                effect="dark"
+            >IOI</el-tag
             >
             <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
             <div
-              style="color: rgb(220, 220, 220); width: 100%; font-size: 20px; text-align: center"
+                style="color: rgb(220, 220, 220); width: 100%; font-size: 20px; text-align: center"
             >
               <el-icon><BellFilled /></el-icon>比赛时间:{{ constestInfo.startTime }}至{{
                 constestInfo.endTime
@@ -42,18 +42,18 @@
             </div>
             <div>
               <div
-                style="color: rgb(220, 220, 220); width: 100%; font-size: 20px; text-align: center"
+                  style="color: rgb(220, 220, 220); width: 100%; font-size: 20px; text-align: center"
               >
                 <el-icon><Promotion /></el-icon>
                 主办方:ptuCode.com
               </div>
               <div
-                style="color: rgb(220, 220, 220); width: 100%; font-size: 20px; text-align: center"
+                  style="color: rgb(220, 220, 220); width: 100%; font-size: 20px; text-align: center"
               >
                 <el-icon><UserFilled /></el-icon>参与人数：{{ constestInfo.userNumber }}
               </div>
               <div
-                style="
+                  style="
                   color: rgb(220, 220, 220);
                   width: 100%;
                   font-size: 20px;
@@ -85,31 +85,31 @@
             <template #default>
               <div v-if="isShowCountDown" style="margin: auto">
                 <count-down
-                  @selectQuestion="selectQuestion"
-                  :endTime="startTime"
-                  :endText="endText"
+                    @selectQuestion="selectQuestion"
+                    :endTime="startTime"
+                    :endText="endText"
                 />
               </div>
               <div
-                class="warning"
-                v-if="constestInfo.isBeInvited == 0 && constestInfo.isInvite == true"
+                  class="warning"
+                  v-if="constestInfo.isBeInvited == 0 && constestInfo.isInvite == true"
               >
                 当前比赛需要邀请，且您未被邀请，无法参加！
               </div>
 
               <div
-                class="passwordInput"
-                v-if="constestInfo.isInputPassword != 1 && constestInfo.isInputPassword != null"
+                  class="passwordInput"
+                  v-if="constestInfo.isInputPassword != 1 && constestInfo.isInputPassword != null"
               >
                 <el-input
-                  v-model="inputPassword"
-                  style="width: 240px"
-                  placeholder="请输入比赛密码"
+                    v-model="inputPassword"
+                    style="width: 240px"
+                    placeholder="请输入比赛密码"
                 />
                 <el-button type="primary" @click="submitPassword()">提交</el-button>
               </div>
               <div
-                style="
+                  style="
                   background-color: beige;
                   min-height: 300px;
                   height: auto;
@@ -125,28 +125,28 @@
         </el-tab-pane>
         <div>
           <el-tab-pane label="题目" name="second"
-            ><el-scrollbar height="600px">
-              <el-table :data="questionList" style="width: 100%">
-                <el-table-column label="题号" prop="letter"> </el-table-column>
-                <el-table-column label="题目" prop="title">
-                  <template #default="{ row }">
-                    <el-link @click="intoQuestion(row.questionId)">{{ row.title }}</el-link>
-                  </template>
-                </el-table-column>
-                <el-table-column label="状态" prop="isPass">
-                  <template #default="{ row }">
-                    <el-tag v-if="row.isPass == 1" type="primary">通过</el-tag>
-
-                    <el-tag v-if="row.isPass == -1" type="info">未提交</el-tag>
-
-                    <el-tag v-if="row.isPass == 0" type="danger">失败</el-tag>
-                  </template>
-                </el-table-column>
-
-                <template #empty>
-                  <el-empty description="没有数据" />
+          ><el-scrollbar height="600px">
+            <el-table :data="questionList" style="width: 100%">
+              <el-table-column label="题号" prop="letter"> </el-table-column>
+              <el-table-column label="题目" prop="title">
+                <template #default="{ row }">
+                  <el-link @click="intoQuestion(row.questionId)">{{ row.title }}</el-link>
                 </template>
-              </el-table> </el-scrollbar
+              </el-table-column>
+              <el-table-column label="状态" prop="isPass">
+                <template #default="{ row }">
+                  <el-tag v-if="row.isPass == 1" type="primary">通过</el-tag>
+
+                  <el-tag v-if="row.isPass == -1" type="info">未提交</el-tag>
+
+                  <el-tag v-if="row.isPass == 0" type="danger">失败</el-tag>
+                </template>
+              </el-table-column>
+
+              <template #empty>
+                <el-empty description="没有数据" />
+              </template>
+            </el-table> </el-scrollbar
           ></el-tab-pane>
           <el-tab-pane label="提交" name="third">
             <el-scrollbar height="600px">
@@ -162,7 +162,7 @@
                   <template #default="{ row }">
                     <el-tag v-if="row.result == 100" type="success">答案正确</el-tag>
                     <el-tag v-else-if="row.result < 100 && row.result > 0" type="primary"
-                      >部分正确</el-tag
+                    >部分正确</el-tag
                     >
                     <el-tag v-if="row.result == 0" type="danger">答案错误</el-tag>
                     <el-tag v-if="row.result == -2" type="warning">编译错误</el-tag>
@@ -183,7 +183,7 @@
                   <el-empty description="没有数据" />
                 </template>
               </el-table> </el-scrollbar
-          ></el-tab-pane>
+            ></el-tab-pane>
           <el-tab-pane label="排名" name="fourth">
             <el-scrollbar height="600px">
               <el-table :data="rankinglist" style="width: 100%">
@@ -192,9 +192,9 @@
                 <el-table-column label="通过" prop="totalNum"> </el-table-column>
 
                 <el-table-column
-                  v-for="(item, index) in questionList"
-                  :key="index"
-                  :label="item.letter"
+                    v-for="(item, index) in questionList"
+                    :key="index"
+                    :label="item.letter"
                 >
                   <template #default="{ row }">
                     <el-link>{{ row.questionInfo[index].score }}</el-link>
@@ -205,7 +205,7 @@
                   <el-empty description="没有数据" />
                 </template>
               </el-table> </el-scrollbar
-          ></el-tab-pane>
+            ></el-tab-pane>
         </div>
       </el-tabs>
     </div>
@@ -248,28 +248,28 @@ const refreshRank = () => {
 }
 const selectQuestion = () => {
   request
-    .get(`/contest/racepage/${id.value}/question`)
-    .then((res) => {
-      if (res.code == 200) {
-        questionList.value = res.data
-        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-        questionList.value.forEach((item, index) => {
-          // 确保索引在字母数组范围内内，这里简单处理只取前26个
-          if (index < letters.length) {
-            item.letter = letters[index]
-            let t = item.questionId
-            hashmap.set(t, letters[index])
-          } else {
-            item.letter = '超出了字母范围'
-          }
-        })
-      } else {
-        ElMessage.error(res.msg)
-      }
-    })
-    .catch((err) => {
-      ElMessage.error(err)
-    })
+      .get(`/contest/racepage/${id.value}/question`)
+      .then((res) => {
+        if (res.code == 200) {
+          questionList.value = res.data
+          const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+          questionList.value.forEach((item, index) => {
+            // 确保索引在字母数组范围内内，这里简单处理只取前26个
+            if (index < letters.length) {
+              item.letter = letters[index]
+              let t = item.questionId
+              hashmap.set(t, letters[index])
+            } else {
+              item.letter = '超出了字母范围'
+            }
+          })
+        } else {
+          ElMessage.error(res.msg)
+        }
+      })
+      .catch((err) => {
+        ElMessage.error(err)
+      })
   isShowCountDown.value = false
 }
 const selectRecord = () => {
@@ -286,7 +286,7 @@ onMounted(async () => {
     endTime.value = new Date(constestInfo.value.endTime).getTime() / 1000 + ' '
 
     isShowCountDown.value =
-      new Date(constestInfo.value.startTime).getTime() - new Date().getTime() > 0 ? true : false
+        new Date(constestInfo.value.startTime).getTime() - new Date().getTime() > 0 ? true : false
     // 比赛开始，查询题目
     if (isShowCountDown.value == false) {
       selectQuestion()
@@ -313,25 +313,25 @@ const submitPassword = () => {
 <style>
 .contest-info {
   background:
-    url(@/views/imgs/contest.png) no-repeat,
-    linear-gradient(
-      303deg,
-      #186ee8 0%,
-      #1b6fe8 9%,
-      #2274e9 19%,
-      #2b79ea 28%,
-      #3481eb 38%,
-      #3d89ec 48%,
-      #4591ed 57%,
-      #4d99ef 66%,
-      #54a0f0 74%,
-      #5aa7f1 81%,
-      #60aef2 88%,
-      #64b3f4 93%,
-      #67b7f4 97%,
-      #69b9f5 99%,
-      #6abaf5 100%
-    );
+      url(@/views/imgs/contest.png) no-repeat,
+      linear-gradient(
+          303deg,
+          #186ee8 0%,
+          #1b6fe8 9%,
+          #2274e9 19%,
+          #2b79ea 28%,
+          #3481eb 38%,
+          #3d89ec 48%,
+          #4591ed 57%,
+          #4d99ef 66%,
+          #54a0f0 74%,
+          #5aa7f1 81%,
+          #60aef2 88%,
+          #64b3f4 93%,
+          #67b7f4 97%,
+          #69b9f5 99%,
+          #6abaf5 100%
+      );
   background-size: cover;
   object-fit: cover;
   background-position: center center;
