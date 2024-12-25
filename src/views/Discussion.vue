@@ -1,36 +1,65 @@
 <template>
   <div class="discussion-container">
-    <!-- 发布文章按钮 -->
-    <el-button type="primary" @click="dialogVisible = true">
-      发布文章
-    </el-button>
+    <!-- 顶部操作栏 -->
+    <div class="discussion-header">
+      <div class="left-actions">
+        <el-button type="primary" @click="dialogVisible = true">
+          <el-icon><Plus /></el-icon>发布文章
+        </el-button>
+        <!-- 文章类型筛选 -->
+        <el-select v-model="filterType" placeholder="筛选类型" clearable>
+          <el-option label="全部" :value="null" />
+          <el-option
+            v-for="type in articleTypes"
+            :key="type.value"
+            :label="type.label"
+            :value="type.value"
+          />
+        </el-select>
+      </div>
+      <!-- 排序选项 -->
+      <div class="sort-options">
+        <el-radio-group v-model="sortBy" @change="handleSortChange">
+          <el-radio-button label="newest">最新</el-radio-button>
+          <el-radio-button label="hot">最热</el-radio-button>
+          <el-radio-button label="likes">最多点赞</el-radio-button>
+        </el-radio-group>
+      </div>
+    </div>
 
     <!-- 文章列表 -->
     <div class="discussion-list">
-      <el-card v-for="item in articles" :key="item.sourceId" class="discussion-item" @click="goToDetail(item.id)">
-        <div class="discussion-header">
-          <el-tag :type="getArticleTypeTag(item.articleType)">
-            {{ getArticleTypeLabel(item.articleType) }}
-          </el-tag>
+      <el-card v-for="item in filteredArticles" :key="item.sourceId" class="discussion-item">
+        <div class="article-main" @click="goToDetail(item.id)">
+          <div class="article-meta">
+            <el-tag :type="getArticleTypeTag(item.articleType)" class="article-type-tag">
+              {{ getArticleTypeLabel(item.articleType) }}
+            </el-tag>
+            <h3 class="article-title">{{ item.title }}</h3>
+          </div>
+          <div class="article-brief">{{ item.content.substring(0, 150) }}...</div>
         </div>
-        <h3>{{ item.title }}</h3>
-        <div class="discussion-brief">{{ item.content.substring(0, 100) }}...</div>
-        <div class="discussion-footer">
+        <div class="article-footer">
           <div class="article-stats">
-            <span class="stats-item">
+            <el-button-group>
+              <el-button :type="item.isLiked ? 'primary' : 'default'" @click="handleLike($event, item)">
+                <el-icon><Pointer /></el-icon>
+                <span>{{ item.likeNum }}</span>
+              </el-button>
+              <el-button :type="item.isFavorited ? 'primary' : 'default'" @click="handleFavorite($event, item)">
+                <el-icon><Star /></el-icon>
+                <span>{{ item.favourNum }}</span>
+              </el-button>
+            </el-button-group>
+            <span class="view-count">
               <el-icon><View /></el-icon>
-              <span class="stats-number">{{ item.articleReads }}</span>
-            </span>
-            <span class="stats-item" @click.stop="handleFavorite($event, item)">
-              <el-icon><Star /></el-icon>
-              <span class="stats-number">{{ item.favourNum }}</span>
-            </span>
-            <span class="stats-item" @click.stop="handleLike($event, item)">
-              <el-icon><Pointer /></el-icon>
-              <span class="stats-number">{{ item.likeNum }}</span>
+              {{ item.articleReads }}次浏览
             </span>
           </div>
-          <span>{{ formatDate(item.createTime) }}</span>
+          <div class="article-info">
+            <span class="author">作者: {{ item.userId }}</span>
+            <span class="time">发布于 {{ formatDate(item.createTime) }}</span>
+          </div>
         </div>
       </el-card>
     </div>
@@ -89,11 +118,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
-import { View, Star, Pointer } from '@element-plus/icons-vue'
+import { View, Star, Pointer, Plus } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
 import type { FormInstance } from 'element-plus'
 const router = useRouter()
@@ -288,29 +317,70 @@ const handleLike = async (event: Event, item: Article) => {
   // TODO: 实现点赞功能
   console.log('点赞文章:', item)
 }
+
+// 新增的状态
+const filterType = ref<string | null>(null)
+const sortBy = ref('newest')
+
+// 排序和筛选
+const filteredArticles = computed(() => {
+  let result = [...articles.value]
+  
+  // 类型筛选
+  if (filterType.value !== '' && filterType.value !== null) {
+    result = result.filter(article => article.articleType === Number(filterType.value))
+  }
+  
+  // 排序
+  switch (sortBy.value) {
+    case 'hot':
+      result.sort((a, b) => b.articleReads - a.articleReads)
+      break
+    case 'likes':
+      result.sort((a, b) => b.likeNum - a.likeNum)
+      break
+    case 'newest':
+    default:
+      result.sort((a, b) => new Date(b.createTime).getTime() - new Date(a.createTime).getTime())
+  }
+  
+  return result
+})
+
+const handleSortChange = () => {
+  getArticles()
+}
 </script>
 
 <style scoped>
 .discussion-container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 24px;
+  max-width: 1000px;
   margin: 0 auto;
-  background-color: #f5f7fa;
-  border-radius: 8px;
-  min-height: calc(100vh - 40px);
+  background-color: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
-.discussion-list {
-  margin-top: 20px;
+.discussion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 0 20px;
+}
+
+.left-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
 }
 
 .discussion-item {
   margin-bottom: 16px;
-  cursor: pointer;
   transition: all 0.3s;
-  background-color: #fff;
-  border: 1px solid #ebeef5;
-  padding: 16px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .discussion-item:hover {
@@ -318,45 +388,63 @@ const handleLike = async (event: Event, item: Article) => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.discussion-header {
+.article-main {
+  cursor: pointer;
+}
+
+.article-meta {
   margin-bottom: 12px;
 }
 
-.discussion-header .el-tag {
+.article-title {
+  margin: 8px 0;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.article-type-tag {
   margin-right: 8px;
 }
 
-.discussion-brief {
+.article-brief {
   color: #666;
-  margin: 8px 0;
+  line-height: 1.6;
+  margin-bottom: 16px;
 }
 
-.discussion-footer {
+.article-footer {
   display: flex;
   justify-content: space-between;
-  color: #999;
-  font-size: 14px;
-  margin-top: 12px;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
 }
 
 .article-stats {
   display: flex;
+  align-items: center;
   gap: 16px;
 }
 
-.article-stats span {
+.view-count {
+  color: #909399;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.article-stats i {
-  font-size: 16px;
+.article-info {
+  color: #909399;
+  font-size: 14px;
+  display: flex;
+  gap: 16px;
 }
 
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
+.sort-options {
+  margin-left: auto;
+}
+
+.discussion-list {
+  padding: 0 20px;
 }
 </style>

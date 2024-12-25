@@ -18,4 +18,6 @@ export interface Article {
         content: string
         createTime: string
     }>
+    isLiked: boolean
+    isFavorited: boolean
 }
