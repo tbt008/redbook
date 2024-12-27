@@ -28,8 +28,16 @@
         </div>
 
         <!-- 文章内容 -->
-        <div class="article-content">
-          {{ discussion.content }}
+        <div class="article-content markdown-body">
+          <mavon-editor
+            v-model="discussion.content"
+            :subfield="false"
+            :defaultOpen="'preview'"
+            :toolbarsFlag="false"
+            :editable="false"
+            :scrollStyle="true"
+            :ishljs="true"
+          />
         </div>
 
         <!-- 文章底部操作栏 -->
@@ -202,6 +210,21 @@
   line-height: 1.8;
   color: #2c3e50;
   margin: 32px 0;
+}
+
+.article-content :deep(.v-note-wrapper) {
+  z-index: 1;
+  border: none;
+  min-height: auto !important;
+}
+
+.article-content :deep(.v-note-panel) {
+  border: none;
+}
+
+.article-content :deep(.v-show-content) {
+  background-color: transparent;
+  padding: 0;
 }
 
 .article-actions {

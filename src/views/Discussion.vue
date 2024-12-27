@@ -97,13 +97,15 @@
           </el-form-item>
 
           <el-form-item label="内容" prop="content">
-            <el-input
+            <mavon-editor
               v-model="newArticle.content"
-              type="textarea"
-              :rows="6"
-              placeholder="请输入文章内容"
-            ></el-input>
+              style="height: 500px"
+              ref="mavonEditorRef"
+              :ishljs="true"
+              @change="handleEditorChange"
+            />
           </el-form-item>
+
         </el-form>
         <template #footer>
           <span class="dialog-footer">
@@ -169,6 +171,11 @@ const articleTypes = [
   { value: 4, label: '竞赛' },
   { value: 5, label: '算法模板' },
 ]
+
+// 添加编辑器变更处理函数
+const handleEditorChange = (value: string, render: string) => {
+  newArticle.content = value // 保存 markdown 内容
+}
 
 // 文章列表
 const articles = ref<Array<Article>>([])
