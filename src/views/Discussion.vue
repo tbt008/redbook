@@ -46,7 +46,7 @@
               </el-tag>
               <h3 class="article-title">{{ item.title }}</h3>
             </div>
-            <div class="article-brief">{{ item.content.substring(0, 150) }}...</div>
+            <div class="article-brief" v-html="renderMarkdown(item.content.substring(0, 150))"></div>
           </div>
           <div class="article-footer">
             <div class="article-stats">
@@ -74,48 +74,60 @@
       </div>
 
       <!-- 发布文章对话框 -->
-      <el-dialog v-model="dialogVisible" title="发布文章" width="50%">
-        <el-form :model="newArticle" :rules="rules" ref="formRef">
-          <el-form-item label="标题" prop="title">
-            <el-input v-model="newArticle.title" placeholder="请输入标题"></el-input>
-          </el-form-item>
-          
-          <el-form-item label="文章类型" prop="articleTypeName">
-            <el-select 
-              v-model="newArticle.articleTypeName" 
-              placeholder="请选择文章类型" 
-              style="width: 100%"
-              @change="handleArticleTypeChange"
-            >
-              <el-option
-                v-for="type in articleTypes"
-                :key="type.value"
-                :label="type.label"
-                :value="type.value"
-              />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item label="内容" prop="content">
-            <mavon-editor
-              v-model="newArticle.content"
-              style="height: 500px"
-              ref="mavonEditorRef"
-              :ishljs="true"
-              @change="handleEditorChange"
-            />
-          </el-form-item>
-
-        </el-form>
-        <template #footer>
-          <span class="dialog-footer">
-            <el-button @click="dialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="submitArticle">
-              发布
+      <el-drawer
+        v-model="dialogVisible"
+        title="发布文章"
+        size="100%"
+        :with-header="false"
+        direction="ttb"
+        class="publish-drawer"
+      >
+        <div class="publish-container">
+          <!-- <div class="publish-header">
+            <h2>发布文章</h2>
+            <el-button @click="dialogVisible = false">
+              <el-icon><Close /></el-icon>
             </el-button>
-          </span>
-        </template>
-      </el-dialog>
+          </div> -->
+          
+          <el-form :model="newArticle" :rules="rules" ref="formRef" class="publish-form">
+            <el-form-item label="标题" prop="title">
+              <el-input v-model="newArticle.title" placeholder="请输入标题"></el-input>
+            </el-form-item>
+            
+            <el-form-item label="文章类型" prop="articleTypeName">
+              <el-select 
+                v-model="newArticle.articleTypeName" 
+                placeholder="请选择文章类型" 
+                style="width: 100%"
+                @change="handleArticleTypeChange"
+              >
+                <el-option
+                  v-for="type in articleTypes"
+                  :key="type.value"
+                  :label="type.label"
+                  :value="type.value"
+                />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="内容" prop="content">
+              <mavon-editor
+                v-model="newArticle.content"
+                style="height: calc(100vh - 300px);width: 100%;"
+                ref="mavonEditorRef"
+                :ishljs="true"
+                @change="handleEditorChange"
+              />
+            </el-form-item>
+
+            <el-form-item class="publish-actions">
+              <el-button @click="dialogVisible = false">取消</el-button>
+              <el-button type="primary" @click="submitArticle">发布</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </el-drawer>
 
       <!-- 分页组件 -->
       <div class="pagination-container">
@@ -153,9 +165,10 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
-import { View, Star, Pointer, Plus } from '@element-plus/icons-vue'
+import { View, Star, Pointer, Plus, Close } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
 import type { FormInstance } from 'element-plus'
+import { marked } from 'marked'
 const router = useRouter()
 const dialogVisible = ref(false)
 const formRef = ref<FormInstance>()
@@ -428,6 +441,16 @@ const handleSortChange = () => {
 const handleArticleTypeChange = (value: number) => {
   newArticle.articleType = value
 }
+
+// 添加 markdown 渲染函数
+const renderMarkdown = (content: string) => {
+  try {
+    return marked(content + '...')
+  } catch (error) {
+    console.error('Markdown 渲染错误:', error)
+    return content + '...'
+  }
+}
 </script>
 
 <style scoped>
@@ -552,5 +575,44 @@ const handleArticleTypeChange = (value: number) => {
 .announcement-content {
   color: #666;
   line-height: 1.6;
+}
+
+.publish-drawer :deep(.el-drawer__body) {
+  padding: 0;
+}
+
+.publish-container {
+  height: 100%;
+  padding: 24px;
+  background-color: #fff;
+}
+
+.publish-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0 20px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 20px;
+}
+
+.publish-header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #303133;
+}
+
+.publish-form {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.publish-form :deep(.el-form-item__label) {
+  font-weight: bold;
+}
+
+.publish-actions {
+  margin-top: 20px;
+  text-align: right;
 }
 </style>
