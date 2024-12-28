@@ -77,9 +77,9 @@
             <template v-if="message.role === 'ai'">
               <el-avatar 
                 :size="40" 
-                :src="aiAvatar" 
+                :src="getAiAvatar" 
                 class="avatar clickable" 
-                @click="showImageViewer(aiAvatar)" 
+                @click="showImageViewer(getAiAvatar)" 
               />
               <div class="message-bubble ai-bubble">
                 {{ message.content }}
@@ -104,7 +104,7 @@
 
           <!-- 修改加载动画显示条件 -->
           <div v-if="isLoading && currentLoadingAI === '智谱清言'" class="message-item">
-            <el-avatar :size="40" :src="aiAvatar" class="avatar" />
+            <el-avatar :size="40" :src="getAiAvatar" class="avatar" />
             <div class="message-bubble ai-bubble loading-bubble">
               <span class="loading-dots"> <i></i><i></i><i></i> </span>
             </div>
@@ -122,9 +122,9 @@
             <template v-if="message.role === 'ai'">
               <el-avatar 
                 :size="40" 
-                :src="aiAvatar" 
+                :src="getAiAvatar" 
                 class="avatar clickable" 
-                @click="showImageViewer(aiAvatar)" 
+                @click="showImageViewer(getAiAvatar)" 
               />
               <div class="message-bubble ai-bubble">
                 {{ message.content }}
@@ -149,7 +149,7 @@
 
           <!-- 修改加载动画显示条件 -->
           <div v-if="isLoading && currentLoadingAI === '讯飞星火'" class="message-item">
-            <el-avatar :size="40" :src="aiAvatar" class="avatar" />
+            <el-avatar :size="40" :src="getAiAvatar" class="avatar" />
             <div class="message-bubble ai-bubble loading-bubble">
               <span class="loading-dots"> <i></i><i></i><i></i> </span>
             </div>
@@ -192,7 +192,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, computed } from 'vue'
 import {
   ChatDotRound,
   ChatLineRound,
@@ -211,6 +211,8 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const userAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
 const aiAvatar = new URL('../views/imgs/usagi_avatar.png', import.meta.url).href
+const aiAvatar2 = new URL('../views/imgs/bot.jpg', import.meta.url).href
+const aiAvatar3 = new URL('../views/imgs/usagi_king.jpg', import.meta.url).href
 const usagiAvatar = new URL('../views/imgs/usagi_background_yellow.jpg', import.meta.url).href
 const usagiAvatar2 = new URL('../views/imgs/usagi_background.png', import.meta.url).href
 const isCollapse = ref(false) // 侧边栏折叠状态
@@ -405,20 +407,25 @@ const showImageViewer = (imageUrl: string) => {
   showViewer.value = true
 }
 
+// 添加计算属性获取当前AI头像
+const getAiAvatar = computed(() => {
+  if (!useCustomBg.value) {
+    return aiAvatar2
+  }
+  return currentBgIndex.value === 1 ? aiAvatar3 : aiAvatar
+})
+
 // 修改切换主题方法
 const toggleTheme = () => {
   const messagesEl = document.querySelector('.messages') as HTMLElement
   
   if (!useCustomBg.value) {
-    // 首次启用自定义背景
     useCustomBg.value = true
     currentBgIndex.value = 0
   } 
   
-  // 在两种背景之间切换
   currentBgIndex.value = (currentBgIndex.value + 1) % 3
   if (currentBgIndex.value === 0) {
-    // 禁用自定义背景
     useCustomBg.value = false
     messagesEl.style.backgroundImage = 'none'
   } else if (currentBgIndex.value === 1) {
@@ -426,7 +433,6 @@ const toggleTheme = () => {
   } else {
     messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
   }
-  
   
   if (useCustomBg.value) {
     messagesEl.style.backgroundSize = 'cover'
