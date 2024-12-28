@@ -36,10 +36,10 @@
             </div>
           </div>
         </div>
-      <!-- 发布文章对话框 -->
+      <!-- 编辑文章对话框 -->
       <el-drawer
         v-model="disabled"
-        title="发布文章"
+        title="编辑文章"
         size="100%"
         :with-header="false"
         direction="ttb"
@@ -83,7 +83,7 @@
 
             <el-form-item class="publish-actions">
               <el-button @click="disabled = false">取消</el-button>
-              <el-button type="primary" @click="editArticle">发布</el-button>
+              <el-button type="primary" @click="editArticle">修改</el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -541,15 +541,36 @@ const handleArticleTypeChange = (value: number) => {
 const editArticle = async () => {
   try {
     if (!formRef.value) return
-    // TODO: 编辑文章
-    ElMessage.success('编辑文章还没写')
-    } catch (error) {
-      console.error('编辑文章失败:', error)
-      ElMessage.error('编辑文章失败')
+    await formRef.value.validate()
+    
+    const response = await request.put('/article/update', newArticle, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      ElMessage.success('文章编辑成功')
+      disabled.value = false // 关闭弹窗
+      await getDiscussionDetail() // 重新获取文章详情
+    } else {
+      ElMessage.error(response.msg || '编辑文章失败')
     }
+  } catch (error) {
+    console.error('编辑文章失败:', error)
+    ElMessage.error('编辑文章失败')
+  }
 } 
 // 处理编辑按钮点击
 const handleEdit = () => {
+  // 填充表单数据
+  if (discussion.value) {
+    newArticle.title = discussion.value.title
+    newArticle.content = discussion.value.content
+    newArticle.articleTypeName = discussion.value.articleTypeName
+    newArticle.articleType = discussion.value.articleType
+    newArticle.sourceId = Number(discussion.value.id)
+  }
   disabled.value = true 
 }
 // 格式化日期
