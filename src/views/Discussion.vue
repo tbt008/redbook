@@ -112,13 +112,17 @@
             </el-form-item>
 
             <el-form-item label="内容" prop="content">
-              <mavon-editor
-                v-model="newArticle.content"
-                style="height: calc(100vh - 300px);width: 100%;"
-                ref="mavonEditorRef"
-                :ishljs="true"
-                @change="handleEditorChange"
-              />
+              <div class="editor-container">
+                <mavon-editor
+                  v-model="newArticle.content"
+                  class="md-editor"
+                  ref="mavonEditorRef"
+                  :ishljs="true"
+                  :toolbars="toolbars"
+                  @change="handleEditorChange"
+                  :boxShadow="false"
+                />
+              </div>
             </el-form-item>
 
             <el-form-item class="publish-actions">
@@ -462,6 +466,38 @@ const renderMarkdown = (content: string) => {
     return content + '...'
   }
 }
+
+// 添加工具栏配置
+const toolbars = {
+  bold: true,
+  italic: true,
+  header: true,
+  underline: true,
+  strikethrough: true,
+  mark: true,
+  superscript: true,
+  subscript: true,
+  quote: true,
+  ol: true,
+  ul: true,
+  link: true,
+  imagelink: true,
+  code: true,
+  table: true,
+  fullscreen: true,
+  readmodel: true,
+  htmlcode: true,
+  help: true,
+  undo: true,
+  redo: true,
+  trash: true,
+  navigation: true,
+  alignleft: true,
+  aligncenter: true,
+  alignright: true,
+  subfield: true,
+  preview: true
+}
 </script>
 
 <style scoped>
@@ -590,12 +626,14 @@ const renderMarkdown = (content: string) => {
 
 .publish-drawer :deep(.el-drawer__body) {
   padding: 0;
+  overflow: hidden;
 }
 
 .publish-container {
   height: 100%;
   padding: 24px;
   background-color: #fff;
+  overflow-y: auto;
 }
 
 .publish-header {
@@ -616,6 +654,7 @@ const renderMarkdown = (content: string) => {
 .publish-form {
   max-width: 1200px;
   margin: 0 auto;
+  position: relative;
 }
 
 .publish-form :deep(.el-form-item__label) {
@@ -685,4 +724,15 @@ const renderMarkdown = (content: string) => {
   animation: pulse 1s infinite;
 }
 /* 上面是ai按钮 */
+
+.editor-container {
+  position: relative;
+  height: 500px;
+  width: 100%;
+}
+
+.md-editor {
+  z-index: 3000;
+  height: 100% !important;
+}
 </style>

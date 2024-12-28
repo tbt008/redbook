@@ -189,6 +189,7 @@
   position: relative;
   height: 500px;
   width: 100%;
+  border: 1px solid #ddd;
 }
 .md-editor {
   z-index: 3000;
@@ -399,17 +400,27 @@
 }
 
 :deep(.v-note-wrapper) {
-  min-height: auto !important;
-  height: auto !important;
+  height: 100% !important;
 }
 
-:deep(.v-note-panel) {
-  height: auto !important;
+:deep(.v-note-wrapper .v-note-panel) {
+  height: 100% !important;
 }
 
-:deep(.v-note-show) {
-  height: auto !important;
+:deep(.v-note-wrapper .v-note-panel .v-note-edit) {
+  height: 100% !important;
 }
+
+:deep(.v-note-wrapper .v-note-panel .v-note-show) {
+  height: 100% !important;
+}
+
+:deep(.v-note-wrapper .v-note-panel .v-note-edit .v-note-edit-content),
+:deep(.v-note-wrapper .v-note-panel .v-note-show .v-show-content) {
+  height: calc(100% - 40px) !important;  /* 减去工具栏的高度 */
+  overflow-y: auto !important;
+}
+
 /* 修改抽屉样式 */
 .publish-drawer :deep(.el-drawer__body) {
   padding: 0;
