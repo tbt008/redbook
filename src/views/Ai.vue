@@ -222,8 +222,14 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const isLoading = ref(false) // 加载状态
 const currentLoadingAI = ref('') // 当前正在加载的 AI
 const isDarkMode = ref(false) // 暗色模式状态
-const useCustomBg = ref(false)
-const currentBgIndex = ref(0) // 用于追踪当前背景
+const useCustomBg = ref<{ [key: string]: boolean }>({
+  '智谱清言': false,
+  '讯飞星火': false
+})
+const currentBgIndex = ref<{ [key: string]: number }>({
+  '智谱清言': 0,
+  '讯飞星火': 0
+})
 
 // 消息存储----为每个 AI 维护独立的消息列表
 const messages = ref<{ [key: string]: { role: string; content: string; isNew?: boolean }[] }>({
@@ -254,9 +260,41 @@ const toggleCollapse = () => {
   isCollapse.value = !isCollapse.value
 }
 
-// 选择AI
+// 添加一个新的辅助函数来处理背景更新
+const updateBackground = (aiType: string) => {
+  const messagesEl = document.querySelector('.messages') as HTMLElement
+  if (!messagesEl) return
+
+  if (useCustomBg.value[aiType]) {
+    const img = new Image()
+    img.onload = () => {
+      messagesEl.style.backgroundImage = `url(${img.src})`
+      messagesEl.style.backgroundSize = 'cover'
+      messagesEl.style.backgroundPosition = 'center'
+    }
+    
+    if (currentBgIndex.value[aiType] === 1) {
+      img.src = usagiAvatar
+      messagesEl.style.backgroundImage = `url(${usagiAvatar})`
+    } else if (currentBgIndex.value[aiType] === 2) {
+      img.src = usagiAvatar2
+      messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
+    }
+    messagesEl.style.backgroundSize = 'cover'
+    messagesEl.style.backgroundPosition = 'center'
+  } else {
+    messagesEl.style.backgroundImage = 'none'
+    messagesEl.style.backgroundColor = 'var(--messages-bg-color)'
+  }
+}
+
+// 修改 selectAI 方法
 const selectAI = (index: string) => {
   selectedAI.value = index
+  // 立即更新背景
+  nextTick(() => {
+    updateBackground(index)
+  })
 }
 
 // 消息发送处理
@@ -373,6 +411,28 @@ const handleThemeChange = (command: string) => {
 // 在组件挂载时初始化主题
 onMounted(() => {
   initDarkMode()
+  
+  // 从 localStorage 恢复主题状态
+  const savedThemes = localStorage.getItem('aiThemes')
+  if (savedThemes) {
+    const { useCustomBg: savedCustomBg, currentBgIndex: savedBgIndex } = JSON.parse(savedThemes)
+    useCustomBg.value = savedCustomBg
+    currentBgIndex.value = savedBgIndex
+    
+    // 应用保存的主题
+    const messagesEl = document.querySelector('.messages') as HTMLElement
+    const currentAI = selectedAI.value
+    
+    if (useCustomBg.value[currentAI]) {
+      if (currentBgIndex.value[currentAI] === 1) {
+        messagesEl.style.backgroundImage = `url(${usagiAvatar})`
+      } else if (currentBgIndex.value[currentAI] === 2) {
+        messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
+      }
+      messagesEl.style.backgroundSize = 'cover'
+      messagesEl.style.backgroundPosition = 'center'
+    }
+  }
 })
 
 const showInfo = () => {
@@ -409,35 +469,44 @@ const showImageViewer = (imageUrl: string) => {
 
 // 添加计算属性获取当前AI头像
 const getAiAvatar = computed(() => {
-  if (!useCustomBg.value) {
+  const currentAI = selectedAI.value
+  if (!useCustomBg.value[currentAI]) {
     return aiAvatar2
   }
-  return currentBgIndex.value === 1 ? aiAvatar3 : aiAvatar
+  return currentBgIndex.value[currentAI] === 1 ? aiAvatar3 : aiAvatar
 })
 
 // 修改切换主题方法
 const toggleTheme = () => {
   const messagesEl = document.querySelector('.messages') as HTMLElement
+  const currentAI = selectedAI.value
   
-  if (!useCustomBg.value) {
-    useCustomBg.value = true
-    currentBgIndex.value = 0
+  if (!useCustomBg.value[currentAI]) {
+    useCustomBg.value[currentAI] = true
+    currentBgIndex.value[currentAI] = 0
   } 
   
-  currentBgIndex.value = (currentBgIndex.value + 1) % 3
-  if (currentBgIndex.value === 0) {
-    useCustomBg.value = false
+  currentBgIndex.value[currentAI] = (currentBgIndex.value[currentAI] + 1) % 3
+  
+  if (currentBgIndex.value[currentAI] === 0) {
+    useCustomBg.value[currentAI] = false
     messagesEl.style.backgroundImage = 'none'
-  } else if (currentBgIndex.value === 1) {
+  } else if (currentBgIndex.value[currentAI] === 1) {
     messagesEl.style.backgroundImage = `url(${usagiAvatar})`
   } else {
     messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
   }
   
-  if (useCustomBg.value) {
+  if (useCustomBg.value[currentAI]) {
     messagesEl.style.backgroundSize = 'cover'
     messagesEl.style.backgroundPosition = 'center'
   }
+
+  // 保存主题状态到 localStorage
+  localStorage.setItem('aiThemes', JSON.stringify({
+    useCustomBg: useCustomBg.value,
+    currentBgIndex: currentBgIndex.value
+  }))
 }
 </script>
 
