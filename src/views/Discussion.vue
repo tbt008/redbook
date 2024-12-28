@@ -157,6 +157,17 @@
         </div>
       </el-card>
     </div>
+    <!-- ai按钮 -->
+    <div class="ai-button-container">
+      <el-button 
+        class="ai-button" 
+        @click="router.push('/ai')"
+      >
+        <el-icon class="ai-icon"><ChatDotRound /></el-icon>
+        <span class="ai-text">AI</span>
+      </el-button>
+    </div>
+
   </div>
 </template>
 
@@ -165,7 +176,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
-import { View, Star, Pointer, Plus, Close } from '@element-plus/icons-vue'
+import { View, Star, Pointer, Plus, Close, ChatDotRound } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
 import type { FormInstance } from 'element-plus'
 import { marked } from 'marked'
@@ -615,4 +626,63 @@ const renderMarkdown = (content: string) => {
   margin-top: 20px;
   text-align: right;
 }
+/* ai按钮 */
+.ai-button-container {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 999;
+}
+
+.ai-button {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px 0 0 12px;
+  background: linear-gradient(145deg, #7F53FF, #3C8CE7);
+  border: none;
+  box-shadow: -2px 2px 10px rgba(60, 140, 231, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+}
+
+.ai-button:hover {
+  width: 72px;
+  background: linear-gradient(145deg, #8E67FF, #479FFF);
+  box-shadow: -4px 4px 15px rgba(60, 140, 231, 0.3);
+}
+
+.ai-icon {
+  font-size: 28px;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.ai-text {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 添加动画效果 */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.ai-button:active {
+  transform: scale(0.95);
+}
+
+.ai-button:hover .ai-icon {
+  animation: pulse 1s infinite;
+}
+/* 上面是ai按钮 */
 </style>
