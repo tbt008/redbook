@@ -458,7 +458,7 @@ const renderMarkdown = (content: string) => {
   display: flex;
   gap: 24px;
   padding: 24px;
-  max-width: 1400px;
+  max-width: 85%;
   margin: 0 auto;
 }
 
