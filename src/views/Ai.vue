@@ -54,9 +54,14 @@
       <!-- 顶部标题栏 - 显示当前 AI 和清空按钮 -->
       <el-header class="header">
         <span class="header-title">{{ selectedAI }}</span>
-        <el-button type="danger" size="small" @click="deleteChat" :icon="Delete">
-          清空聊天记录
-        </el-button>
+        <div class="header-buttons">
+          <el-button type="primary" size="small" @click="toggleTheme" :icon="Brush">
+            切换主题
+          </el-button>
+          <el-button type="danger" size="small" @click="deleteChat" :icon="Delete">
+            清空聊天记录
+          </el-button>
+        </div>
       </el-header>
 
       <!-- 聊天内容区域 -->
@@ -70,7 +75,12 @@
           >
             <!-- AI消息布局 -->
             <template v-if="message.role === 'ai'">
-              <el-avatar :size="40" :src="aiAvatar" class="avatar" />
+              <el-avatar 
+                :size="40" 
+                :src="aiAvatar" 
+                class="avatar clickable" 
+                @click="showImageViewer(aiAvatar)" 
+              />
               <div class="message-bubble ai-bubble">
                 {{ message.content }}
               </div>
@@ -82,7 +92,12 @@
                 <div class="message-bubble user-bubble">
                   {{ message.content }}
                 </div>
-                <el-avatar :size="40" :src="userAvatar" class="avatar" />
+                <el-avatar 
+                  :size="40" 
+                  :src="userAvatar" 
+                  class="avatar clickable" 
+                  @click="showImageViewer(userAvatar)" 
+                />
               </div>
             </template>
           </div>
@@ -105,7 +120,12 @@
           >
             <!-- AI消息布局 -->
             <template v-if="message.role === 'ai'">
-              <el-avatar :size="40" :src="aiAvatar" class="avatar" />
+              <el-avatar 
+                :size="40" 
+                :src="aiAvatar" 
+                class="avatar clickable" 
+                @click="showImageViewer(aiAvatar)" 
+              />
               <div class="message-bubble ai-bubble">
                 {{ message.content }}
               </div>
@@ -117,7 +137,12 @@
                 <div class="message-bubble user-bubble">
                   {{ message.content }}
                 </div>
-                <el-avatar :size="40" :src="userAvatar" class="avatar" />
+                <el-avatar 
+                  :size="40" 
+                  :src="userAvatar" 
+                  class="avatar clickable" 
+                  @click="showImageViewer(userAvatar)" 
+                />
               </div>
             </template>
           </div>
@@ -157,6 +182,13 @@
       </el-main>
     </el-container>
   </el-container>
+
+  <!-- 添加图片查看器组件 -->
+  <el-image-viewer
+    v-if="showViewer"
+    :url-list="[currentImage]"
+    @close="showViewer = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -170,15 +202,17 @@ import {
   Delete,
   Moon,
   Sunny,
-  InfoFilled
+  InfoFilled,
+  Brush
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 const router = useRouter()
 const userAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
-const aiAvatar = new URL('../views/imgs/bot.jpg', import.meta.url).href
-
+const aiAvatar = new URL('../views/imgs/usagi_avatar.png', import.meta.url).href
+const usagiAvatar = new URL('../views/imgs/usagi_background_yellow.jpg', import.meta.url).href
+const usagiAvatar2 = new URL('../views/imgs/usagi_background.png', import.meta.url).href
 const isCollapse = ref(false) // 侧边栏折叠状态
 const userMessage = ref('') // 用户输入消息
 const selectedAI = ref('智谱清言') // 当前选中的 AI
@@ -186,6 +220,8 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const isLoading = ref(false) // 加载状态
 const currentLoadingAI = ref('') // 当前正在加载的 AI
 const isDarkMode = ref(false) // 暗色模式状态
+const useCustomBg = ref(false)
+const currentBgIndex = ref(0) // 用于追踪当前背景
 
 // 消息存储----为每个 AI 维护独立的消息列表
 const messages = ref<{ [key: string]: { role: string; content: string; isNew?: boolean }[] }>({
@@ -359,6 +395,44 @@ const showInfo = () => {
     }
   )
 }
+
+// 在 script setup 中添加
+const showViewer = ref(false)
+const currentImage = ref('')
+
+const showImageViewer = (imageUrl: string) => {
+  currentImage.value = imageUrl
+  showViewer.value = true
+}
+
+// 修改切换主题方法
+const toggleTheme = () => {
+  const messagesEl = document.querySelector('.messages') as HTMLElement
+  
+  if (!useCustomBg.value) {
+    // 首次启用自定义背景
+    useCustomBg.value = true
+    currentBgIndex.value = 0
+  } 
+  
+  // 在两种背景之间切换
+  currentBgIndex.value = (currentBgIndex.value + 1) % 3
+  if (currentBgIndex.value === 0) {
+    // 禁用自定义背景
+    useCustomBg.value = false
+    messagesEl.style.backgroundImage = 'none'
+  } else if (currentBgIndex.value === 1) {
+    messagesEl.style.backgroundImage = `url(${usagiAvatar})`
+  } else {
+    messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
+  }
+  
+  
+  if (useCustomBg.value) {
+    messagesEl.style.backgroundSize = 'cover'
+    messagesEl.style.backgroundPosition = 'center'
+  }
+}
 </script>
 
 <style scoped>
@@ -437,6 +511,19 @@ const showInfo = () => {
   padding: 20px;
   background-color: var(--messages-bg-color);
   transition: background-color 0.3s ease;
+  position: relative;
+}
+
+.messages::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .message-item {
@@ -444,6 +531,8 @@ const showInfo = () => {
   align-items: flex-start;
   margin-bottom: 20px;
   padding: 0 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .message-user {
@@ -649,5 +738,19 @@ const showInfo = () => {
 .footer-button:last-child {
   margin-left: auto;
   margin-right: 20%;
+}
+
+.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.clickable:hover {
+  transform: scale(1.1);
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
 }
 </style>
