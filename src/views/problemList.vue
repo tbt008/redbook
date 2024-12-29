@@ -19,7 +19,7 @@
 
           <!-- elementplus el-button: 标签选择按钮 -->
           <el-button class="filter-item" @click="showTagDialog = true">
-            标签
+            算法标签
             <template v-if="selectedTagIds.length">
               ({{ selectedTagIds.length }})
             </template>
