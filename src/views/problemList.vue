@@ -55,8 +55,7 @@
           :data="problems" 
           style="width: 100%" 
           v-loading="loading"
-          @cell-mouse-enter="handleMouseEnter"
-          @cell-mouse-leave="handleMouseLeave"
+          @cell-mouse-enter="handleMouseEnter" 
         >
           <!-- 状态列 -->
           <el-table-column label="状态" width="80">
@@ -155,6 +154,7 @@
         <!-- 原有的统计图表卡片 -->
         <el-card class="side-card stats-card">
           <div class="stats-content">
+            <!-- TODO 未来会传更多数据 -->
             <ProblemStatsPie
               :title="hoveredProblem?.questionName"
               :pass-person="hoveredProblem?.passPerson"
@@ -412,9 +412,9 @@ const handleMouseEnter = (row: Problem) => {
   hoveredProblem.value = row
 }
 
-const handleMouseLeave = () => {
-  hoveredProblem.value = null
-}
+// const handleMouseLeave = () => {
+//   hoveredProblem.value = null
+// }
 </script>
 
 <style scoped>
