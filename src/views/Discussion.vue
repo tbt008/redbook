@@ -4,8 +4,12 @@
       <!-- 顶部操作栏 -->
       <div class="discussion-header">
         <div class="left-actions">
-          <el-button type="primary" @click="dialogVisible = true">
-            <el-icon><Plus /></el-icon>发布文章
+          <el-button 
+            class="publish-button" 
+            @click="dialogVisible = true"
+          >
+            <el-icon class="publish-icon"><EditPen /></el-icon>
+            <span class="publish-text">发布文章</span>
           </el-button>
           <!-- 文章类型筛选 -->
           <el-select v-model="filterType" placeholder="标签选择">
@@ -918,5 +922,44 @@ const toolbars = {
   padding: 8px 12px;
   border-radius: 16px;
   background-color: #f5f7fa;
+}
+
+.publish-button {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.publish-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, #7075f5 0%, #5a52f3 100%);
+}
+
+.publish-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.publish-icon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.publish-button:hover .publish-icon {
+  transform: rotate(90deg);
+}
+
+.publish-text {
+  font-size: 15px;
+  letter-spacing: 0.5px;
 }
 </style>
