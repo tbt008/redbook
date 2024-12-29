@@ -773,7 +773,14 @@ const toolbars = {
   color: #666;
   gap: 0.5rem;
 }
-
+.like-btn.active {
+  background-color: #e1f3d8;
+  color: #67c23a;
+}
+.favorite-btn.active {
+  background-color: #fdf6ec;
+  color: #e6a23c;
+}
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .main-content {
