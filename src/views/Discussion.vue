@@ -8,7 +8,7 @@
             class="publish-button" 
             @click="dialogVisible = true"
           >
-            <el-icon class="publish-icon"><EditPen /></el-icon>
+            <el-icon class="publish-icon"><Plus /></el-icon>
             <span class="publish-text">发布文章</span>
           </el-button>
           <!-- 文章类型筛选 -->
