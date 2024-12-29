@@ -180,7 +180,48 @@
       direction="ttb"
       class="publish-drawer"
     >
-      <!-- 发布文章表单内容保持不变 -->
+      <div class="publish-container">
+        <el-form :model="newArticle" :rules="rules" ref="formRef" class="publish-form">
+          <el-form-item label="标题" prop="title">
+            <el-input v-model="newArticle.title" placeholder="请输入标题"></el-input>
+          </el-form-item>
+          
+          <el-form-item label="文章类型" prop="articleTypeName">
+            <el-select 
+              v-model="newArticle.articleTypeName" 
+              placeholder="请选择文章类型" 
+              style="width: 100%"
+              @change="handleArticleTypeChange"
+            >
+              <el-option
+                v-for="type in articleTypes"
+                :key="type.value"
+                :label="type.label"
+                :value="type.value"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="内容" prop="content">
+            <div class="editor-container">
+              <mavon-editor
+                v-model="newArticle.content"
+                class="md-editor"
+                ref="mavonEditorRef"
+                :ishljs="true"
+                :toolbars="toolbars"
+                @change="handleEditorChange"
+                :boxShadow="false"
+              />
+            </div>
+          </el-form-item>
+
+          <el-form-item class="publish-actions">
+            <el-button @click="dialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="submitArticle">发布</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
     </el-drawer>
   </div>
 </template>
@@ -273,6 +314,15 @@ const getArticleTypeTag = (type: number) => {
     5: 'primary'
   }
   return types[type] || ''
+}
+
+// 编辑器内容变更处理
+const handleEditorChange = (value: string, render: string) => {
+  newArticle.content = value
+}
+
+const handleArticleTypeChange = (value: number) => {
+  newArticle.articleType = value
 }
 
 const getArticleTypeLabel = (type: number) => {
@@ -910,5 +960,66 @@ const toolbars = {
 /* 调整主内容区域样式 */
 .main-content {
   padding-top: 2rem; /* 由于移除了横幅，添加适当的顶部间距 */
+}
+
+.editor-container {
+  position: relative;
+  height: 500px;
+  width: 100%;
+  border: 1px solid #ddd;
+}
+
+.md-editor {
+  z-index: 3000;
+  height: 100% !important;
+}
+
+.publish-actions {
+  margin-top: 20px;
+  text-align: right;
+}
+
+.publish-drawer :deep(.el-drawer__body) {
+  padding: 0;
+  overflow: hidden;
+}
+
+.publish-container {
+  height: 100%;
+  padding: 24px;
+  background-color: #fff;
+  overflow-y: auto;
+}
+
+.publish-form {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.publish-form :deep(.el-form-item__label) {
+  font-weight: bold;
+}
+
+:deep(.v-note-wrapper) {
+  height: 100% !important;
+}
+
+:deep(.v-note-wrapper .v-note-panel) {
+  height: 100% !important;
+}
+
+:deep(.v-note-wrapper .v-note-panel .v-note-edit) {
+  height: 100% !important;
+}
+
+:deep(.v-note-wrapper .v-note-panel .v-note-show) {
+  height: 100% !important;
+}
+
+:deep(.v-note-wrapper .v-note-panel .v-note-edit .v-note-edit-content),
+:deep(.v-note-wrapper .v-note-panel .v-note-show .v-show-content) {
+  height: calc(100% - 40px) !important;
+  overflow-y: auto !important;
 }
 </style>
