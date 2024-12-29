@@ -55,7 +55,7 @@
           :data="problems" 
           style="width: 100%" 
           v-loading="loading"
-          @cell-mouse-enter="handleMouseEnter" 
+          @cell-mouse-enter="handleMouseEnter"
         >
           <!-- 状态列 -->
           <el-table-column label="状态" width="80">
