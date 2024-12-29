@@ -493,7 +493,7 @@ const toolbars = {
   display: grid;
   grid-template-columns: 1fr 300px;
   gap: 2rem;
-  max-width: 1400px;
+  max-width: 1300px;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -561,6 +561,9 @@ const toolbars = {
 /* 文章列表 */
 .discussion-list {
   margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .articles-container {
@@ -574,6 +577,7 @@ const toolbars = {
   border: 1px solid rgba(255, 255, 255, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  margin: 0;
 }
 
 .discussion-item:hover {
