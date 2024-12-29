@@ -50,16 +50,24 @@
           </div>
           <div class="article-footer">
             <div class="article-stats">
-              <el-button-group>
-                <el-button :type="item.isLiked ? 'primary' : 'default'" @click="handleLike($event, item)">
+              <div class="interaction-buttons">
+                <button 
+                  class="interaction-btn like-btn" 
+                  :class="{ 'active': item.isLiked }"
+                  @click="handleLike($event, item)"
+                >
                   <el-icon><Pointer /></el-icon>
                   <span>{{ item.likeNum }}</span>
-                </el-button>
-                <el-button :type="item.isFavorited ? 'primary' : 'default'" @click="handleFavorite($event, item)">
+                </button>
+                <button 
+                  class="interaction-btn favorite-btn" 
+                  :class="{ 'active': item.isFavorited }"
+                  @click="handleFavorite($event, item)"
+                >
                   <el-icon><Star /></el-icon>
                   <span>{{ item.favourNum }}</span>
-                </el-button>
-              </el-button-group>
+                </button>
+              </div>
               <span class="view-count">
                 <el-icon><View /></el-icon>
                 {{ item.articleReads }}次浏览
@@ -290,7 +298,7 @@ const getArticles = async () => {
     
     if (response.code === 200) {
 
-      articles.value = response.data 
+      articles.value = response.data.list 
       console.log(response.data )
     } else { 
       ElMessage.error(response.data || '获取文章列表失败')
@@ -307,7 +315,7 @@ const getTotalCount = async () => {
     const response = await request.post('/article/list', {
       pageStart: 1,
       pageSize: 100000,  //较大数
-      sortField: 'string',
+      // sortField: 'createTime',
       sortOrder: 'asc'
     }, {
       headers: {
@@ -316,7 +324,7 @@ const getTotalCount = async () => {
     })as any
     
     if (response.code === 200) {
-      total.value = response.data.length
+      total.value = response.data.list.length
       getArticles()
     } else {
       ElMessage.error(response.msg || '获取数据失败')
@@ -356,9 +364,9 @@ const submitArticle = async () => {
       ElMessage.error('发布文章失败')
     }
 } 
+
 // 页面加载时获取数据
-onMounted(() => {
-  getArticles()
+onMounted(() => { 
   getTotalCount()
 })
 
@@ -376,14 +384,48 @@ const handleSizeChange = (val: number) => {
 
 const handleFavorite = async (event: Event, item: Article) => {
   event.preventDefault()
-  // TODO: 实现收藏功能
-  console.log('收藏文章:', item)
+  try {
+    const response = await request.put(`/article/star/${item.id}`, null, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      // 更新文章的收藏状态和数量
+      item.isFavorited = !item.isFavorited
+      item.favourNum = item.isFavorited ? item.favourNum + 1 : item.favourNum - 1
+      ElMessage.success(item.isFavorited ? '收藏成功' : '取消收藏成功')
+    } else {
+      ElMessage.error(response.msg || '操作失败')
+    }
+  } catch (error) {
+    console.error('收藏操作失败:', error)
+    ElMessage.error('收藏操作失败')
+  }
 }
 
 const handleLike = async (event: Event, item: Article) => {
   event.preventDefault()
-  // TODO: 实现点赞功能
-  console.log('点赞文章:', item)
+  try {
+    const response = await request.put(`/article/like/${item.id}`, null, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      // 更新文章的点赞状态和数量
+      item.isLiked = !item.isLiked
+      item.likeNum = item.isLiked ? item.likeNum + 1 : item.likeNum - 1
+      ElMessage.success(item.isLiked ? '点赞成功' : '取消点赞成功')
+    } else {
+      ElMessage.error(response.msg || '操作失败')
+    }
+  } catch (error) {
+    console.error('点赞操作失败:', error)
+    ElMessage.error('点赞操作失败')
+  }
 }
 
 // 新增的状态
@@ -439,7 +481,7 @@ const filteredArticles = computed(() => {
         return dateB.getTime() - dateA.getTime();
       });
       break
-    default:
+    // default:
       // result.sort((a, b) => 
       //   new Date(b.createTime[0], b.createTime[1],b.createTime[2],b.createTime[3],b.createTime[4],b.createTime[5]).getTime() -
       //   new Date(a.createTime[0], a.createTime[1],a.createTime[2],a.createTime[3],a.createTime[4],a.createTime[5]).getTime()
@@ -734,5 +776,60 @@ const toolbars = {
 .md-editor {
   z-index: 3000;
   height: 100% !important;
+}
+
+.interaction-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.interaction-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  background-color: #f5f7fa;
+  color: #606266;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.interaction-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.like-btn.active {
+  background-color: #e1f3d8;
+  color: #67c23a;
+}
+
+.favorite-btn.active {
+  background-color: #fdf6ec;
+  color: #e6a23c;
+}
+
+.interaction-btn .el-icon {
+  font-size: 16px;
+}
+
+/* 添加点击动画效果 */
+.interaction-btn:active {
+  transform: scale(0.95);
+}
+
+/* 修改浏览数样式 */
+.view-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #909399;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background-color: #f5f7fa;
 }
 </style>

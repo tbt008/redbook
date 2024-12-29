@@ -104,16 +104,24 @@
         <!-- 文章底部操作栏 -->
         <div class="article-actions">
           <div class="action-buttons">
-            <el-button-group>
-              <el-button :type="isLiked ? 'primary' : 'default'" @click="handleLike">
+            <div class="interaction-buttons">
+              <button 
+                class="interaction-btn like-btn" 
+                :class="{ 'active': discussion.isLiked }"
+                @click="handleLike($event, discussion)"
+              >
                 <el-icon><Pointer /></el-icon>
                 <span>{{ discussion.likeNum }}</span>
-              </el-button>
-              <el-button :type="isFavorited ? 'primary' : 'default'" @click="handleFavorite">
+              </button>
+              <button 
+                class="interaction-btn favorite-btn" 
+                :class="{ 'active': discussion.isFavorited }"
+                @click="handleFavorite($event, discussion)"
+              >
                 <el-icon><Star /></el-icon>
                 <span>{{ discussion.favourNum }}</span>
-              </el-button>
-            </el-button-group>
+              </button>
+            </div>
             <span class="view-count">
               <el-icon><View /></el-icon>
               {{ discussion.articleReads }}次浏览
@@ -380,6 +388,10 @@
   align-items: center;
   gap: 4px;
   color: #909399;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background-color: #f5f7fa;
 }
 
 .article-type-tag {
@@ -446,6 +458,49 @@
 }
 .publish-form :deep(.el-form-item__label) {
   font-weight: bold;
+}
+
+.interaction-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.interaction-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  background-color: #f5f7fa;
+  color: #606266;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.interaction-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.like-btn.active {
+  background-color: #e1f3d8;
+  color: #67c23a;
+}
+
+.favorite-btn.active {
+  background-color: #fdf6ec;
+  color: #e6a23c;
+}
+
+.interaction-btn .el-icon {
+  font-size: 16px;
+}
+
+/* 添加点击动画效果 */
+.interaction-btn:active {
+  transform: scale(0.95);
 }
 
 </style>
@@ -641,14 +696,52 @@ const getArticleTypeTag = (type: string) => {
   return types[type] || 'info'
 }
 
-const handleLike = async () => {
-  // TODO: 实现点赞功能
-  console.log('点赞文章:', discussion.value?.id)
+const handleLike = async (event: Event, item: Article) => {
+  event.preventDefault()
+  try {
+    const response = await request.put(`/article/like/${item.id}`, null, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      // 更新文章的点赞状态和数量
+      
+      item.isLiked = !item.isLiked 
+      item.likeNum = item.isLiked ? item.likeNum + 1 : item.likeNum - 1
+      ElMessage.success(item.isLiked ? '点赞成功' : '取消点赞成功')
+    } else {
+      ElMessage.error(response.msg || '操作失败')
+    }
+  } catch (error) {
+    console.error('点赞操作失败:', error)
+    ElMessage.error('点赞操作失败')
+  }
 }
 
-const handleFavorite = async () => {
-  // TODO: 实现收藏功能
-  console.log('收藏文章:', discussion.value?.id)
+const handleFavorite = async (event: Event, item: Article) => {
+  event.preventDefault()
+  try {
+    const response = await request.put(`/article/star/${item.id}`, null, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      // 更新文章的收藏状态和数量 
+      item.isFavorited = !item.isFavorited
+      isFavorited.value=item.isFavorited
+      item.favourNum = item.isFavorited ? item.favourNum + 1 : item.favourNum - 1
+      ElMessage.success(item.isFavorited ? '收藏成功' : '取消收藏成功')
+    } else {
+      ElMessage.error(response.msg || '操作失败')
+    }
+  } catch (error) {
+    console.error('收藏操作失败:', error)
+    ElMessage.error('收藏操作失败')
+  }
 }
 
 // 新增获取作者统计数据的方法
