@@ -38,7 +38,7 @@
 
       <!-- 文章列表 -->
       <div class="discussion-list">
-        <el-card v-for="item in filteredArticles" :key="item.sourceId" class="discussion-item">
+        <el-card v-for="item in articles" :key="item.id" class="discussion-item">
           <div class="article-main" @click="goToDetail(item.id)">
             <div class="article-meta">
               <el-tag :type="getArticleTypeTag(item.articleType)" class="article-type-tag">
@@ -184,7 +184,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
@@ -278,13 +278,15 @@ const goToDetail = (id: string) => {
 const pageParams = reactive({
   pageStart: 1,
   pageSize: 10,
-  sortField: 'createTime',
-  sortOrder: 'asc'
+  sortField: 'create_time',
+  // create_time favour_num like_num
+  sortOrder: 'desc'
 })
 
 // 获取文章列表
 const getArticles = async () => {
   try {
+
     const response = await request.post('/article/list', {
       pageStart: pageParams.pageStart,
       pageSize: pageParams.pageSize,
@@ -297,7 +299,8 @@ const getArticles = async () => {
     })as any
     
     if (response.code === 200) {
-
+      // 在发起请求前清空文章列表
+      articles.value = []
       articles.value = response.data.list 
       console.log(response.data )
     } else { 
@@ -315,8 +318,8 @@ const getTotalCount = async () => {
     const response = await request.post('/article/list', {
       pageStart: 1,
       pageSize: 100000,  //较大数
-      // sortField: 'createTime',
-      sortOrder: 'asc'
+      sortField: 'create_time',
+      sortOrder: 'desc'
     }, {
       headers: {
         'auth-token': `Bearer ${token}`
@@ -432,67 +435,25 @@ const handleLike = async (event: Event, item: Article) => {
 const filterType = ref<string | null>("all")
 const sortBy = ref('newest')
 
-// 排序和筛选
-const filteredArticles = computed(() => {
-  let result = [...articles.value]
-  
-  // 类型筛选 - 修改类型比较逻辑
-  if (filterType.value && filterType.value !== 'all') {
-    console.log('当前选择的类型:', filterType.value) // 添加调试日志
-    console.log('文章列表:', result) // 添加调试日志
-    result = result.filter(article => {
-      console.log('比较:', article.articleType, Number(filterType.value)) // 添加调试日志
-      return article.articleType === Number(filterType.value)
-    })
-  }
-  
-  // 排序
-  switch (sortBy.value) {
-    case 'hot':
-      result.sort((a, b) => b.articleReads - a.articleReads)
-      break
-    case 'likes':
-      result.sort((a, b) => b.likeNum - a.likeNum)
-      break
-    case 'newest':
-      result.sort((a, b) => {
-        // 如果任一时间为空，将其排在最后
-        if (!a.createTime) return 1;
-        if (!b.createTime) return -1;
-        
-        // 创建日期对象进行比较
-        const dateA = new Date(
-          a.createTime[0], 
-          a.createTime[1] - 1, // 月份从0开始
-          a.createTime[2], 
-          a.createTime[3] || 0, 
-          a.createTime[4] || 0, 
-          a.createTime[5] || 0
-        );
-        const dateB = new Date(
-          b.createTime[0], 
-          b.createTime[1] - 1, // 月份从0开始
-          b.createTime[2], 
-          b.createTime[3] || 0, 
-          b.createTime[4] || 0, 
-          b.createTime[5] || 0
-        );
-        
-        return dateB.getTime() - dateA.getTime();
-      });
-      break
-    // default:
-      // result.sort((a, b) => 
-      //   new Date(b.createTime[0], b.createTime[1],b.createTime[2],b.createTime[3],b.createTime[4],b.createTime[5]).getTime() -
-      //   new Date(a.createTime[0], a.createTime[1],a.createTime[2],a.createTime[3],a.createTime[4],a.createTime[5]).getTime()
-      // );
-  }
-  
-  return result
-})
+ 
 
 const handleSortChange = () => {
-  getArticles()
+  // 根据选择的排序方式更新 sortField
+  switch (sortBy.value) {
+    case 'newest':
+      pageParams.sortField = 'create_time'
+      break
+    case 'hot':
+      pageParams.sortField = 'article_reads'
+      break
+    case 'likes':
+      pageParams.sortField = 'like_num'
+      break
+  }
+  console.log("修改")
+  console.log(pageParams.sortField)
+  pageParams.pageStart = 1
+  getArticles() // 重新获取排序后的数据
 }
 
 const handleArticleTypeChange = (value: number) => {
