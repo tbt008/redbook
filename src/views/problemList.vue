@@ -82,6 +82,16 @@
           </template>
         </el-table-column>
 
+        <!-- 提交次数列 -->
+        <el-table-column label="提交次数" width="200" align="center">
+          <template #header>
+            <span class="submission-count-header">提交次数</span>
+          </template>
+          <template #default="{ row }">
+            {{ row.tryPerson }}
+          </template>
+        </el-table-column>
+
         <!-- 难度列 -->
         <el-table-column label="难度" width="100">
           <template #default="{ row }">
@@ -571,5 +581,11 @@ const clearTags = () => {
 .tag-search-input {
   margin-bottom: 16px;
   width: 100%;
+}
+
+/* 修改提交次数列样式 */
+.submission-count-header {
+  float: center;  /* 靠左浮动，使文字靠近题目列 */
+  margin-left: 0;  /* 移除左边距 */
 }
 </style>
