@@ -213,6 +213,7 @@
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
+  background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
 }
 
 .main-content {
@@ -244,15 +245,29 @@
   background-color: #f2f3f5;
   border: none;
   color: #606266;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
+
 .back-button:hover {
   background-color: #e4e7ed;
   color: #409EFF;
+  transform: translateX(-5px);
 }
- .back-button .el-icon {
+
+.back-button:active {
+  transform: translateX(-2px);
+}
+
+.back-button .el-icon {
   margin-right: 4px;
   font-size: 14px;
+  transition: transform 0.3s ease;
+}
+
+.back-button:hover .el-icon {
+  transform: translateX(-3px);
 }
 
 .article-header {
@@ -404,7 +419,58 @@
 .article-operations {
   margin-left: auto;
   display: flex;
-  gap: 8px;
+  gap: 12px;
+}
+
+.article-operations .el-button {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+/* 编辑按钮样式 */
+.article-operations .el-button--primary {
+  background: linear-gradient(135deg, #409EFF 0%, #2c89ff 100%);
+  box-shadow: 0 2px 12px rgba(64, 158, 255, 0.2);
+}
+
+.article-operations .el-button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.3);
+  background: linear-gradient(135deg, #66b1ff 0%, #409EFF 100%);
+}
+
+/* 删除按钮样式 */
+.article-operations .el-button--danger {
+  background: linear-gradient(135deg, #f56c6c 0%, #e64242 100%);
+  box-shadow: 0 2px 12px rgba(245, 108, 108, 0.2);
+}
+
+.article-operations .el-button--danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(245, 108, 108, 0.3);
+  background: linear-gradient(135deg, #f78989 0%, #f56c6c 100%);
+}
+
+/* 点击效果 */
+.article-operations .el-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 图标样式 */
+.article-operations .el-icon {
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.article-operations .el-button:hover .el-icon {
+  transform: scale(1.1);
 }
 
 :deep(.markdown-body) {
