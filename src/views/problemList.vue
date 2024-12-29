@@ -1,137 +1,167 @@
 <template>
   <div class="problem-list-container">
-    <div class="content-wrapper">
-      <!-- 筛选区域 -->
-      <div class="filter-section">
-        <div style="font-size: 12px;line-height: 32px;">筛选条件</div>
-        <!-- elementplus el-select: 难度选择下拉框 -->
-        <el-select v-model="difficulty" placeholder="难度" class="filter-item">
-          <el-option label="全部" :value="null" />
-          <el-option label="入门" :value="1" />
-          <el-option label="简单" :value="2" />
-          <el-option label="普及" :value="3" />
-          <el-option label="提高" :value="4" />
-          <el-option label="困难" :value="5" />
-        </el-select>
+    <!-- 修改布局结构 -->
+    <div class="page-layout">
+      <!-- 左侧主要内容区 -->
+      <div class="content-wrapper">
+        <!-- 筛选区域 -->
+        <div class="filter-section">
+          <div style="font-size: 12px;line-height: 32px;">筛选条件</div>
+          <!-- elementplus el-select: 难度选择下拉框 -->
+          <el-select v-model="difficulty" placeholder="难度" class="filter-item">
+            <el-option label="全部" :value="null" />
+            <el-option label="入门" :value="1" />
+            <el-option label="简单" :value="2" />
+            <el-option label="普及" :value="3" />
+            <el-option label="提高" :value="4" />
+            <el-option label="困难" :value="5" />
+          </el-select>
 
-        <!-- elementplus el-button: 标签选择按钮 -->
-        <el-button class="filter-item" @click="showTagDialog = true">
-          标签
-          <template v-if="selectedTagIds.length">
-            ({{ selectedTagIds.length }})
-          </template>
-        </el-button>
+          <!-- elementplus el-button: 标签选择按钮 -->
+          <el-button class="filter-item" @click="showTagDialog = true">
+            标签
+            <template v-if="selectedTagIds.length">
+              ({{ selectedTagIds.length }})
+            </template>
+          </el-button>
 
-        <!-- elementplus el-input: 搜索输入框 -->
-        <el-input v-model="searchKeyword" placeholder="搜索题目" class="filter-item" clearable>
-          <template #prefix>
-            <!-- elementplus el-icon: 搜索图标 -->
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
-      </div>
+          <!-- elementplus el-input: 搜索输入框 -->
+          <el-input v-model="searchKeyword" placeholder="搜索题目" class="filter-item" clearable>
+            <template #prefix>
+              <!-- elementplus el-icon: 搜索图标 -->
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
 
-      <!-- 已选标签显示区域 -->
-      <div v-if="selectedTagIds.length" class="selected-tags-bar">
-        <div style="font-size: 12px;line-height: 24px;">已选择：</div>
-        <!-- elementplus el-tag: 已选标签展示 -->
-        <el-tag
-          v-for="tagId in selectedTagIds"
-          :key="tagId"
-          closable
-          type="primary"
-          class="selected-tag"
-          @close="handleTagChange(false, tagId)"
+        <!-- 已选标签显示区域 -->
+        <div v-if="selectedTagIds.length" class="selected-tags-bar">
+          <div style="font-size: 12px;line-height: 24px;">已选择：</div>
+          <!-- elementplus el-tag: 已选标签展示 -->
+          <el-tag
+            v-for="tagId in selectedTagIds"
+            :key="tagId"
+            closable
+            type="primary"
+            class="selected-tag"
+            @close="handleTagChange(false, tagId)"
+          >
+            {{ allTags.find(tag => tag.id === tagId)?.name }}
+          </el-tag>
+        </div>
+
+        <!-- elementplus el-table: 题目列表表格 -->
+        <el-table 
+          :data="problems" 
+          style="width: 100%" 
+          v-loading="loading"
+          @cell-mouse-enter="handleMouseEnter"
+          @cell-mouse-leave="handleMouseLeave"
         >
-          {{ allTags.find(tag => tag.id === tagId)?.name }}
-        </el-tag>
+          <!-- 状态列 -->
+          <el-table-column label="状态" width="80">
+            <template #default="{ row }">
+              <div v-if="row.isPass === 1" class="status-icon success">
+                <Check style="width: 12px; height: 12px" />
+              </div>
+              <div v-else-if="row.isPass === 2" class="status-icon pending">
+                <div class="dash"></div>
+              </div>
+            </template>
+          </el-table-column>
+
+          <!-- 题目列 -->
+          <el-table-column label="题目" min-width="300">
+            <template #default="{ row }">
+              <router-link :to="`/question?id=${row.questionId}`" class="problem-title">
+                {{ row.questionName }}
+              </router-link>
+              <div class="problem-tags">
+                <!-- elementplus el-tag: 题目标签 -->
+                <el-tag
+                  v-for="tag in row.tags"
+                  :key="tag"
+                  size="small"
+                  effect="plain"
+                  class="tag-item"
+                >
+                  {{ tag }}
+                </el-tag>
+              </div>
+            </template>
+          </el-table-column>
+
+          <!-- 提交次数列 -->
+          <el-table-column label="提交次数" width="200" align="center">
+            <template #header>
+              <span class="submission-count-header">提交次数</span>
+            </template>
+            <template #default="{ row }">
+              {{ row.tryPerson }}
+            </template>
+          </el-table-column>
+
+          <!-- 难度列 -->
+          <el-table-column label="难度" width="100">
+            <template #default="{ row }">
+              <span :class="[
+                'difficulty-label',
+                row.difficulty === 1 ? 'difficulty-entry' : '',
+                row.difficulty === 2 ? 'difficulty-easy' : '',
+                row.difficulty === 3 ? 'difficulty-medium' : '',
+                row.difficulty === 4 ? 'difficulty-hard' : '',
+                row.difficulty === 5 ? 'difficulty-expert' : ''
+              ]">
+                {{ row.difficultyName }}
+              </span>
+            </template>
+          </el-table-column>
+
+          <!-- 通过率列 -->
+          <el-table-column label="通过率" width="180">
+            <template #default="{ row }">
+              <el-progress
+                :percentage="Number(row.passRate)"
+                text-inside
+                :stroke-width="18"
+                :color="getProgressColor(row.passRate)"
+              />
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- elementplus el-pagination: 分页器 -->
+        <div class="pagination-container">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total="total"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
+        </div>
       </div>
 
-      <!-- elementplus el-table: 题目列表表格 -->
-      <el-table :data="problems" style="width: 100%" v-loading="loading">
-        <!-- 状态列 -->
-        <el-table-column label="状态" width="80">
-          <template #default="{ row }">
-            <div v-if="row.isPass === 1" class="status-icon success">
-              <Check style="width: 12px; height: 12px" />
-            </div>
-            <div v-else-if="row.isPass === 2" class="status-icon pending">
-              <div class="dash"></div>
-            </div>
-          </template>
-        </el-table-column>
+      <!-- 右侧统计面板 -->
+      <div class="side-panel">
+        <!-- 添加日历卡片 -->
+        <el-card class="side-card calendar-card">
 
-        <!-- 题目列 -->
-        <el-table-column label="题目" min-width="300">
-          <template #default="{ row }">
-            <router-link :to="`/question?id=${row.questionId}`" class="problem-title">
-              {{ row.questionName }}
-            </router-link>
-            <div class="problem-tags">
-              <!-- elementplus el-tag: 题目标签 -->
-              <el-tag
-                v-for="tag in row.tags"
-                :key="tag"
-                size="small"
-                effect="plain"
-                class="tag-item"
-              >
-                {{ tag }}
-              </el-tag>
-            </div>
-          </template>
-        </el-table-column>
-
-        <!-- 提交次数列 -->
-        <el-table-column label="提交次数" width="200" align="center">
-          <template #header>
-            <span class="submission-count-header">提交次数</span>
-          </template>
-          <template #default="{ row }">
-            {{ row.tryPerson }}
-          </template>
-        </el-table-column>
-
-        <!-- 难度列 -->
-        <el-table-column label="难度" width="100">
-          <template #default="{ row }">
-            <span :class="[
-              'difficulty-label',
-              row.difficulty === 1 ? 'difficulty-entry' : '',
-              row.difficulty === 2 ? 'difficulty-easy' : '',
-              row.difficulty === 3 ? 'difficulty-medium' : '',
-              row.difficulty === 4 ? 'difficulty-hard' : '',
-              row.difficulty === 5 ? 'difficulty-expert' : ''
-            ]">
-              {{ row.difficultyName }}
-            </span>
-          </template>
-        </el-table-column>
-
-        <!-- 通过率列 -->
-        <el-table-column label="通过率" width="180">
-          <template #default="{ row }">
-            <el-progress
-              :percentage="Number(row.passRate)"
-              text-inside
-              :stroke-width="18"
-              :color="getProgressColor(row.passRate)"
+          <el-calendar class="custom-calendar" />
+        </el-card>
+        
+        <!-- 原有的统计图表卡片 -->
+        <el-card class="side-card stats-card">
+          <div class="stats-content">
+            <ProblemStatsPie
+              :title="hoveredProblem?.questionName"
+              :pass-person="hoveredProblem?.passPerson"
+              :try-person="hoveredProblem?.tryPerson"
             />
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- elementplus el-pagination: 分页器 -->
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+          </div>
+        </el-card>
       </div>
     </div>
   </div>
@@ -219,6 +249,7 @@ import { Search, Check } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { type Problem } from '@/types/problem'
 import { type Tag, type TagGroup } from '@/types/tag'
+import ProblemStatsPie from '@/components/ProblemStatsPie.vue'
 
 // 状态变量
 const loading = ref(true)
@@ -232,6 +263,7 @@ const sortField = ref('createTime')
 const sortOrder = ref('desc')
 const problems = ref<Problem[]>([])
 const allTags = ref<Tag[]>([])
+const hoveredProblem = ref<Problem | null>(null)
 
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate: number) => {
@@ -374,21 +406,87 @@ const handleTagChange = (checked: true | false | undefined, tagId: number) => {
 const clearTags = () => {
   selectedTagIds.value = []
 }
+
+// 添加鼠标悬停处理函数
+const handleMouseEnter = (row: Problem) => {
+  hoveredProblem.value = row
+}
+
+const handleMouseLeave = () => {
+  hoveredProblem.value = null
+}
 </script>
 
 <style scoped>
 /* 容器样式 */
 .problem-list-container {
   padding: 20px;
-  max-width: 1200px;
+  max-width: 95%;
+  margin: 0 auto;
+}
+
+.page-layout {
+  display: flex;
+  gap: 24px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .content-wrapper {
+  flex: 1;
   background: white;
   border-radius: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   padding: 20px;
+}
+
+.side-panel {
+  width: 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.calendar-card {
+  position: sticky;
+  top: 24px;
+  border-radius: 20px;
+}
+
+.stats-card {
+  position: sticky;
+  top: 400px;  /* 调整位置，确保在日历下方 */
+  border-radius: 20px;
+  height: 350px;
+}
+
+.custom-calendar :deep(.el-calendar__body) {
+  padding: 8px;
+}
+
+.custom-calendar :deep(.el-calendar-table) {
+  font-size: 12px;
+}
+
+.custom-calendar :deep(.el-calendar-day) {
+  height: 32px;
+  padding: 4px;
+}
+
+.side-card :deep(.el-card__body) {
+  padding: 0;
+}
+
+.side-card-header {
+  font-weight: bold;
+  color: #303133;
+}
+
+.stats-content {
+  min-height: 350px;
+  /* display: flex; */
+ 
+
 }
 
 /* 筛选区域样式 */
