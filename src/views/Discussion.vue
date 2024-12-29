@@ -28,11 +28,18 @@
         </div>
         <!-- 排序选项 -->
         <div class="sort-options">
-          <el-radio-group v-model="sortBy" @change="handleSortChange">
-            <el-radio-button label="newest">最新</el-radio-button>
-            <el-radio-button label="hot">最热</el-radio-button>
-            <el-radio-button label="likes">最多点赞</el-radio-button>
-          </el-radio-group>
+          <div class="sort-buttons-group">
+            <button 
+              v-for="option in sortOptions" 
+              :key="option.value"
+              class="sort-btn"
+              :class="{ active: sortBy === option.value }"
+              @click="sortBy = option.value; handleSortChange()"
+            >
+              <el-icon><component :is="option.icon" /></el-icon>
+              {{ option.label }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -188,10 +195,18 @@ import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
-import { View, Star, Pointer, Plus, Close, ChatDotRound } from '@element-plus/icons-vue'
+import { View, Star, Pointer, Plus, Close, ChatDotRound, Clock, Sunrise } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
 import type { FormInstance } from 'element-plus'
 import { marked } from 'marked'
+
+// 排序选项
+const sortOptions = [
+  { label: '最新', value: 'newest', icon: Clock },
+  { label: '最热', value: 'hot', icon: Sunrise },
+  { label: '最多点赞', value: 'likes', icon: Pointer }
+]
+
 const router = useRouter()
 const dialogVisible = ref(false)
 const formRef = ref<FormInstance>()
@@ -504,6 +519,63 @@ const toolbars = {
 </script>
 
 <style scoped>
+.sort-options {
+  margin-left: auto;
+}
+
+.sort-buttons-group {
+  display: flex;
+  align-items: center;
+}
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: #909399;
+  cursor: pointer;
+  font-size: 14px;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.sort-btn:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 12px;
+  background-color: #dcdfe6;
+}
+
+.sort-btn:hover {
+  color: #409EFF;
+}
+
+.sort-btn.active {
+  color: #303133;
+  font-weight: 500;
+}
+
+.sort-btn.active::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  background-color: #409EFF;
+  border-radius: 1px;
+}
+
+.sort-btn .el-icon {
+  font-size: 14px;
+}
 .page-container {
   display: flex;
   gap: 24px;
@@ -601,6 +673,60 @@ const toolbars = {
 
 .sort-options {
   margin-left: auto;
+}
+
+.sort-buttons-group {
+  display: flex;
+  align-items: center;
+}
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: #909399;
+  cursor: pointer;
+  font-size: 14px;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.sort-btn:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 12px;
+  background-color: #dcdfe6;
+}
+
+.sort-btn:hover {
+  color: #409EFF;
+}
+
+.sort-btn.active {
+  color: #303133;
+  font-weight: 500;
+}
+
+.sort-btn.active::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  background-color: #409EFF;
+  border-radius: 1px;
+}
+
+.sort-btn .el-icon {
+  font-size: 14px;
 }
 
 .discussion-list {
