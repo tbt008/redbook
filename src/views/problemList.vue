@@ -419,8 +419,11 @@ const handleMouseEnter = (row: Problem) => {
 /* 容器样式 */
 .problem-list-container {
   padding: 20px;
-  max-width: 95%;
+  max-width: 100%;
+  min-height: 100vh;
+  height: 100%;
   margin: 0 auto;
+  background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
 }
 
 .page-layout {
