@@ -353,16 +353,23 @@ const renderMarkdown = (content: string) => {
   }
 }
 
-// API 请求函数
+
 const getArticles = async () => {
   try {
     loading.value = true
-    const response = await request.post('/article/list', {
+    const params: any = {
       pageStart: pageParams.pageStart,
       pageSize: pageParams.pageSize,
       sortField: pageParams.sortField,
-      sortOrder: pageParams.sortOrder
-    }, {
+      sortOrder: pageParams.sortOrder,
+    }
+
+    // 如果选择了具体标签（不是"全部"），添加 articleType 参数
+    if (filterType.value && filterType.value !== 'all') {
+      params.articleType = Number(filterType.value)
+    }
+
+    const response = await request.post('/article/list', params, {
       headers: {
         'auth-token': `Bearer ${token}`
       }
@@ -535,6 +542,12 @@ const toolbars = {
   subfield: true,
   preview: true
 }
+
+// 添加对 filterType 的监听
+watch(filterType, () => {
+  pageParams.pageStart = 1 // 切换标签时重置页码
+  getArticles()
+})
 </script>
 <style scoped>
 /* 页面基础布局 */
