@@ -58,61 +58,76 @@
         <!-- 文章列表卡片 -->
         <el-card class="articles-card">
           <div class="discussion-list">
-            <el-card 
-              v-for="item in articles" 
-              :key="item.id" 
-              class="discussion-item"
-            >
-              <div class="article-main" @click="goToDetail(item.id)">
-                <div class="article-meta">
-                  <el-tag 
-                    :type="getArticleTypeTag(item.articleType)" 
-                    class="article-type-tag"
-                    effect="light"
-                  >
-                    {{ getArticleTypeLabel(item.articleType) }}
-                  </el-tag>
-                  <h3 class="article-title">{{ item.title }}</h3>
-                </div>
-                <div 
-                  class="article-brief" 
-                  v-html="renderMarkdown(item.content.substring(0, 150))"
-                ></div>
-              </div>
-              <div class="article-footer">
-                <div class="article-stats">
-                  <div class="interaction-buttons">
-                    <button 
-                      class="interaction-btn like-btn" 
-                      :class="{ 'active': item.isLiked }"
-                      @click="handleLike($event, item)"
+            <!-- 加载状态 -->
+            <div v-if="loading" class="loading-state">
+              <el-icon class="loading-icon is-loading"><Loading /></el-icon>
+              <span>加载中...</span>
+            </div>
+
+            <!-- 空数据状态 -->
+            <el-empty 
+              v-else-if="!loading && (!articles || articles.length === 0)"
+              description="暂无数据"
+            />
+
+            <!-- 文章列表 -->
+            <template v-else>
+              <el-card 
+                v-for="item in articles" 
+                :key="item.id" 
+                class="discussion-item"
+              >
+                <div class="article-main" @click="goToDetail(item.id)">
+                  <div class="article-meta">
+                    <el-tag 
+                      :type="getArticleTypeTag(item.articleType)" 
+                      class="article-type-tag" 
+                      effect="light"
                     >
-                      <el-icon><Pointer /></el-icon>
-                      <span>{{ item.likeNum }}</span>
-                    </button>
-                    <button 
-                      class="interaction-btn favorite-btn" 
-                      :class="{ 'active': item.isFavorited }"
-                      @click="handleFavorite($event, item)"
-                    >
-                      <el-icon><Star /></el-icon>
-                      <span>{{ item.favourNum }}</span>
-                    </button>
+                      {{ getArticleTypeLabel(item.articleType) }}
+                    </el-tag>
+                    <h3 class="article-title">{{ item.title }}</h3>
                   </div>
-                  <span class="view-count">
-                    <el-icon><View /></el-icon>
-                    {{ item.articleReads }}次浏览
-                  </span>
+                  <div 
+                    class="article-brief" 
+                    v-html="renderMarkdown(item.content.substring(0, 150))"
+                  ></div>
                 </div>
-                <div class="article-info">
-                  <span class="author">作者: {{ item.userId }}</span>
-                  <span class="time">发布于 {{ formatDate(item.createTime) }}</span>
+                <div class="article-footer">
+                  <div class="article-stats">
+                    <div class="interaction-buttons">
+                      <button 
+                        class="interaction-btn like-btn" 
+                        :class="{ 'active': item.isLiked }"
+                        @click="handleLike($event, item)"
+                      >
+                        <el-icon><Pointer /></el-icon>
+                        <span>{{ item.likeNum }}</span>
+                      </button>
+                      <button 
+                        class="interaction-btn favorite-btn" 
+                        :class="{ 'active': item.isFavorited }"
+                        @click="handleFavorite($event, item)"
+                      >
+                        <el-icon><Star /></el-icon>
+                        <span>{{ item.favourNum }}</span>
+                      </button>
+                    </div>
+                    <span class="view-count">
+                      <el-icon><View /></el-icon>
+                      {{ item.articleReads }}次浏览
+                    </span>
+                  </div>
+                  <div class="article-info">
+                    <span class="author">作者: {{ item.userId }}</span>
+                    <span class="time">发布于 {{ formatDate(item.createTime) }}</span>
+                  </div>
                 </div>
-              </div>
-            </el-card>
+              </el-card>
+            </template>
 
             <!-- 分页组件 -->
-            <div class="pagination-container">
+            <div v-if="!loading && articles && articles.length > 0" class="pagination-container">
               <el-pagination
                 v-model:current-page="pageParams.pageStart"
                 v-model:page-size="pageParams.pageSize"
@@ -234,7 +249,7 @@ import { ref, reactive, onMounted, computed, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
-import { View, Star, Pointer, Plus, Close, ChatDotRound, Clock, Sunrise } from '@element-plus/icons-vue'
+import { View, Star, Pointer, Plus, Close, ChatDotRound, Clock, Sunrise, Loading } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
 import type { FormInstance } from 'element-plus'
 import { marked } from 'marked'
