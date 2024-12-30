@@ -211,13 +211,16 @@
   display: flex;
   gap: 24px;
   padding: 24px;
-  max-width: 1400px;
+  max-width: 1500px;
   margin: 0 auto;
+  min-height: 100vh;
   background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
+  justify-content: center;
 }
 
 .main-content {
-  flex: 1;
+  flex: 0.9;
+  max-width: 1000px;
   background-color: #ffffff;
   border-radius: 20px;
   padding: 24px;
@@ -305,6 +308,7 @@
 }
 
 .article-content {
+  max-width: 1000px;
   font-size: 16px;
   line-height: 1.8;
   color: #2c3e50;
