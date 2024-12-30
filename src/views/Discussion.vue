@@ -60,6 +60,7 @@
           <div class="discussion-list">
             <!-- 加载状态 -->
             <div v-if="loading" class="loading-state">
+              <!-- 加上loading动画 使用is-loading -->
               <el-icon class="loading-icon is-loading"><Loading /></el-icon>
               <span>加载中...</span>
             </div>

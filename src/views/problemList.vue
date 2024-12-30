@@ -267,8 +267,8 @@ const hoveredProblem = ref<Problem | null>(null)
 
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate: number) => {
-  if (rate >= 80) return '#67C23A'
-  if (rate >= 60) return '#E6A23C'
+  if (rate >= 70) return '#67C23A'
+  if (rate >= 50) return '#E6A23C'
   return '#F56C6C'
 }
 

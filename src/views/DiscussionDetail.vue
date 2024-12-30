@@ -23,7 +23,7 @@
               <el-avatar :size="32" :src="Avatar"/>
               <span class="author-name">{{ discussion.userId }}</span>
               <span class="publish-time">发布于 {{ formatDateArray(discussion.createTime) }}</span>
-              <div class="article-operations" v-if="isAuthor">
+              <div class="article-operations" v-if="discussion?.userId?.toString() === isAuthor?.toString()">
                 <el-button type="primary" size="small" @click="handleEdit">
                   <el-icon><Edit /></el-icon>
                   编辑
@@ -152,9 +152,21 @@
               <div class="comment-header">
                 <el-avatar :size="32" :src="comment.authorAvatar"/>
                 <div class="comment-info">
-                  <span class="comment-author">{{ comment.author }}</span>
-                  <span class="comment-time">{{ formatDate(comment.createTime) }}</span>
+                  <span class="comment-author">{{ comment.userId }}</span>
+                  <span class="comment-time">{{ formatDateArray(comment.createTime) }}</span>
                 </div>
+
+                <!-- 添加删除按钮 -->
+                 <!-- 如果是作者是用户或者评论作者是用户则可以删除 -->
+                <el-button 
+                  v-if="isAuthor?.toString() === comment.userId?.toString() || isAuthor?.toString() === discussion?.userId?.toString()"
+                  type="danger" 
+                  size="small"
+                  class="delete-comment-btn"
+                  @click="handleDeleteComment(comment.id)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
               </div>
               <div class="comment-content">
                 {{ comment.content }}
@@ -191,7 +203,354 @@
     </div>
   </div>
 </template>
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { View, Star, Pointer, ArrowLeft, Edit, Delete } from '@element-plus/icons-vue'
+import { type Article } from '@/types/article'
+import request from '@/util/request'
+const Avatar = new URL('../views/imgs/bot.jpg', import.meta.url).href
+const route = useRoute()
+const router = useRouter()
+const loading = ref<boolean>(true)
+const discussion = ref<Article | null>(null)
+const newComment = ref<string>('')
+const token = localStorage.getItem('auth-token')
+const isLiked = ref(false)
+const isFavorited = ref(false)
+const currentUser = ref<any>(null)
+const isAuthor = localStorage.getItem('uid')
+const disabled = ref(false)
+import type { FormInstance } from 'element-plus'
+const formRef = ref<FormInstance>()
+// 作者统计数据
+const authorStats = reactive({
+  articles: 0,
+  likes: 0
+})
+// 表单验证规则
+const rules = {
+  title: [
+    { required: true, message: '请输入标题', trigger: 'blur' },
+    { min: 3, max: 50, message: '标题长度应在 3 到 50 个字符之间', trigger: 'blur' }
+  ],
+  articleTypeName: [
+    { required: true, message: '请选择文章类型', trigger: 'change' },
+  ],
+  content: [
+    { required: true, message: '请输入内容', trigger: 'blur' },
+    { min: 10, message: '内容不能少于 10 个字符', trigger: 'blur' }
+  ]
+}
 
+const toolbars = {
+  bold: true,
+  italic: true,
+  header: true,
+  underline: true,
+  strikethrough: true,
+  mark: true,
+  superscript: true,
+  subscript: true,
+  quote: true,
+  ol: true,
+  ul: true,
+  link: true,
+  imagelink: true,
+  code: true,
+  table: true,
+  fullscreen: true,
+  readmodel: true,
+  htmlcode: true,
+  help: true,
+  undo: true,
+  redo: true,
+  trash: true,
+  navigation: true,
+  alignleft: true,
+  aligncenter: true,
+  alignright: true,
+  subfield: true,
+  preview: true
+}
+// 新文章表单
+const newArticle = reactive({
+  title: '',
+  content: '',
+  articleTypeName: '', 
+  articleType: 0,
+  likeNum: 0,
+  favourNum: 0,
+  articleReads: 0,
+  sourceId: 0
+})
+// 添加编辑器变更处理函数
+const handleEditorChange = (value: string, render: string) => {
+  newArticle.content = value // 保存 markdown 内容
+}
+// 文章类型列表
+const articleTypes = [
+  { value: 0, label: '算法文章' },
+  { value: 1, label: '题解文章' },
+  { value: 2, label: '经验分享' },
+  { value: 3, label: '杂谈' },
+  { value: 4, label: '竞赛' },
+  { value: 5, label: '算法模板' },
+]
+const handleArticleTypeChange = (value: number) => {
+  newArticle.articleType = value
+}
+// 编辑文章
+const editArticle = async () => {
+  try {
+    if (!formRef.value) return
+    await formRef.value.validate()
+    
+    const response = await request.put('/article/update', newArticle, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      ElMessage.success('文章编辑成功')
+      disabled.value = false // 关闭弹窗
+      await getDiscussionDetail() // 重新获取文章详情
+    } else {
+      ElMessage.error(response.msg || '编辑文章失败')
+    }
+  } catch (error) {
+    console.error('编辑文章失败:', error)
+    ElMessage.error('编辑文章失败')
+  }
+} 
+// 处理编辑按钮点击
+const handleEdit = () => {
+  // 填充表单数据
+  if (discussion.value) {
+    newArticle.title = discussion.value.title
+    newArticle.content = discussion.value.content
+    newArticle.articleTypeName = discussion.value.articleTypeName
+    newArticle.articleType = discussion.value.articleType
+    newArticle.sourceId = Number(discussion.value.id)
+  }
+  disabled.value = true 
+}
+// 格式化日期
+const formatDate = (dateString: string): string => {
+  return new Date(dateString).toLocaleString('zh-CN')
+}
+const formatDateArray = (dateArray: number[]) => {
+  return `${dateArray[0]}年${dateArray[1]}月${dateArray[2]}日`
+}
+// 获取文章详情
+const getDiscussionDetail = async () => {
+  try {
+    loading.value = true
+    const response = await request.get(`/article/${route.params.id}`, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    })as any
+    
+    if (response.code === 200) { 
+      discussion.value = response.data
+      console.log(discussion.value)
+      console.log(response.data)
+    } else {
+      ElMessage.error(response.msg || '获取文章详情失败')
+    }
+  } catch (error) {
+    console.error('获取文章详情失败:', error)
+    ElMessage.error('获取文章详情失败')
+  } finally {
+    loading.value = false
+  }
+}
+ 
+const submitComment = async () => {
+  if (!newComment.value.trim() || !discussion.value) return
+  
+  try {
+    const commentData = {
+      articleId: discussion.value.id,
+      rootId: 0,  // 顶级评论
+      parentId: 0, // 顶级评论
+      content: newComment.value.trim() //去除左右空格再发送
+    }
+
+    const response = await request.post('/article/comment', commentData, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      ElMessage.success('评论发表成功')
+      newComment.value = '' // 清空评论输入框
+      await getDiscussionDetail() // 重新获取文章详情以更新评论列表
+    } else {
+      ElMessage.error(response.msg || '评论发表失败')
+    }
+  } catch (error) {
+    console.error('评论发表失败:', error)
+    ElMessage.error('评论发表失败')
+  }
+}
+
+// 获取文章类型对应的标签样式
+const getArticleTypeTag = (type: string) => {
+  const types: Record<string, string> = {
+    "算法文章": 'success',
+    "题解文章": 'warning',
+    "分享文章": 'info',
+    "杂谈文章": 'default',
+    "竞赛文章": 'danger',
+    "算法模板": 'primary'
+  }
+  return types[type] || 'info'
+}
+
+const handleLike = async (event: Event, item: Article) => {
+  event.preventDefault()
+  try {
+    const response = await request.put(`/article/like/${item.id}`, null, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      // 更新文章的点赞状态和数量
+      
+      item.isLiked = !item.isLiked 
+      item.likeNum = item.isLiked ? item.likeNum + 1 : item.likeNum - 1
+      ElMessage.success(item.isLiked ? '点赞成功' : '取消点赞成功')
+    } else {
+      ElMessage.error(response.msg || '操作失败')
+    }
+  } catch (error) {
+    console.error('点赞操作失败:', error)
+    ElMessage.error('点赞操作失败')
+  }
+}
+
+const handleFavorite = async (event: Event, item: Article) => {
+  event.preventDefault()
+  try {
+    const response = await request.put(`/article/star/${item.id}`, null, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      // 更新文章的收藏状态和数量 
+      item.isFavorited = !item.isFavorited
+      isFavorited.value=item.isFavorited
+      item.favourNum = item.isFavorited ? item.favourNum + 1 : item.favourNum - 1
+      ElMessage.success(item.isFavorited ? '收藏成功' : '取消收藏成功')
+    } else {
+      ElMessage.error(response.msg || '操作失败')
+    }
+  } catch (error) {
+    console.error('收藏操作失败:', error)
+    ElMessage.error('收藏操作失败')
+  }
+}
+
+// 新增获取作者统计数据的方法
+const getAuthorStats = async () => {
+  if (!discussion.value?.userId) return
+  // TODO: 实现获取作者统计数据的接口调用
+}
+
+// 获取当前用户信息
+const getCurrentUser = async () => {
+  try {
+    const response = await request.get('/user/get/user', {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+    
+    if (response.code === 200) {
+      currentUser.value = response.data
+
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+  }
+}
+
+
+
+// 处理删除按钮点击
+const handleDelete = async () => {
+  try {
+    await ElMessageBox.confirm('确定要删除这篇文章吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    const response = await request.delete(`/article/delete/${discussion.value?.id}`, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      ElMessage.success('文章删除成功')
+      router.back() // 删除成功后返回上一页
+    } else {
+      ElMessage.error(response.msg || '删除文章失败')
+    }
+    
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除文章失败:', error)
+      ElMessage.error('删除文章失败')
+    }
+  }
+}
+
+// 处理删除评论
+const handleDeleteComment = async (commentId: number) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条评论吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    const response = await request.delete(`/article/comment/delete/${commentId}`, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      ElMessage.success('评论删除成功')
+      await getDiscussionDetail() // 重新获取文章详情以更新评论列表
+    } else {
+      ElMessage.error(response.msg || '删除评论失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除评论失败:', error)
+      ElMessage.error('删除评论失败')
+    }
+  }
+}
+
+// 异步执行来获取文章详情和用户信息
+onMounted(async () => {
+  await getDiscussionDetail()
+  // await getCurrentUser()  
+})
+</script>
 <style scoped>
 .editor-container {
   position: relative;
@@ -349,6 +708,7 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
+  position: relative;
 }
 
 .comment-info {
@@ -573,312 +933,14 @@
   transform: scale(0.95);
 }
 
+.delete-comment-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 8px;
+}
+
 </style>
 
-<script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { View, Star, Pointer, ArrowLeft, Edit, Delete } from '@element-plus/icons-vue'
-import { type Article } from '@/types/article'
-import request from '@/util/request'
-const Avatar = new URL('../views/imgs/bot.jpg', import.meta.url).href
-const route = useRoute()
-const router = useRouter()
-const loading = ref<boolean>(true)
-const discussion = ref<Article | null>(null)
-const newComment = ref<string>('')
-const token = localStorage.getItem('auth-token')
-const isLiked = ref(false)
-const isFavorited = ref(false)
-const currentUser = ref<any>(null)
-const isAuthor = ref(false)
-const disabled = ref(false)
-import type { FormInstance } from 'element-plus'
-const formRef = ref<FormInstance>()
-// 作者统计数据
-const authorStats = reactive({
-  articles: 0,
-  likes: 0
-})
-// 表单验证规则
-const rules = {
-  title: [
-    { required: true, message: '请输入标题', trigger: 'blur' },
-    { min: 3, max: 50, message: '标题长度应在 3 到 50 个字符之间', trigger: 'blur' }
-  ],
-  articleTypeName: [
-    { required: true, message: '请选择文章类型', trigger: 'change' },
-  ],
-  content: [
-    { required: true, message: '请输入内容', trigger: 'blur' },
-    { min: 10, message: '内容不能少于 10 个字符', trigger: 'blur' }
-  ]
-}
 
-const toolbars = {
-  bold: true,
-  italic: true,
-  header: true,
-  underline: true,
-  strikethrough: true,
-  mark: true,
-  superscript: true,
-  subscript: true,
-  quote: true,
-  ol: true,
-  ul: true,
-  link: true,
-  imagelink: true,
-  code: true,
-  table: true,
-  fullscreen: true,
-  readmodel: true,
-  htmlcode: true,
-  help: true,
-  undo: true,
-  redo: true,
-  trash: true,
-  navigation: true,
-  alignleft: true,
-  aligncenter: true,
-  alignright: true,
-  subfield: true,
-  preview: true
-}
-// 新文章表单
-const newArticle = reactive({
-  title: '',
-  content: '',
-  articleTypeName: '', 
-  articleType: 0,
-  likeNum: 0,
-  favourNum: 0,
-  articleReads: 0,
-  sourceId: 0
-})
-// 添加编辑器变更处理函数
-const handleEditorChange = (value: string, render: string) => {
-  newArticle.content = value // 保存 markdown 内容
-}
-// 文章类型列表
-const articleTypes = [
-  { value: 0, label: '算法文章' },
-  { value: 1, label: '题解文章' },
-  { value: 2, label: '经验分享' },
-  { value: 3, label: '杂谈' },
-  { value: 4, label: '竞赛' },
-  { value: 5, label: '算法模板' },
-]
-const handleArticleTypeChange = (value: number) => {
-  newArticle.articleType = value
-}
-// 编辑文章
-const editArticle = async () => {
-  try {
-    if (!formRef.value) return
-    await formRef.value.validate()
-    
-    const response = await request.put('/article/update', newArticle, {
-      headers: {
-        'auth-token': `Bearer ${token}`
-      }
-    }) as any
-
-    if (response.code === 200) {
-      ElMessage.success('文章编辑成功')
-      disabled.value = false // 关闭弹窗
-      await getDiscussionDetail() // 重新获取文章详情
-    } else {
-      ElMessage.error(response.msg || '编辑文章失败')
-    }
-  } catch (error) {
-    console.error('编辑文章失败:', error)
-    ElMessage.error('编辑文章失败')
-  }
-} 
-// 处理编辑按钮点击
-const handleEdit = () => {
-  // 填充表单数据
-  if (discussion.value) {
-    newArticle.title = discussion.value.title
-    newArticle.content = discussion.value.content
-    newArticle.articleTypeName = discussion.value.articleTypeName
-    newArticle.articleType = discussion.value.articleType
-    newArticle.sourceId = Number(discussion.value.id)
-  }
-  disabled.value = true 
-}
-// 格式化日期
-const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleString('zh-CN')
-}
-const formatDateArray = (dateArray: number[]) => {
-  return `${dateArray[0]}年${dateArray[1]}月${dateArray[2]}日`
-}
-// 获取文章详情
-const getDiscussionDetail = async () => {
-  try {
-    loading.value = true
-    const response = await request.get(`/article/${route.params.id}`, {
-      headers: {
-        'auth-token': `Bearer ${token}`
-      }
-    })as any
-    
-    if (response.code === 200) { 
-      discussion.value = response.data
-      console.log(discussion.value)
-      console.log(response.data)
-    } else {
-      ElMessage.error(response.msg || '获取文章详情失败')
-    }
-  } catch (error) {
-    console.error('获取文章详情失败:', error)
-    ElMessage.error('获取文章详情失败')
-  } finally {
-    loading.value = false
-  }
-}
- 
-const submitComment = async () => {
-  if (!newComment.value.trim() || !discussion.value) return
-  
-  try {
-    //TODO
-    //评论
-  } catch (error) {
-    console.error('评论发表失败:', error)
-    ElMessage.error('评论发表失败')
-  }
-}
-
-// 获取文章类型对应的标签样式
-const getArticleTypeTag = (type: string) => {
-  const types: Record<string, string> = {
-    "算法文章": 'success',
-    "题解文章": 'warning',
-    "分享文章": 'info',
-    "杂谈文章": 'default',
-    "竞赛文章": 'danger',
-    "算法模板": 'primary'
-  }
-  return types[type] || 'info'
-}
-
-const handleLike = async (event: Event, item: Article) => {
-  event.preventDefault()
-  try {
-    const response = await request.put(`/article/like/${item.id}`, null, {
-      headers: {
-        'auth-token': `Bearer ${token}`
-      }
-    }) as any
-
-    if (response.code === 200) {
-      // 更新文章的点赞状态和数量
-      
-      item.isLiked = !item.isLiked 
-      item.likeNum = item.isLiked ? item.likeNum + 1 : item.likeNum - 1
-      ElMessage.success(item.isLiked ? '点赞成功' : '取消点赞成功')
-    } else {
-      ElMessage.error(response.msg || '操作失败')
-    }
-  } catch (error) {
-    console.error('点赞操作失败:', error)
-    ElMessage.error('点赞操作失败')
-  }
-}
-
-const handleFavorite = async (event: Event, item: Article) => {
-  event.preventDefault()
-  try {
-    const response = await request.put(`/article/star/${item.id}`, null, {
-      headers: {
-        'auth-token': `Bearer ${token}`
-      }
-    }) as any
-
-    if (response.code === 200) {
-      // 更新文章的收藏状态和数量 
-      item.isFavorited = !item.isFavorited
-      isFavorited.value=item.isFavorited
-      item.favourNum = item.isFavorited ? item.favourNum + 1 : item.favourNum - 1
-      ElMessage.success(item.isFavorited ? '收藏成功' : '取消收藏成功')
-    } else {
-      ElMessage.error(response.msg || '操作失败')
-    }
-  } catch (error) {
-    console.error('收藏操作失败:', error)
-    ElMessage.error('收藏操作失败')
-  }
-}
-
-// 新增获取作者统计数据的方法
-const getAuthorStats = async () => {
-  if (!discussion.value?.userId) return
-  // TODO: 实现获取作者统计数据的接口调用
-}
-
-// 获取当前用户信息
-const getCurrentUser = async () => {
-  try {
-    const response = await request.get('/user/get/user', {
-      headers: {
-        'auth-token': `Bearer ${token}`
-      }
-    }) as any
-    
-    if (response.code === 200) {
-      currentUser.value = response.data
-      // 检查当前用户是否为文章作者
-      if (discussion.value) {
-        isAuthor.value = currentUser.value.uid == discussion.value.userId
-      }
-      else{
-        isAuthor.value = false
-
-      }
-    }
-  } catch (error) {
-    console.error('获取用户信息失败:', error)
-  }
-}
-
-
-
-// 处理删除按钮点击
-const handleDelete = async () => {
-  try {
-    await ElMessageBox.confirm('确定要删除这篇文章吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    const response = await request.delete(`/article/delete/${discussion.value?.id}`, {
-      headers: {
-        'auth-token': `Bearer ${token}`
-      }
-    }) as any
-
-    if (response.code === 200) {
-      ElMessage.success('文章删除成功')
-      router.back() // 删除成功后返回上一页
-    } else {
-      ElMessage.error(response.msg || '删除文章失败')
-    }
-    
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除文章失败:', error)
-      ElMessage.error('删除文章失败')
-    }
-  }
-}
-// 异步执行来获取文章详情和用户信息
-onMounted(async () => {
-  await getDiscussionDetail()
-  await getCurrentUser()  
-})
-</script>

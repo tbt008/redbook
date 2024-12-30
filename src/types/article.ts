@@ -13,10 +13,12 @@ export interface Article {
     sourceId: string
     comments: Array<{
         id: number
-        author: string
+        userId: number 
+        rootId: number
+        parentId: number
         authorAvatar: string
         content: string
-        createTime: string
+        createTime: number[]
     }>
     isLiked: boolean
     isFavorited: boolean
