@@ -1,127 +1,131 @@
 <template>
   <div class="page-container">
     <div class="main-content">
-      <div class="discussion-container">
-        <!-- 顶部操作栏 -->
-        <div class="discussion-header">
-          <div class="left-actions">
-            <el-button 
-              class="publish-button" 
-              @click="dialogVisible = true"
-            >
-              <el-icon class="publish-icon"><EditPen /></el-icon>
-              <span class="publish-text">发布文章</span> 
-            </el-button>
-            
-            <!-- 文章类型筛选 -->
-            <el-select 
-              v-model="filterType" 
-              placeholder="标签选择"
-              class="filter-select"
-            >
-              <template #prefix>
-                <span class="select-label">
-                  {{ filterType === 'all' ? '全部文章' : 
-                     filterType === null ? '标签选择' : 
-                     getArticleTypeLabel(Number(filterType)) }}
-                </span>
-              </template>
-              <el-option label="全部" value="all" />
-              <el-option
-                v-for="type in articleTypes"
-                :key="type.value"
-                :label="type.label"
-                :value="type.value.toString()"
-              />
-            </el-select>
-          </div>
-
-          <!-- 排序选项 -->
-          <div class="sort-options">
-            <div class="sort-buttons-group">
-              <button 
-                v-for="option in sortOptions" 
-                :key="option.value"
-                class="sort-btn"
-                :class="{ active: sortBy === option.value }"
-                @click="sortBy = option.value; handleSortChange()"
+      <div class="discussion-section">
+        <!-- 顶部操作栏卡片 -->
+        <el-card class="actions-card">
+          <div class="discussion-header">
+            <div class="left-actions">
+              <el-button 
+                class="publish-button" 
+                @click="dialogVisible = true"
               >
-                <el-icon><component :is="option.icon" /></el-icon>
-                {{ option.label }}
-              </button>
+                <el-icon class="publish-icon"><EditPen /></el-icon>
+                <span class="publish-text">发布文章</span> 
+              </el-button>
+              
+              <!-- 文章类型筛选 -->
+              <el-select 
+                v-model="filterType" 
+                placeholder="标签选择"
+                class="filter-select"
+              >
+                <template #prefix>
+                  <span class="select-label">
+                    {{ filterType === 'all' ? '全部文章' : 
+                       filterType === null ? '标签选择' : 
+                       getArticleTypeLabel(Number(filterType)) }}
+                  </span>
+                </template>
+                <el-option label="全部" value="all" />
+                <el-option
+                  v-for="type in articleTypes"
+                  :key="type.value"
+                  :label="type.label"
+                  :value="type.value.toString()"
+                />
+              </el-select>
             </div>
-          </div>
-        </div>
 
-        <!-- 文章列表 -->
-        <div class="discussion-list">
-          <el-card 
-            v-for="item in articles" 
-            :key="item.id" 
-            class="discussion-item"
-          >
-            <div class="article-main" @click="goToDetail(item.id)">
-              <div class="article-meta">
-                <el-tag 
-                  :type="getArticleTypeTag(item.articleType)" 
-                  class="article-type-tag"
-                  effect="light"
+            <!-- 排序选项 -->
+            <div class="sort-options">
+              <div class="sort-buttons-group">
+                <button 
+                  v-for="option in sortOptions" 
+                  :key="option.value"
+                  class="sort-btn"
+                  :class="{ active: sortBy === option.value }"
+                  @click="sortBy = option.value; handleSortChange()"
                 >
-                  {{ getArticleTypeLabel(item.articleType) }}
-                </el-tag>
-                <h3 class="article-title">{{ item.title }}</h3>
-              </div>
-              <div 
-                class="article-brief" 
-                v-html="renderMarkdown(item.content.substring(0, 150))"
-              ></div>
-            </div>
-            <div class="article-footer">
-              <div class="article-stats">
-                <div class="interaction-buttons">
-                  <button 
-                    class="interaction-btn like-btn" 
-                    :class="{ 'active': item.isLiked }"
-                    @click="handleLike($event, item)"
-                  >
-                    <el-icon><Pointer /></el-icon>
-                    <span>{{ item.likeNum }}</span>
-                  </button>
-                  <button 
-                    class="interaction-btn favorite-btn" 
-                    :class="{ 'active': item.isFavorited }"
-                    @click="handleFavorite($event, item)"
-                  >
-                    <el-icon><Star /></el-icon>
-                    <span>{{ item.favourNum }}</span>
-                  </button>
-                </div>
-                <span class="view-count">
-                  <el-icon><View /></el-icon>
-                  {{ item.articleReads }}次浏览
-                </span>
-              </div>
-              <div class="article-info">
-                <span class="author">作者: {{ item.userId }}</span>
-                <span class="time">发布于 {{ formatDate(item.createTime) }}</span>
+                  <el-icon><component :is="option.icon" /></el-icon>
+                  {{ option.label }}
+                </button>
               </div>
             </div>
-          </el-card>
-
-          <!-- 分页组件 -->
-          <div class="pagination-container">
-            <el-pagination
-              v-model:current-page="pageParams.pageStart"
-              v-model:page-size="pageParams.pageSize"
-              :page-sizes="[10, 20, 30, 50]"
-              :total="total"
-              :pager-count="7"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-              layout="total, sizes, prev, pager, next, jumper"
-            />
           </div>
-        </div>
+        </el-card>
+
+        <!-- 文章列表卡片 -->
+        <el-card class="articles-card">
+          <div class="discussion-list">
+            <el-card 
+              v-for="item in articles" 
+              :key="item.id" 
+              class="discussion-item"
+            >
+              <div class="article-main" @click="goToDetail(item.id)">
+                <div class="article-meta">
+                  <el-tag 
+                    :type="getArticleTypeTag(item.articleType)" 
+                    class="article-type-tag"
+                    effect="light"
+                  >
+                    {{ getArticleTypeLabel(item.articleType) }}
+                  </el-tag>
+                  <h3 class="article-title">{{ item.title }}</h3>
+                </div>
+                <div 
+                  class="article-brief" 
+                  v-html="renderMarkdown(item.content.substring(0, 150))"
+                ></div>
+              </div>
+              <div class="article-footer">
+                <div class="article-stats">
+                  <div class="interaction-buttons">
+                    <button 
+                      class="interaction-btn like-btn" 
+                      :class="{ 'active': item.isLiked }"
+                      @click="handleLike($event, item)"
+                    >
+                      <el-icon><Pointer /></el-icon>
+                      <span>{{ item.likeNum }}</span>
+                    </button>
+                    <button 
+                      class="interaction-btn favorite-btn" 
+                      :class="{ 'active': item.isFavorited }"
+                      @click="handleFavorite($event, item)"
+                    >
+                      <el-icon><Star /></el-icon>
+                      <span>{{ item.favourNum }}</span>
+                    </button>
+                  </div>
+                  <span class="view-count">
+                    <el-icon><View /></el-icon>
+                    {{ item.articleReads }}次浏览
+                  </span>
+                </div>
+                <div class="article-info">
+                  <span class="author">作者: {{ item.userId }}</span>
+                  <span class="time">发布于 {{ formatDate(item.createTime) }}</span>
+                </div>
+              </div>
+            </el-card>
+
+            <!-- 分页组件 -->
+            <div class="pagination-container">
+              <el-pagination
+                v-model:current-page="pageParams.pageStart"
+                v-model:page-size="pageParams.pageSize"
+                :page-sizes="[10, 20, 30, 50]"
+                :total="total"
+                :pager-count="7"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+                layout="total, sizes, prev, pager, next, jumper"
+              />
+            </div>
+          </div>
+        </el-card>
       </div>
 
       <!-- 侧边栏 -->
@@ -299,7 +303,7 @@ const rules = {
   ],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
-    { min: 10, message: '内容不能少于 10 个字符', trigger: 'blur' }
+    { min: 10, message: '内容不能少于 5 个字符', trigger: 'blur' }
   ]
 }
 
@@ -537,25 +541,63 @@ const toolbars = {
 .page-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
+  overflow-x: hidden;
 }
 
 .main-content {
   display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 2rem;
-  max-width: 1300px;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 1.8rem;
+  max-width: 1170px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.8rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* 讨论区容器 */
-.discussion-container {
+/* 修改讨论区布局样式 */
+.discussion-section {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.actions-card {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 16px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 2rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  height: 72px;
+}
+
+.articles-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* 移除原有的 discussion-container 样式 */
+.discussion-container {
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* 调整顶部操作栏内边距 */
+.discussion-header {
+  padding: 0.5rem;
+  margin-bottom: 0;
+}
+
+/* 调整文章列表内边距 */
+.discussion-list {
+  margin-top: 0;
+  padding: 1rem;
 }
 
 /* 顶部操作栏 */
@@ -577,7 +619,7 @@ const toolbars = {
 .publish-button {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.675rem 1.35rem;
   border-radius: 12px;
   color: white;
   font-weight: 600;
@@ -627,7 +669,7 @@ const toolbars = {
   border: 1px solid rgba(255, 255, 255, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  margin: 0;
+  margin-bottom: 0.45rem;
 }
 
 .discussion-item:hover {
@@ -637,14 +679,14 @@ const toolbars = {
 
 .article-main {
   cursor: pointer;
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 .article-meta {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
 }
 
 .article-type-tag {
@@ -654,22 +696,24 @@ const toolbars = {
 }
 
 .article-title {
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #1a1a1a;
-  margin: 0.5rem 0;
+  margin: 0.4rem 0;
   line-height: 1.4;
 }
 
 .article-brief {
   color: #4b5563;
-  line-height: 1.6;
-  font-size: 0.975rem;
+  line-height: 1.5;
+  font-size: 0.813rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* 文章底部 */
 .article-footer {
-  padding: 1rem 1.5rem;
+  padding: 0.8rem 1.2rem;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
@@ -680,26 +724,26 @@ const toolbars = {
 .article-stats {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .interaction-buttons {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .interaction-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border: none;
   border-radius: 20px;
   background-color: rgba(0, 0, 0, 0.05);
   color: #666;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.875rem;
+  font-size: 0.813rem;
 }
 
 .interaction-btn:hover {
@@ -717,7 +761,7 @@ const toolbars = {
   align-items: center;
   gap: 0.5rem;
   color: #666;
-  font-size: 0.875rem;
+  font-size: 0.813rem;
 }
 
 /* 侧边栏 */
@@ -773,8 +817,8 @@ const toolbars = {
 }
 
 .ai-button {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 3.15rem;
+  height: 3.15rem;
   border-radius: 50%;
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   border: none;
@@ -835,6 +879,7 @@ const toolbars = {
 @media (max-width: 1200px) {
   .main-content {
     grid-template-columns: 1fr;
+    padding: 1rem;
   }
 
   .side-panel {
@@ -913,7 +958,7 @@ const toolbars = {
 }
 
 .editor-container {
-  height: 500px;
+  height: 450px;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #ddd;
