@@ -516,7 +516,7 @@ const handleCurrentChange = (val: number) => {
   getArticles()
 }
 
-// 生命周期钩子
+
 onMounted(() => {
   getArticles()
 })
