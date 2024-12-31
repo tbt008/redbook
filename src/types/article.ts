@@ -1,3 +1,15 @@
+// 定义递归的评论类型
+interface Comment {
+  id: number
+  userId: number
+  rootId: number
+  parentId: number
+  authorAvatar: string
+  content: string
+  createTime: number[]
+  children?: Comment[]
+}
+
 // 文章接口定义
 export interface Article {
     id: string
@@ -11,15 +23,7 @@ export interface Article {
     articleType: number
     articleReads: number
     sourceId: string
-    comments: Array<{
-        id: number
-        userId: number 
-        rootId: number
-        parentId: number
-        authorAvatar: string
-        content: string
-        createTime: number[]
-    }>
+    comments: Comment[]
     isLiked: boolean
     isFavorited: boolean
 }

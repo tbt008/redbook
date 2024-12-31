@@ -168,8 +168,127 @@
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </div>
+              
               <div class="comment-content">
                 {{ comment.content }}
+              </div>
+              
+              <div class="comment-divider"></div>
+              
+              <div class="comment-footer">
+                <div class="comment-actions">
+                  <!-- 左侧查看回复按钮 -->
+                  <div class="left-actions">
+                    <el-button 
+                      type="text" 
+                      size="small" 
+                      @click="toggleReplies(comment)"
+                      class="view-replies-button"
+                      v-if="comment.children && comment.children.length > 0"
+                    >
+                      <el-icon><ArrowDown :class="{ 'rotate': showRepliesMap[comment.id] }" /></el-icon>
+                      {{ showRepliesMap[comment.id] ? '收起' : `${comment.children.length}条回复` }}
+                    </el-button>
+                  </div>
+                  
+                  <!-- 右侧固定的发表回复按钮 -->
+                  <div class="right-actions">
+                    <el-button 
+                      type="text" 
+                      size="small" 
+                      @click="showReplyInput(comment)"
+                      class="create-reply-button"
+                    >
+                      <el-icon><ChatLineRound /></el-icon>
+                      发表回复
+                    </el-button>
+                  </div>
+                </div>
+
+                <!-- 回复输入框 -->
+                <div v-if="activeReplyId === comment.id" class="reply-input">
+                  <div class="reply-to">
+                    回复 <span class="reply-target">@{{ replyToUser }}</span>
+                  </div>
+                  <el-input
+                    v-model="replyContent"
+                    type="textarea"
+                    :rows="2"
+                    placeholder="写下你的回复..."
+                  />
+                  <div class="reply-actions">
+                    <el-button size="small" @click="cancelReply">取消</el-button>
+                    <el-button 
+                      type="primary" 
+                      size="small" 
+                      @click="submitReply(comment)" 
+                      :disabled="!replyContent.trim()"
+                    >
+                      回复
+                    </el-button>
+                  </div>
+                </div>
+
+                <!-- 回复列表 -->
+                <div v-if="showRepliesMap[comment.id] && comment.children && comment.children.length > 0" class="reply-list">
+                  <div v-for="reply in comment.children" :key="reply.id" class="reply-item">
+                    <div class="reply-header">
+                      <el-avatar :size="24" :src="reply.authorAvatar"/>
+                      <span class="reply-author">{{ reply.userId }}</span>
+                      <span class="reply-time">{{ formatDateArray(reply.createTime) }}</span>
+                      
+                      <!-- 调整按钮顺序 -->
+                      <div class="reply-header-actions">
+                        <el-button 
+                          type="text" 
+                          size="small" 
+                          @click="showReplyInput(reply)"
+                        >
+                          回复
+                        </el-button>
+                        <el-button 
+                          v-if="isAuthor?.toString() === reply.userId?.toString() || isAuthor?.toString() === discussion?.userId?.toString()"
+                          type="danger" 
+                          size="small"
+                          class="delete-comment-btn"
+                          @click="handleDeleteComment(reply.id)"
+                        >
+                          <el-icon><Delete /></el-icon>
+                        </el-button>
+                      </div>
+                    </div>
+                    <div class="reply-content">
+                      <template v-if="reply.parentId !== reply.rootId">
+                        回复 <span class="reply-target">@{{ comment.userId }}</span>：
+                      </template>
+                      {{ reply.content }}
+                    </div>
+                    <!-- 回复的回复输入框 -->
+                    <div v-if="activeReplyId === reply.id" class="nested-reply-input">
+                      <div class="reply-to">
+                        回复 <span class="reply-target">@{{ replyToUser }}</span>
+                      </div>
+                      <el-input
+                        v-model="replyContent"
+                        type="textarea"
+                        :rows="2"
+                        placeholder="写下你的回复..."
+                      />
+                      <div class="reply-actions">
+                        <el-button size="small" @click="cancelReply">取消</el-button>
+                        <el-button 
+                          type="primary" 
+                          size="small" 
+                          @click="submitReply(reply)" 
+                          :disabled="!replyContent.trim()"
+                        >
+                          回复
+                        </el-button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
               </div>
             </el-card>
           </div>
@@ -207,7 +326,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { View, Star, Pointer, ArrowLeft, Edit, Delete } from '@element-plus/icons-vue'
+import { View, Star, Pointer, ArrowLeft, Edit, Delete, ChatLineRound, ArrowDown } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
 import request from '@/util/request'
 const Avatar = new URL('../views/imgs/bot.jpg', import.meta.url).href
@@ -240,7 +359,7 @@ const rules = {
   ],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
-    { min: 10, message: '内容不能少于 10 个字符', trigger: 'blur' }
+    { min: 5, message: '内容不能少于 10 个字符', trigger: 'blur' }
   ]
 }
 
@@ -304,10 +423,21 @@ const handleArticleTypeChange = (value: number) => {
 // 编辑文章
 const editArticle = async () => {
   try {
-    if (!formRef.value) return
+    if (!formRef.value) { 
+      ElMessage.error('表单初始化失败,请刷新页面重试')
+      return
+    }
+    // formRef.value.validate() 是 Element Plus 表单组件提供的验证方法，
+    // 它会根据之前定义的 rules 规则来验证表单中的所有字段。
     await formRef.value.validate()
     
-    const response = await request.put('/article/update', newArticle, {
+    const response = await request.post('/article/update', {
+      id: discussion.value?.id, // 使用当前文章的ID
+      title: newArticle.title,
+      content: newArticle.content,
+      articleType: newArticle.articleType,
+      sourceId: newArticle.sourceId
+    }, {
       headers: {
         'auth-token': `Bearer ${token}`
       }
@@ -315,14 +445,14 @@ const editArticle = async () => {
 
     if (response.code === 200) {
       ElMessage.success('文章编辑成功')
-      disabled.value = false // 关闭弹窗
-      await getDiscussionDetail() // 重新获取文章详情
+      disabled.value = false
+      await getDiscussionDetail()
     } else {
       ElMessage.error(response.msg || '编辑文章失败')
     }
   } catch (error) {
     console.error('编辑文章失败:', error)
-    ElMessage.error('编辑文章失败')
+    ElMessage.error(error|| '编辑文章失败')
   }
 } 
 // 处理编辑按钮点击
@@ -344,7 +474,47 @@ const formatDate = (dateString: string): string => {
 const formatDateArray = (dateArray: number[]) => {
   return `${dateArray[0]}年${dateArray[1]}月${dateArray[2]}日`
 }
-// 获取文章详情
+// 添加类型定义
+interface Comment {
+  id: number
+  userId: number
+  rootId: number
+  parentId: number
+  authorAvatar: string
+  content: string
+  createTime: number[]
+  children?: Comment[]
+}
+
+// 将评论数组转换为树形结构
+const transformComments = (comments: Comment[]) => {
+  const commentMap = new Map<number, Comment>()
+  const rootComments: Comment[] = []
+
+  // 首先创建所有评论的映射
+  comments.forEach(comment => {
+    commentMap.set(comment.id, { ...comment, children: [] })
+  })
+
+  // 构建树形结构
+  comments.forEach(comment => {
+    const currentComment = commentMap.get(comment.id)!
+    if (comment.rootId === 0) {
+      // 这是一级评论
+      rootComments.push(currentComment)
+    } else {
+      // 这是回复
+      const parentComment = commentMap.get(comment.rootId)
+      if (parentComment && parentComment.children) {
+        parentComment.children.push(currentComment)
+      }
+    }
+  })
+
+  return rootComments
+}
+
+// 修改获取文章详情的方法
 const getDiscussionDetail = async () => {
   try {
     loading.value = true
@@ -352,12 +522,15 @@ const getDiscussionDetail = async () => {
       headers: {
         'auth-token': `Bearer ${token}`
       }
-    })as any
+    }) as any
     
-    if (response.code === 200) { 
-      discussion.value = response.data
-      console.log(discussion.value)
-      console.log(response.data)
+    if (response.code === 200) {
+      // 转换评论数据为树形结构
+      const articleData = response.data
+      if (articleData.comments) {
+        articleData.comments = transformComments(articleData.comments)
+      }
+      discussion.value = articleData
     } else {
       ElMessage.error(response.msg || '获取文章详情失败')
     }
@@ -368,6 +541,7 @@ const getDiscussionDetail = async () => {
     loading.value = false
   }
 }
+
  
 const submitComment = async () => {
   if (!newComment.value.trim() || !discussion.value) return
@@ -545,6 +719,65 @@ const handleDeleteComment = async (commentId: number) => {
   }
 }
 
+// 添加新的响应式数据
+const activeReplyId = ref<number | null>(null)
+const replyContent = ref('')
+const replyToUser = ref<string | null>(null)
+
+// 修改显示回复输入框的方法
+const showReplyInput = (comment: { id: number, userId: number | string }) => {
+  activeReplyId.value = comment.id
+  replyToUser.value = comment.userId.toString()
+  replyContent.value = ''
+}
+
+// 修改取消回复的方法
+const cancelReply = () => {
+  activeReplyId.value = null
+  replyToUser.value = null
+  replyContent.value = ''
+}
+
+// 修改提交回复的方法
+const submitReply = async (comment: Comment) => {
+  if (!replyContent.value.trim()) return
+  
+  try {
+    const replyData = {
+      articleId: discussion.value?.id,
+      rootId: comment.rootId === 0 ? comment.id : comment.rootId, // 如果回复一级评论，使用评论ID作为rootId
+      parentId: comment.id,
+      content: replyContent.value.trim()
+    }
+
+    const response = await request.post('/article/reply', replyData, {
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any
+
+    if (response.code === 200) {
+      ElMessage.success('回复成功')
+      replyContent.value = ''
+      activeReplyId.value = null
+      await getDiscussionDetail() // 重新获取文章详情以更新评论列表
+    } else {
+      ElMessage.error(response.msg || '回复失败')
+    }
+  } catch (error) {
+    console.error('回复失败:', error)
+    ElMessage.error('回复失败')
+  }
+}
+
+// 添加新的响应式数据
+const showRepliesMap = reactive<Record<number, boolean>>({})
+
+// 添加新的方法
+const toggleReplies = (comment: { id: number }) => {
+  showRepliesMap[comment.id] = !showRepliesMap[comment.id]
+}
+
 // 异步执行来获取文章详情和用户信息
 onMounted(async () => {
   await getDiscussionDetail()
@@ -709,12 +942,15 @@ onMounted(async () => {
   gap: 12px;
   margin-bottom: 12px;
   position: relative;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .comment-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
 }
 
 .comment-author {
@@ -934,11 +1170,172 @@ onMounted(async () => {
 }
 
 .delete-comment-btn {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  margin-left: auto;
+  padding: 4px 8px; 
+}
+
+.comment-actions {
+  margin-top: 8px;
+}
+
+.reply-input {
+  margin: 12px 0;
+  padding-left: 20px;
+  padding: 12px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.reply-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.reply-list {
+  margin-top: 12px;
+  padding-left: 20px;
+}
+
+.reply-item {
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+}
+
+.reply-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  position: relative;
+  width: 100%;
+}
+
+.reply-author {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.reply-time {
+  font-size: 12px;
+  color: #909399;
+}
+
+.reply-content {
+  font-size: 14px;
+  color: #606266;
+  padding-left: 32px;
+}
+
+.nested-reply-input {
+  margin: 8px 0 8px 24px;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.nested-reply-list {
+  margin-left: 24px;
+  margin-top: 8px;
+}
+
+.nested-reply-item {
+  padding: 8px;
+  margin-bottom: 4px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.reply-actions {
+  margin-left: auto;
+}
+
+.reply-to {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.reply-to {
+  margin-bottom: 8px;
+  color: #606266;
+  font-size: 14px;
+}
+
+.reply-target {
+  color: #409EFF;
+  font-weight: 500;
+}
+
+/* 新增reply-header-actions样式 */
+.reply-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 调整删除按钮样式 */
+.delete-comment-btn {
   padding: 4px 8px;
+}
+
+.comment-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.view-replies-button,
+.create-reply-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #909399;
+}
+
+.view-replies-button:hover,
+.create-reply-button:hover {
+  color: #409EFF;
+}
+
+.view-replies-button .el-icon {
+  transition: transform 0.3s ease;
+}
+
+.view-replies-button .rotate {
+  transform: rotate(180deg);
+}
+
+.reply-list {
+  margin-top: 12px;
+  margin-left: 40px;
+  border-left: 2px solid #ebeef5;
+  padding-left: 16px;
+}
+
+.reply-item {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+/* 优化回复区域的视觉层次 */
+.reply-content {
+  margin: 8px 0;
+  color: #606266;
+}
+
+.comment-divider {
+  height: 1px;
+  background-color: #ebeef5;
+  margin: 12px 0;
 }
 
 </style>
