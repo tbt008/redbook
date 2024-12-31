@@ -319,7 +319,7 @@ const rules = {
   ],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
-    { min: 10, message: '内容不能少于 5 个字符', trigger: 'blur' }
+    { min: 5, message: '内容不能少于 5 个字符', trigger: 'blur' }
   ]
 }
 
@@ -547,7 +547,7 @@ const toolbars = {
   fullscreen: true,
   readmodel: true,
   htmlcode: true,
-  help: true,
+
   undo: true,
   redo: true,
   trash: true,

@@ -135,10 +135,11 @@
           
           <!-- 评论输入框 -->
           <div class="comment-input">
-            <el-input
+            <mavon-editor
               v-model="newComment"
-              type="textarea"
-              :rows="3"
+              class="comment-editor"
+              :toolbars="commentToolbars"
+              :boxShadow="false"
               placeholder="写下你的评论..."
             />
             <el-button type="primary" @click="submitComment" :disabled="!newComment.trim()">
@@ -169,8 +170,16 @@
                 </el-button>
               </div>
               
-              <div class="comment-content">
-                {{ comment.content }}
+              <div class="comment-content markdown-body">
+                <mavon-editor
+                  v-model="comment.content"
+                  :subfield="false"
+                  :defaultOpen="'preview'"
+                  :toolbarsFlag="false"
+                  :editable="false"
+                  :scrollStyle="true"
+                  :ishljs="true"
+                />
               </div>
               
               <div class="comment-divider"></div>
@@ -210,10 +219,11 @@
                   <div class="reply-to">
                     回复 <span class="reply-target">@{{ replyToUser }}</span>
                   </div>
-                  <el-input
+                  <mavon-editor
                     v-model="replyContent"
-                    type="textarea"
-                    :rows="2"
+                    class="reply-editor"
+                    :toolbars="commentToolbars"
+                    :boxShadow="false"
                     placeholder="写下你的回复..."
                   />
                   <div class="reply-actions">
@@ -257,21 +267,30 @@
                         </el-button>
                       </div>
                     </div>
-                    <div class="reply-content">
+                    <div class="reply-content markdown-body">
                       <template v-if="reply.parentId !== reply.rootId">
                         回复 <span class="reply-target">@{{ comment.userId }}</span>：
                       </template>
-                      {{ reply.content }}
+                      <mavon-editor
+                        v-model="reply.content"
+                        :subfield="false"
+                        :defaultOpen="'preview'"
+                        :toolbarsFlag="false"
+                        :editable="false"
+                        :scrollStyle="true"
+                        :ishljs="true"
+                      />
                     </div>
                     <!-- 回复的回复输入框 -->
                     <div v-if="activeReplyId === reply.id" class="nested-reply-input">
                       <div class="reply-to">
                         回复 <span class="reply-target">@{{ replyToUser }}</span>
                       </div>
-                      <el-input
+                      <mavon-editor
                         v-model="replyContent"
-                        type="textarea"
-                        :rows="2"
+                        class="reply-editor"
+                        :toolbars="commentToolbars"
+                        :boxShadow="false"
                         placeholder="写下你的回复..."
                       />
                       <div class="reply-actions">
@@ -359,7 +378,7 @@ const rules = {
   ],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
-    { min: 5, message: '内容不能少于 10 个字符', trigger: 'blur' }
+    { min: 5, message: '内容不能少于 5 个字符', trigger: 'blur' }
   ]
 }
 
@@ -381,8 +400,7 @@ const toolbars = {
   table: true,
   fullscreen: true,
   readmodel: true,
-  htmlcode: true,
-  help: true,
+  htmlcode: true, 
   undo: true,
   redo: true,
   trash: true,
@@ -776,6 +794,38 @@ const showRepliesMap = reactive<Record<number, boolean>>({})
 // 添加新的方法
 const toggleReplies = (comment: { id: number }) => {
   showRepliesMap[comment.id] = !showRepliesMap[comment.id]
+}
+
+// 添加评论编辑器工具栏配置
+const commentToolbars = {
+  bold: true, // 粗体
+  italic: true, // 斜体
+  header: false, // 标题
+  underline: true, // 下划线
+  strikethrough: true, // 中划线
+  mark: true, // 标记
+  superscript: false, // 上角标
+  subscript: false, // 下角标
+  quote: true, // 引用
+  ol: true, // 有序列表
+  ul: true, // 无序列表
+  link: true, // 链接
+  imagelink: false, // 图片链接
+  code: true, // 代码块
+  table: false, // 表格
+  fullscreen: false, // 全屏编辑
+  readmodel: false, // 沉浸式阅读
+  htmlcode: false, // HTML 源码
+  help: false, // 帮助
+  undo: true, // 上一步
+  redo: true, // 下一步
+  trash: true, // 清空
+  navigation: false, // 导航目录
+  alignleft: false, // 左对齐
+  aligncenter: false, // 居中
+  alignright: false, // 右对齐
+  subfield: false, // 单双栏模式
+  preview: true, // 预览
 }
 
 // 异步执行来获取文章详情和用户信息
@@ -1336,6 +1386,48 @@ onMounted(async () => {
   height: 1px;
   background-color: #ebeef5;
   margin: 12px 0;
+}
+
+/* 添加评论编辑器样式 */
+.comment-editor {
+  margin-bottom: 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+}
+
+.comment-editor :deep(.v-note-wrapper) {
+  min-height: 150px;
+  max-height: 300px;
+}
+
+.reply-editor {
+  margin: 8px 0;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+}
+
+.reply-editor :deep(.v-note-wrapper) {
+  min-height: 100px;
+  max-height: 200px;
+}
+
+/* 确保markdown内容样式正确 */
+.comment-content :deep(.v-note-wrapper),
+.reply-content :deep(.v-note-wrapper) {
+  min-height: auto !important;
+  border: none;
+}
+
+.comment-content :deep(.v-note-panel),
+.reply-content :deep(.v-note-panel) {
+  border: none;
+}
+
+/* 移除预览区域的padding */
+.comment-content :deep(.v-show-content),
+.reply-content :deep(.v-show-content) {
+  padding: 0 !important;
+  background-color: transparent !important;
 }
 
 </style>
