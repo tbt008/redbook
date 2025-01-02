@@ -659,7 +659,7 @@ const getAuthorStats = async () => {
   const id=localStorage.getItem('id')
 
   try {
-    const response = await request.get(`/article/user/list/${uid}`, {
+    const response = await request.get(`/article/user/list/${discussion.value?.userId}`, {
     }) as any
 
     if (response.code === 200) {
