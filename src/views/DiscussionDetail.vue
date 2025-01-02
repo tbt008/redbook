@@ -328,12 +328,12 @@
           <h3>{{ discussion.userId }}</h3>
           <div class="author-stats">
             <div class="stat-item">
-              <div class="stat-value">{{ authorStats.articles || 0 }}</div>
-              <div class="stat-label">文章</div>
+              <div class="stat-value">{{ authorStats.articles }}</div>
+              <div class="stat-label">总文章</div>
             </div>
             <div class="stat-item">
-              <div class="stat-value">{{ authorStats.likes || 0 }}</div>
-              <div class="stat-label">获赞</div>
+              <div class="stat-value">{{ authorStats.totalLikes }}</div>
+              <div class="stat-label">总获赞</div>
             </div>
           </div>
         </div>
@@ -355,7 +355,6 @@ const loading = ref<boolean>(true)
 const discussion = ref<Article | null>(null)
 const newComment = ref<string>('')
 const token = localStorage.getItem('auth-token')
-const isLiked = ref(false)
 const isFavorited = ref(false)
 const currentUser = ref<any>(null)
 const isAuthor = localStorage.getItem('uid')
@@ -365,13 +364,13 @@ const formRef = ref<FormInstance>()
 // 作者统计数据
 const authorStats = reactive({
   articles: 0,
-  likes: 0
+  totalLikes: 0
 })
 // 表单验证规则
 const rules = {
   title: [
     { required: true, message: '请输入标题', trigger: 'blur' },
-    { min: 3, max: 50, message: '标题长度应在 3 到 50 个字符之间', trigger: 'blur' }
+    { min: 2, max: 50, message: '标题长度应在 2 到 50 个字符之间', trigger: 'blur' }
   ],
   articleTypeName: [
     { required: true, message: '请选择文章类型', trigger: 'change' },
@@ -615,7 +614,7 @@ const handleLike = async (event: Event, item: Article) => {
 
     if (response.code === 200) {
       // 更新文章的点赞状态和数量
-      
+      getAuthorStats()
       item.isLiked = !item.isLiked 
       item.likeNum = item.isLiked ? item.likeNum + 1 : item.likeNum - 1
       ElMessage.success(item.isLiked ? '点赞成功' : '取消点赞成功')
@@ -638,6 +637,7 @@ const handleFavorite = async (event: Event, item: Article) => {
     }) as any
 
     if (response.code === 200) {
+      getAuthorStats()
       // 更新文章的收藏状态和数量 
       item.isFavorited = !item.isFavorited
       isFavorited.value=item.isFavorited
@@ -652,10 +652,32 @@ const handleFavorite = async (event: Event, item: Article) => {
   }
 }
 
-// 新增获取作者统计数据的方法
+// 获取作者统计数据的方法
 const getAuthorStats = async () => {
-  if (!discussion.value?.userId) return
-  // TODO: 实现获取作者统计数据的接口调用
+  
+  const uid=localStorage.getItem('uid')
+  const id=localStorage.getItem('id')
+
+  try {
+    const response = await request.get(`/article/user/list/${uid}`, {
+    }) as any
+
+    if (response.code === 200) {
+      // 设置文章总数
+      authorStats.articles = response.data.length
+      
+      // 计算总获赞数
+      authorStats.totalLikes = response.data.reduce((sum: number, article: any) => {
+        return sum + (article.likeNum || 0)
+      }, 0)
+      console.log(response.data.length)
+    }
+    else{
+      ElMessage.error(response.msg || '获取作者统计数据失败')
+    }
+  } catch (error) {
+    console.error('获取作者统计数据失败:', error)
+  }
 }
 
 // 获取当前用户信息
@@ -831,7 +853,7 @@ const commentToolbars = {
 // 异步执行来获取文章详情和用户信息
 onMounted(async () => {
   await getDiscussionDetail()
-  // await getCurrentUser()  
+  await getAuthorStats()
 })
 </script>
 <style scoped>

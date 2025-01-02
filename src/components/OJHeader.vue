@@ -33,6 +33,7 @@ const userLogin = () => {
     request.get('/user/get/user').then((res) => {
       if (res.code == 200) {
         userImg.value = res.data.avatar
+        localStorage.setItem('id',res.data.id)
         return true
       } else {
         ElMessage.error('用户登录过期！')

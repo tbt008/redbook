@@ -93,7 +93,7 @@ const login = async () => {
     if (res.code == 200) {
       //保存jwt
       localStorage.setItem('authToken', res.data)
-      localStorage.setItem('uid', id.value)
+      localStorage.setItem('uid', uid.value) 
       ElMessage.success('登录成功！欢迎回来!')
       router.go(-1)
     } else {

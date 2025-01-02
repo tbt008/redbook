@@ -312,7 +312,7 @@ const newArticle = reactive({
 const rules = {
   title: [
     { required: true, message: '请输入标题', trigger: 'blur' },
-    { min: 3, max: 50, message: '标题长度应在 3 到 50 个字符之间', trigger: 'blur' }
+    { min: 2, max: 50, message: '标题长度应在 2 到 50 个字符之间', trigger: 'blur' }
   ],
   articleTypeName: [
     { required: true, message: '请选择文章类型', trigger: 'change' },
