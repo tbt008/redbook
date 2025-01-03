@@ -151,7 +151,7 @@
           <el-calendar class="custom-calendar" />
         </el-card>
         
-        <!-- 原有的统计图表卡片 -->
+        <!-- 统计图表卡片 -->
         <el-card class="side-card stats-card">
           <div class="stats-content">
             <!-- TODO 未来会传更多数据 -->
@@ -446,17 +446,17 @@ const handleMouseEnter = (row: Problem) => {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  position: sticky;
+  top: 20px;
+  align-self: flex-start;
+  height: fit-content;
 }
 
 .calendar-card {
-  position: sticky;
-  top: 24px;
   border-radius: 20px;
 }
 
 .stats-card {
-  position: sticky;
-  top: 400px;  /* 调整位置，确保在日历下方 */
   border-radius: 20px;
   height: 350px;
 }

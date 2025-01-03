@@ -421,7 +421,7 @@ const newArticle = reactive({
   articleReads: 0,
   sourceId: 0
 })
-// 添加编辑器变更处理函数
+// 编辑器变更处理函数
 const handleEditorChange = (value: string, render: string) => {
   newArticle.content = value // 保存 markdown 内容
 }
@@ -491,7 +491,7 @@ const formatDate = (dateString: string): string => {
 const formatDateArray = (dateArray: number[]) => {
   return `${dateArray[0]}年${dateArray[1]}月${dateArray[2]}日`
 }
-// 添加类型定义
+// 类型定义
 interface Comment {
   id: number
   userId: number
@@ -759,7 +759,7 @@ const handleDeleteComment = async (commentId: number) => {
   }
 }
 
-// 添加新的响应式数据
+// 响应式数据
 const activeReplyId = ref<number | null>(null)
 const replyContent = ref('')
 const replyToUser = ref<string | null>(null)
@@ -810,15 +810,15 @@ const submitReply = async (comment: Comment) => {
   }
 }
 
-// 添加新的响应式数据
+// 响应式数据
 const showRepliesMap = reactive<Record<number, boolean>>({})
 
-// 添加新的方法
+ 
 const toggleReplies = (comment: { id: number }) => {
   showRepliesMap[comment.id] = !showRepliesMap[comment.id]
 }
 
-// 添加评论编辑器工具栏配置
+// 评论编辑器工具栏配置
 const commentToolbars = {
   bold: true, // 粗体
   italic: true, // 斜体

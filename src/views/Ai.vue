@@ -81,9 +81,7 @@
                 class="avatar clickable" 
                 @click="showImageViewer(getAiAvatar)" 
               />
-              <div class="message-bubble ai-bubble">
-                {{ message.content }}
-              </div>
+              <div class="message-bubble ai-bubble" v-html="formatMessage(message.content)"></div>
             </template>
 
             <!-- 用户消息布局 -->
@@ -126,9 +124,7 @@
                 class="avatar clickable" 
                 @click="showImageViewer(getAiAvatar)" 
               />
-              <div class="message-bubble ai-bubble">
-                {{ message.content }}
-              </div>
+              <div class="message-bubble ai-bubble" v-html="formatMessage(message.content)"></div>
             </template>
 
             <!-- 用户消息布局 -->
@@ -208,6 +204,7 @@ import {
 import request from '@/util/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
+import { marked } from 'marked'
 const router = useRouter()
 const userAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
 const aiAvatar = new URL('../views/imgs/usagi_avatar.png', import.meta.url).href
@@ -321,10 +318,10 @@ const sendMessage = async (e?: KeyboardEvent) => {
 
   isLoading.value = true
   currentLoadingAI.value = currentAI
-
+  const uid = localStorage.getItem('uid')
   try {
     const response = await request.post('/AI/chat', {
-      uid: 1,
+      uid: uid,
       content: messageContent,
       ai: currentAI
     },{
@@ -458,7 +455,7 @@ const showInfo = () => {
   )
 }
 
-// 在 script setup 中添加
+ 
 const showViewer = ref(false)
 const currentImage = ref('')
 
@@ -507,6 +504,14 @@ const toggleTheme = () => {
     useCustomBg: useCustomBg.value,
     currentBgIndex: currentBgIndex.value
   }))
+}
+
+// 添加markdown格式化函数
+const formatMessage = (content: string) => {
+  return marked(content, {
+    breaks: true, // 允许换行符转换为 <br>
+    gfm: true     // 启用 GitHub 风格的 Markdown 语法
+  })
 }
 </script>
 
@@ -827,5 +832,50 @@ const toggleTheme = () => {
 .header-buttons {
   display: flex;
   gap: 10px;
+}
+
+/* 添加markdown样式支持 */
+.ai-bubble :deep(pre) {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.ai-bubble :deep(code) {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.ai-bubble :deep(p) {
+  margin: 8px 0;
+}
+
+.ai-bubble :deep(ul), .ai-bubble :deep(ol) {
+  padding-left: 20px;
+}
+
+.ai-bubble :deep(a) {
+  color: var(--el-color-primary);
+  text-decoration: none;
+}
+
+.ai-bubble :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.ai-bubble :deep(blockquote) {
+  border-left: 4px solid var(--el-border-color);
+  margin: 8px 0;
+  padding-left: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+/* 确保markdown内容继承颜色主题 */
+.dark .ai-bubble :deep(pre),
+.dark .ai-bubble :deep(code) {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 </style>
