@@ -53,12 +53,23 @@
     <el-container class="main-container">
       <!-- 顶部标题栏 - 显示当前 AI 和清空按钮 -->
       <el-header class="header">
-        <span class="header-title">{{ selectedAI }}</span>
-        <div class="header-buttons">
-          <el-button type="primary" size="small" @click="toggleTheme" :icon="Brush">
-            切换主题
+        <div class="header-left">
+          <span class="header-title">{{ selectedAI }}</span>
+          <el-button 
+            type="primary" 
+            size="small" 
+            @click="goHome" 
+            :icon="Back"
+            class="home-button"
+            plain
+            round
+          >
+            返回首页
           </el-button>
-          <el-button type="danger" size="small" @click="deleteChat" :icon="Delete">
+        </div>
+        <div class="header-buttons">
+          <el-button type="danger" size="small" @click="deleteChat" :icon="Delete" plain
+          round>
             清空聊天记录
           </el-button>
         </div>
@@ -68,6 +79,11 @@
       <el-main class="main-content">
         <!-- 消息显示区域 - 分别为两种 AI 模型 -->
         <div v-if="selectedAI === '智谱清言'" class="messages" ref="messagesContainer">
+          <!-- 添加欢迎消息 -->
+          <div v-if="showWelcome && messages['智谱清言'].length === 0" class="welcome-message">
+            欢迎使用 PTUCODE AI 聊天应用
+          </div>
+          
           <div
             v-for="(message, index) in messages['智谱清言']"
             :key="index"
@@ -111,6 +127,11 @@
 
         <!-- 讯飞星火的消息区域 -->
         <div v-if="selectedAI === '讯飞星火'" class="messages" ref="messagesContainer">
+          <!-- 添加欢迎消息 -->
+          <div v-if="showWelcome && messages['讯飞星火'].length === 0" class="welcome-message">
+            欢迎使用 PTUCODE AI 聊天应用
+          </div>
+          
           <div
             v-for="(message, index) in messages['讯飞星火']"
             :key="index"
@@ -199,7 +220,8 @@ import {
   Moon,
   Sunny,
   InfoFilled,
-  Brush
+  Brush,
+  Back
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -299,6 +321,7 @@ const sendMessage = async (e?: KeyboardEvent) => {
   if (e?.shiftKey) return
   if (!userMessage.value.trim()) return
 
+  showWelcome.value = false  // 发送消息时隐藏欢迎消息
   const currentAI = selectedAI.value
   const messageContent = userMessage.value.trim()
   userMessage.value = ''
@@ -473,38 +496,38 @@ const getAiAvatar = computed(() => {
   return currentBgIndex.value[currentAI] === 1 ? aiAvatar3 : aiAvatar
 })
 
-// 修改切换主题方法
-const toggleTheme = () => {
-  const messagesEl = document.querySelector('.messages') as HTMLElement
-  const currentAI = selectedAI.value
+// 修改切换主题方法 被ban了
+// const toggleTheme = () => {
+//   const messagesEl = document.querySelector('.messages') as HTMLElement
+//   const currentAI = selectedAI.value
   
-  if (!useCustomBg.value[currentAI]) {
-    useCustomBg.value[currentAI] = true
-    currentBgIndex.value[currentAI] = 0
-  } 
+//   if (!useCustomBg.value[currentAI]) {
+//     useCustomBg.value[currentAI] = true
+//     currentBgIndex.value[currentAI] = 0
+//   } 
   
-  currentBgIndex.value[currentAI] = (currentBgIndex.value[currentAI] + 1) % 3
+//   currentBgIndex.value[currentAI] = (currentBgIndex.value[currentAI] + 1) % 3
   
-  if (currentBgIndex.value[currentAI] === 0) {
-    useCustomBg.value[currentAI] = false
-    messagesEl.style.backgroundImage = 'none'
-  } else if (currentBgIndex.value[currentAI] === 1) {
-    messagesEl.style.backgroundImage = `url(${usagiAvatar})`
-  } else {
-    messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
-  }
+//   if (currentBgIndex.value[currentAI] === 0) {
+//     useCustomBg.value[currentAI] = false
+//     messagesEl.style.backgroundImage = 'none'
+//   } else if (currentBgIndex.value[currentAI] === 1) {
+//     messagesEl.style.backgroundImage = `url(${usagiAvatar})`
+//   } else {
+//     messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
+//   }
   
-  if (useCustomBg.value[currentAI]) {
-    messagesEl.style.backgroundSize = 'cover'
-    messagesEl.style.backgroundPosition = 'center'
-  }
+//   if (useCustomBg.value[currentAI]) {
+//     messagesEl.style.backgroundSize = 'cover'
+//     messagesEl.style.backgroundPosition = 'center'
+//   }
 
-  // 保存主题状态到 localStorage
-  localStorage.setItem('aiThemes', JSON.stringify({
-    useCustomBg: useCustomBg.value,
-    currentBgIndex: currentBgIndex.value
-  }))
-}
+//   // 保存主题状态到 localStorage
+//   localStorage.setItem('aiThemes', JSON.stringify({
+//     useCustomBg: useCustomBg.value,
+//     currentBgIndex: currentBgIndex.value
+//   }))
+// }
 
 // 添加markdown格式化函数
 const formatMessage = (content: string) => {
@@ -513,6 +536,8 @@ const formatMessage = (content: string) => {
     gfm: true     // 启用 GitHub 风格的 Markdown 语法
   })
 }
+
+const showWelcome = ref(true)
 </script>
 
 <style scoped>
@@ -877,5 +902,29 @@ const formatMessage = (content: string) => {
 .dark .ai-bubble :deep(pre),
 .dark .ai-bubble :deep(code) {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.welcome-message {
+  text-align: center;
+  padding: 60px;
+  color: var(--el-text-color-secondary);
+  font-size: 24px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-weight: bold;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-button {
+  margin-left: 12px;
 }
 </style>
