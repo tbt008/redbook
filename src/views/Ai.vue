@@ -229,11 +229,17 @@ import { useRouter } from 'vue-router'
 import { marked } from 'marked'
 const router = useRouter()
 const userAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
-const aiAvatar = new URL('../views/imgs/usagi_avatar.png', import.meta.url).href
-const aiAvatar2 = new URL('../views/imgs/bot.jpg', import.meta.url).href
-const aiAvatar3 = new URL('../views/imgs/usagi_king.jpg', import.meta.url).href
-const usagiAvatar = new URL('../views/imgs/usagi_background_yellow.jpg', import.meta.url).href
-const usagiAvatar2 = new URL('../views/imgs/usagi_background.png', import.meta.url).href
+// const aiAvatar = new URL('../views/imgs/usagi_avatar.png', import.meta.url).href
+const aiAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
+// const aiAvatar2 = new URL('../views/imgs/bot.jpg', import.meta.url).href
+const aiAvatar2 = new URL('../views/imgs/about3.jpg', import.meta.url).href
+// const aiAvatar3 = new URL('../views/imgs/usagi_king.jpg', import.meta.url).href
+const aiAvatar3 = new URL('../views/imgs/about3.jpg', import.meta.url).href
+
+// const usagiAvatar = new URL('../views/imgs/usagi_background_yellow.jpg', import.meta.url).href
+// const usagiAvatar2 = new URL('../views/imgs/usagi_background.png', import.meta.url).href
+const usagiAvatar = new URL('../views/imgs/white.png', import.meta.url).href
+const usagiAvatar2 = new URL('../views/imgs/white.png', import.meta.url).href
 const isCollapse = ref(false) // 侧边栏折叠状态
 const userMessage = ref('') // 用户输入消息
 const selectedAI = ref('智谱清言') // 当前选中的 AI
@@ -311,9 +317,9 @@ const updateBackground = (aiType: string) => {
 const selectAI = (index: string) => {
   selectedAI.value = index
   // 立即更新背景
-  nextTick(() => {
-    updateBackground(index)
-  })
+  // nextTick(() => {
+  //   updateBackground(index)
+  // })
 }
 
 // 消息发送处理
