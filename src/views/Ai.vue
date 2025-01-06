@@ -117,7 +117,7 @@
           </div>
 
           <!-- 修改加载动画显示条件 -->
-          <div v-if="isLoading && currentLoadingAI === '智谱清言'" class="message-item">
+          <div v-if="isLoading['智谱清言']" class="message-item">
             <el-avatar :size="40" :src="getAiAvatar" class="avatar" />
             <div class="message-bubble ai-bubble loading-bubble">
               <span class="loading-dots"> <i></i><i></i><i></i> </span>
@@ -165,7 +165,7 @@
           </div>
 
           <!-- 修改加载动画显示条件 -->
-          <div v-if="isLoading && currentLoadingAI === '讯飞星火'" class="message-item">
+          <div v-if="isLoading['讯飞星火']" class="message-item">
             <el-avatar :size="40" :src="getAiAvatar" class="avatar" />
             <div class="message-bubble ai-bubble loading-bubble">
               <span class="loading-dots"> <i></i><i></i><i></i> </span>
@@ -184,14 +184,14 @@
               resize="none"
               @keyup.enter.exact="sendMessage"
               class="custom-input"
-              :disabled="isLoading"
+              :disabled="isLoading[selectedAI]"
             />
             <el-button
               type="primary"
               :icon="Position"
               class="send-button"
               @click="sendMessage"
-              :disabled="!userMessage.trim() || isLoading"
+              :disabled="!userMessage.trim() || isLoading[selectedAI]"
             >
               发送
             </el-button>
@@ -245,8 +245,10 @@ const isCollapse = ref(false) // 侧边栏折叠状态
 const userMessage = ref('') // 用户输入消息
 const selectedAI = ref('智谱清言') // 当前选中的 AI
 const messagesContainer = ref<HTMLElement | null>(null)
-const isLoading = ref(false) // 加载状态
-const currentLoadingAI = ref('') // 当前正在加载的 AI
+const isLoading = ref<{ [key: string]: boolean }>({
+  '智谱清言': false,
+  '讯飞星火': false
+})
 const isDarkMode = ref(false) // 暗色模式状态
 const useCustomBg = ref<{ [key: string]: boolean }>({
   '智谱清言': false,
@@ -262,23 +264,6 @@ const messages = ref<{ [key: string]: { role: string; content: string; isNew?: b
   智谱清言: [],
   讯飞星火: []
 })
-
-// 添加加载聊天记录的函数
-const loadChatHistory = () => {
-  const savedMessages = localStorage.getItem('chatMessages')
-  if (savedMessages) {
-    messages.value = JSON.parse(savedMessages)
-    if (messages.value['智谱清言']?.length > 0 || messages.value['讯飞星火']?.length > 0) {
-      showWelcome.value = false
-    }
-  }
-}
-
-// 添加保存聊天记录的函数
-const saveChatHistory = () => {
-  localStorage.setItem('chatMessages', JSON.stringify(messages.value))
-}
-
 // 补充点击事件
 const goHome = () => {
   router.push('/')
@@ -343,28 +328,25 @@ const selectAI = (index: string) => {
 // 消息发送处理
 const sendMessage = async (e?: KeyboardEvent) => {
   if (e?.shiftKey) return
-  if (!userMessage.value.trim() || isLoading.value) return
+  const currentAI = selectedAI.value
+  if (!userMessage.value.trim() || isLoading.value[currentAI]) return
 
   showWelcome.value = false
-  const currentAI = selectedAI.value
   const messageContent = userMessage.value.trim()
   userMessage.value = ''
 
-  // 添加用户消息
   messages.value[currentAI].push({
     role: 'user',
     content: messageContent,
     isNew: true
   })
 
-  // 滚动到底部
   await nextTick()
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
   }
 
-  isLoading.value = true
-  currentLoadingAI.value = currentAI
+  isLoading.value[currentAI] = true
   const uid = localStorage.getItem('uid')
   try {
     const response = await request.post('/AI/chat', {
@@ -381,7 +363,8 @@ const sendMessage = async (e?: KeyboardEvent) => {
         content: response.data,
         isNew: true
       })
-      saveChatHistory() // 保存聊天记录
+      // 保存消息到 localStorage
+      localStorage.setItem('aiMessages', JSON.stringify(messages.value))
     } else {
       messages.value[currentAI].push({
         role: 'ai',
@@ -398,8 +381,7 @@ const sendMessage = async (e?: KeyboardEvent) => {
     })
     ElMessage.error('网络请求失败')
   } finally {
-    isLoading.value = false
-    currentLoadingAI.value = ''
+    isLoading.value[currentAI] = false
     await nextTick()
     if (messagesContainer.value) {
       messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
@@ -423,7 +405,8 @@ const deleteChat = async () => {
 
     if (response.code === 200) {
       messages.value[selectedAI.value] = []
-      saveChatHistory() // 保存更新后的聊天记录
+      // 更新 localStorage 中的消息
+      localStorage.setItem('aiMessages', JSON.stringify(messages.value))
       ElMessage.success('聊天记录已清空')
     } else {
       ElMessage.error(response.data|| '删除失败')
@@ -458,7 +441,12 @@ const handleThemeChange = (command: string) => {
 // 在组件挂载时初始化主题
 onMounted(() => {
   initDarkMode()
-  loadChatHistory() // 加载聊天记录
+  
+  // 从 localStorage 加载历史消息
+  const savedMessages = localStorage.getItem('aiMessages')
+  if (savedMessages) {
+    messages.value = JSON.parse(savedMessages)
+  }
   
   // 从 localStorage 恢复主题状态
   const savedThemes = localStorage.getItem('aiThemes')
