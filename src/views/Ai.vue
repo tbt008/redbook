@@ -184,13 +184,14 @@
               resize="none"
               @keyup.enter.exact="sendMessage"
               class="custom-input"
+              :disabled="isLoading"
             />
             <el-button
               type="primary"
               :icon="Position"
               class="send-button"
               @click="sendMessage"
-              :disabled="!userMessage.trim()"
+              :disabled="!userMessage.trim() || isLoading"
             >
               发送
             </el-button>
@@ -261,6 +262,23 @@ const messages = ref<{ [key: string]: { role: string; content: string; isNew?: b
   智谱清言: [],
   讯飞星火: []
 })
+
+// 添加加载聊天记录的函数
+const loadChatHistory = () => {
+  const savedMessages = localStorage.getItem('chatMessages')
+  if (savedMessages) {
+    messages.value = JSON.parse(savedMessages)
+    if (messages.value['智谱清言']?.length > 0 || messages.value['讯飞星火']?.length > 0) {
+      showWelcome.value = false
+    }
+  }
+}
+
+// 添加保存聊天记录的函数
+const saveChatHistory = () => {
+  localStorage.setItem('chatMessages', JSON.stringify(messages.value))
+}
+
 // 补充点击事件
 const goHome = () => {
   router.push('/')
@@ -273,7 +291,7 @@ const initDarkMode = () => {
     document.documentElement.classList.add('dark')
     document.documentElement.style.setProperty('--el-bg-color', '#2c2c2c')
     document.documentElement.style.setProperty('--el-menu-bg-color', '#2c2c2c')
-    document.documentElement.style.setProperty('--el-text-color-primary', '#000000')
+    document.documentElement.style.setProperty('--el-text-color-primary', '#E5EAF3')
     document.documentElement.style.setProperty('--messages-bg-color', '#141414')
   } else {
     document.documentElement.style.setProperty('--messages-bg-color', '#f5f5f5')
@@ -325,9 +343,9 @@ const selectAI = (index: string) => {
 // 消息发送处理
 const sendMessage = async (e?: KeyboardEvent) => {
   if (e?.shiftKey) return
-  if (!userMessage.value.trim()) return
+  if (!userMessage.value.trim() || isLoading.value) return
 
-  showWelcome.value = false  // 发送消息时隐藏欢迎消息
+  showWelcome.value = false
   const currentAI = selectedAI.value
   const messageContent = userMessage.value.trim()
   userMessage.value = ''
@@ -363,13 +381,14 @@ const sendMessage = async (e?: KeyboardEvent) => {
         content: response.data,
         isNew: true
       })
+      saveChatHistory() // 保存聊天记录
     } else {
       messages.value[currentAI].push({
         role: 'ai',
-        content: `错误: ${response.data|| '未知错误'}`,
+        content: `错误: ${response.msg|| '未知错误'}`,
         isNew: true
       })
-      ElMessage.error(response.data || '请求失败')
+      ElMessage.error(response.msg || '请求失败')
     }
   } catch (error) {
     messages.value[currentAI].push({
@@ -390,10 +409,11 @@ const sendMessage = async (e?: KeyboardEvent) => {
 
 // 清空聊天记录
 const deleteChat = async () => {
+  const uid = localStorage.getItem('uid')
   const ai = selectedAI.value === '讯飞星火' ? 1 : 2
   try {
     const deleteDto = {
-      uid: 1,
+      uid: uid,
       ai: ai
     }
 
@@ -403,6 +423,7 @@ const deleteChat = async () => {
 
     if (response.code === 200) {
       messages.value[selectedAI.value] = []
+      saveChatHistory() // 保存更新后的聊天记录
       ElMessage.success('聊天记录已清空')
     } else {
       ElMessage.error(response.data|| '删除失败')
@@ -421,7 +442,7 @@ const handleThemeChange = (command: string) => {
     html.classList.add('dark')
     html.style.setProperty('--el-bg-color', '#2c2c2c')
     html.style.setProperty('--el-menu-bg-color', '#2c2c2c')
-    html.style.setProperty('--el-text-color-primary', '#000000')
+    html.style.setProperty('--el-text-color-primary', '#E5EAF3')
     html.style.setProperty('--messages-bg-color', '#141414')
   } else {
     html.classList.remove('dark')
@@ -437,6 +458,7 @@ const handleThemeChange = (command: string) => {
 // 在组件挂载时初始化主题
 onMounted(() => {
   initDarkMode()
+  loadChatHistory() // 加载聊天记录
   
   // 从 localStorage 恢复主题状态
   const savedThemes = localStorage.getItem('aiThemes')
@@ -554,7 +576,7 @@ const showWelcome = ref(true)
 
 .aside {
   background-color: var(--el-menu-bg-color);
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   border-right: 1px solid var(--el-border-color-lighter);
   position: relative;
   display: flex;
@@ -571,10 +593,13 @@ const showWelcome = ref(true)
 }
 
 .logo-text {
-  cursor: pointer; /* 添加鼠标指针样式 */
+  cursor: pointer;
   font-size: 20px;
   font-weight: bold;
   color: var(--el-text-color-primary);
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .toggle-icon {
