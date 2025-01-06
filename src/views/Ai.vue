@@ -273,7 +273,7 @@ const initDarkMode = () => {
     document.documentElement.classList.add('dark')
     document.documentElement.style.setProperty('--el-bg-color', '#2c2c2c')
     document.documentElement.style.setProperty('--el-menu-bg-color', '#2c2c2c')
-    document.documentElement.style.setProperty('--el-text-color-primary', '#E5EAF3')
+    document.documentElement.style.setProperty('--el-text-color-primary', '#000000')
     document.documentElement.style.setProperty('--messages-bg-color', '#141414')
   } else {
     document.documentElement.style.setProperty('--messages-bg-color', '#f5f5f5')
@@ -421,7 +421,7 @@ const handleThemeChange = (command: string) => {
     html.classList.add('dark')
     html.style.setProperty('--el-bg-color', '#2c2c2c')
     html.style.setProperty('--el-menu-bg-color', '#2c2c2c')
-    html.style.setProperty('--el-text-color-primary', '#E5EAF3')
+    html.style.setProperty('--el-text-color-primary', '#000000')
     html.style.setProperty('--messages-bg-color', '#141414')
   } else {
     html.classList.remove('dark')
@@ -632,7 +632,7 @@ const showWelcome = ref(true)
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.1);
   z-index: 0;
   pointer-events: none;
 }
