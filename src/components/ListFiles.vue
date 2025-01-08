@@ -138,13 +138,32 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router'; 
+import request from '@/util/request'
 const route = useRoute();
-// const id = route.params.id as string;
-const problem = JSON.parse(route.query.problem as string);
-const name = problem.name;
-const titleid = problem.titleid;
-const id = problem.id as string;
-console.log(problem);
+const problemId = route.query.problemid as string;
+const titleid = problemId;
+const id = problemId;
+const name = ref('');
+
+// 添加获取题目详情的函数
+const fetchProblemDetails = async () => {
+  try {
+    const response = await request.get(`/question/${id}`,{
+       
+    }) as any; 
+    if (response.code === 200) {
+      name.value = response.data.title;
+    } else {
+      message.value = '获取题目详情失败';
+      messageClass.value = 'error';
+    }
+  } catch (error) {
+    message.value = '获取题目详情时发生错误';
+    messageClass.value = 'error';
+    console.error('Error:', error);
+  }
+};
+
 const files = ref<string[]>([]);
 const message = ref('');
 const messageClass = ref<'error' | 'success' | 'warning' | 'info' | ''>('');
@@ -557,7 +576,10 @@ const batchExtract = async (extension: string) => {
   }
 };
 
-onMounted(fetchFileList);
+onMounted(() => {
+  fetchProblemDetails();
+  fetchFileList();
+});
 </script>
 
 <style scoped>
