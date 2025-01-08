@@ -19,7 +19,10 @@
       <span>2. 提交的压缩包要直接对数据压缩，不要对文件夹压缩。</span>
       <br>
       <br>
-      <span>3. 点击文件名即可下载。</span>
+      <span>3. 只支持对zip和rar的解压。</span>
+      <br>
+      <br>
+      <span>4. 点击文件名即可下载。</span>
       <template #footer>
         <div class="dialog-footer">
           <el-button type="primary" @click="dialogVisible = false">确认</el-button> 
@@ -140,7 +143,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router'; 
 import request from '@/util/request'
 const route = useRoute();
-const problemId = route.query.problemid as string;
+const problemId = route.params.problemid as string;
 const titleid = problemId;
 const id = problemId;
 const name = ref('');
