@@ -250,6 +250,7 @@ import request from '@/util/request'
 import { type Problem } from '@/types/problem'
 import { type Tag, type TagGroup } from '@/types/tag'
 import ProblemStatsPie from '@/components/ProblemStatsPie.vue'
+import dayjs from 'dayjs' // 确保项目中安装了 dayjs
 
 // 状态变量
 const loading = ref(true)
@@ -388,6 +389,9 @@ watch(
 onMounted(async () => {
   await getTags()
   await getTotalCount()
+  // 获取当前月份的每日一题
+  const currentMonth = dayjs().format('YYYY-MM')
+  await getDailyQuestions(currentMonth)
 })
 
 // 标签选择相关
@@ -412,7 +416,21 @@ const handleMouseEnter = (row: Problem) => {
   hoveredProblem.value = row
 }
 
+// 添加每日一题相关的状态
+const dailyQuestions = ref<any[]>([])
 
+// 添加获取每日一题的方法
+const getDailyQuestions = async (date: string) => {
+  try {
+    const response = await request.post('/userDailyQuestion/getDailyQuestion', {
+      date: date
+    })
+    console.log('每日一题数据:', response)
+    dailyQuestions.value = response.data
+  } catch (error) {
+    console.error('获取每日一题失败:', error)
+  }
+}
 </script>
 
 <style scoped>
