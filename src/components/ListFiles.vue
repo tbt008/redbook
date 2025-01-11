@@ -406,14 +406,13 @@ const downloadFile = async (folderName: string) => {
   try {
  
     const response = await request.post('/root/question/get/file', {
-      data: {
-        questionId,
-        folderName
-      },
+      questionId,  // 直接传递参数，不要包在data对象里
+      folderName
+    }, {
+      responseType: 'blob',  // 将responseType移到请求配置对象中
       headers: {
         'auth-token': token
-      },
-      responseType: 'blob'
+      }
     });
 
     if (!response) {

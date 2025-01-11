@@ -4,7 +4,7 @@ interface Comment {
   userId: number
   rootId: number
   parentId: number
-  authorAvatar: string
+  avatar: string
   content: string
   createTime: number[]
   children?: Comment[]
@@ -19,6 +19,7 @@ export interface Article {
     favourNum: number
     createTime: number[]
     content: string
+    avatar: string
     articleTypeName: string
     articleType: number
     articleReads: number

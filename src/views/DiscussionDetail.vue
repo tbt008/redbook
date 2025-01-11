@@ -20,7 +20,7 @@
               {{ discussion.articleTypeName }}
             </el-tag>
             <div class="author-info">
-              <el-avatar :size="32" :src="Avatar"/>
+              <el-avatar :size="32" :src="discussion.avatar"/>
               <span class="author-name">{{ discussion.userId }}</span>
               <span class="publish-time">发布于 {{ formatDateArray(discussion.createTime) }}</span>
               <div class="article-operations" v-if="discussion?.userId?.toString() === isAuthor?.toString()">
@@ -151,7 +151,7 @@
           <div class="comments-list">
             <el-card v-for="comment in discussion.comments" :key="comment.id" class="comment-item">
               <div class="comment-header">
-                <el-avatar :size="32" :src="comment.authorAvatar"/>
+                <el-avatar :size="32" :src="comment.avatar"/>
                 <div class="comment-info">
                   <span class="comment-author">{{ comment.userId }}</span>
                   <span class="comment-time">{{ formatDateArray(comment.createTime) }}</span>
@@ -243,7 +243,7 @@
                 <div v-if="showRepliesMap[comment.id] && comment.children && comment.children.length > 0" class="reply-list">
                   <div v-for="reply in comment.children" :key="reply.id" class="reply-item">
                     <div class="reply-header">
-                      <el-avatar :size="24" :src="reply.authorAvatar"/>
+                      <el-avatar :size="24" :src="reply.avatar"/>
                       <span class="reply-author">{{ reply.userId }}</span>
                       <span class="reply-time">{{ formatDateArray(reply.createTime) }}</span>
                       
@@ -324,7 +324,7 @@
           </div>
         </template>
         <div class="author-profile" v-if="discussion">
-          <el-avatar :size="64" :src="Avatar"/>
+          <el-avatar :size="64" :src="discussion.avatar"/>
           <h3>{{ discussion.userId }}</h3>
           <div class="author-stats">
             <div class="stat-item">
@@ -497,7 +497,7 @@ interface Comment {
   userId: number
   rootId: number
   parentId: number
-  authorAvatar: string
+  avatar: string
   content: string
   createTime: number[]
   children?: Comment[]
@@ -547,7 +547,7 @@ const getDiscussionDetail = async () => {
       if (articleData.comments) {
         articleData.comments = transformComments(articleData.comments)
       }
-      discussion.value = articleData
+      discussion.value = articleData 
     } else {
       ElMessage.error(response.msg || '获取文章详情失败')
     }

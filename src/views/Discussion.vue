@@ -120,8 +120,8 @@
                     </span>
                   </div>
                   <div class="article-info">
-                    <span class="author">作者: {{ item.userId }}</span>
-                    <span class="time">发布于 {{ formatDate(item.createTime) }}</span>
+                    <span class="author">作者: {{ item.userId }} </span>
+                    <span class="time"> 发布于 {{ formatDate(item.createTime) }}</span>
                   </div>
                 </div>
               </el-card>

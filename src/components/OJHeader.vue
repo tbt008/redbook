@@ -44,6 +44,8 @@ const userLogin = () => {
     // 获取用户基本信息
     request.get('/user/get/user').then((res) => {
       if (res.code == 200) {
+        //把头像存下来
+        localStorage.setItem('avatar', res.data.avatar)
         userImg.value = res.data.avatar
         loading.value = true
         return true

@@ -229,7 +229,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { marked } from 'marked'
 const router = useRouter()
-const userAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
+const defaultAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
+// 替换原来的 userAvatar 常量定义
+const userAvatar = computed(() => {
+  console.log(localStorage.getItem('avatar'))
+  return localStorage.getItem('avatar') || defaultAvatar
+})
 // const aiAvatar = new URL('../views/imgs/usagi_avatar.png', import.meta.url).href
 const aiAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
 // const aiAvatar2 = new URL('../views/imgs/bot.jpg', import.meta.url).href
@@ -544,6 +549,8 @@ const formatMessage = (content: string) => {
 }
 
 const showWelcome = ref(true)
+
+
 </script>
 
 <style scoped>
