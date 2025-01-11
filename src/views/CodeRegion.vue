@@ -65,7 +65,6 @@ const clickTitleTab = (index) => {
 var key = 'AttackCode_' + choseLanguage.value + '_' + window.location.pathname.split('/')[2]
 var code = useStorage(key, '')
 const clickFooter = (type) => {
-  console.log(clickToLike.value)
   if (type === 1) {
     clickToLike.value = !clickToLike.value
   }

@@ -22,12 +22,12 @@
         <div v-if="selectedTagIds.length" class="selected-tags-bar">
           <!-- elementplus el-tag: 已选标签展示 -->
           <el-tag
-              v-for="tagId in selectedTagIds"
-              :key="tagId"
-              closable
-              type="primary"
-              class="selected-tag"
-              @close="handleTagChange(false, tagId)"
+            v-for="tagId in selectedTagIds"
+            :key="tagId"
+            closable
+            type="primary"
+            class="selected-tag"
+            @close="handleTagChange(false, tagId)"
           >
             {{ allTags.find((tag) => tag.id === tagId)?.name }}
           </el-tag>
@@ -66,35 +66,35 @@
       </div>
       <el-form-item label="题目样例">
         <el-input
-            v-model="input"
-            style="width: 60%"
-            :rows="1"
-            type="textarea"
-            placeholder="输入数据"
+          v-model="input"
+          style="width: 60%"
+          :rows="1"
+          type="textarea"
+          placeholder="输入数据"
         />
         <el-input
-            v-model="output"
-            style="width: 60%"
-            :rows="1"
-            type="textarea"
-            placeholder="输出数据"
+          v-model="output"
+          style="width: 60%"
+          :rows="1"
+          type="textarea"
+          placeholder="输出数据"
         />
         <el-input
-            v-model="explain"
-            style="width: 60%"
-            :rows="1"
-            type="textarea"
-            placeholder="解释"
+          v-model="explain"
+          style="width: 60%"
+          :rows="1"
+          type="textarea"
+          placeholder="解释"
         />
         <el-button type="primary" @click="addExample">添加</el-button>
       </el-form-item>
       <el-form-item label="题目提示">
         <el-input
-            v-model="tip"
-            style="width: 100%"
-            :rows="2"
-            type="textarea"
-            placeholder="Please input"
+          v-model="tip"
+          style="width: 100%"
+          :rows="2"
+          type="textarea"
+          placeholder="Please input"
         />
       </el-form-item>
       <el-form-item label="题目内容" prop="content">
@@ -119,11 +119,11 @@
           <template v-if="selectedTagIds.length">
             <!-- elementplus el-check-tag: 可选择的标签 -->
             <el-check-tag
-                v-for="tagId in selectedTagIds"
-                :key="tagId"
-                :checked="true"
-                class="tag-item"
-                @change="() => handleTagChange(false, tagId)"
+              v-for="tagId in selectedTagIds"
+              :key="tagId"
+              :checked="true"
+              class="tag-item"
+              @change="() => handleTagChange(false, tagId)"
             >
               {{ allTags.find((tag) => tag.id === tagId)?.name }}
             </el-check-tag>
@@ -141,11 +141,11 @@
         <div class="tag-group-content">
           <!-- elementplus el-check-tag: 可选择的标签 -->
           <el-check-tag
-              v-for="tag in group.tags"
-              :key="tag.id"
-              :checked="selectedTagIds.includes(tag.id)"
-              @change="(checked) => handleTagChange(checked, tag.id)"
-              class="tag-item"
+            v-for="tag in group.tags"
+            :key="tag.id"
+            :checked="selectedTagIds.includes(tag.id)"
+            @change="(checked) => handleTagChange(checked, tag.id)"
+            class="tag-item"
           >
             {{ tag.name }}
           </el-check-tag>
@@ -162,7 +162,7 @@
   </el-dialog>
 </template>
 <script lang="js" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
 import { useRouter } from 'vue-router'
@@ -214,16 +214,14 @@ onMounted(() => {
         difficulty.value = res.data.difficulty.toString()
         timeLimit.value = res.data.timeLimit
         memoryLimit.value = res.data.memoryLimit
-        content.value=res.data.description
-        answer.value=res.data.answer
+        content.value = res.data.description
+        answer.value = res.data.answer
         // jsonjson转成数组
         exampleList.value = JSON.parse(res.data.example)
-        
-      }else{
+      } else {
         ElMessage.error(res.msg)
       }
-      }
-    )
+    })
   }
 })
 const answer = ref()
@@ -275,68 +273,90 @@ const getTags = async () => {
   }
 }
 function primary() {
-  
-    if (title.value == '') {
-      alert('请输入标题')
-      return
-    }
-
-    if (props.id) {
-      const id = props.id
-
-      // 更新
-      request
-          .put('/root/question/update', {
-            id: id,
-            title: title.value,
-            status: status.value,
-            difficulty: difficulty.value,
-            timeLimit: timeLimit.value,
-            memoryLimit: memoryLimit.value,
-            examples: JSON.stringify(exampleList.value),
-            tip: tip.value,
-            description: content.value,
-            tagIds: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
-            answer: answer.value
-          })
-          .then((res) => {
-            if (res.code == 200) {
-              ElMessage.success('更新成功！！！')
-              emit('primary')
-            } else {
-              ElMessage.error(res.msg)
-            }
-          })
-    } else {
-      request
-          .post('/root/question/add', {
-            title: title.value,
-            status: status.value,
-            difficulty: difficulty.value,
-            timeLimit: timeLimit.value,
-            memoryLimit: memoryLimit.value,
-            examples: JSON.stringify(exampleList.value),
-            tip: tip.value,
-            description: content.value,
-            tagIds: selectedTagIds.value,
-            answer: answer.value
-          })
-          .then((res) => {
-            if (res.code == 200) {
-              ElMessage.success('添加成功！！！')
-              emit('primary')
-             
-            } else {
-              ElMessage.error(res.msg)
-            }
-          })
-    }
+  if (title.value == '') {
+    alert('请输入标题')
+    return
   }
 
-function cancel() {
+  if (props.id) {
+    const id = props.id
 
+    // 更新
+    request
+      .put('/root/question/update', {
+        id: id,
+        title: title.value,
+        status: status.value,
+        difficulty: difficulty.value,
+        timeLimit: timeLimit.value,
+        memoryLimit: memoryLimit.value,
+        examples: JSON.stringify(exampleList.value),
+        tip: tip.value,
+        description: content.value,
+        tagIds: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
+        answer: answer.value
+      })
+      .then((res) => {
+        if (res.code == 200) {
+          ElMessage.success('更新成功！！！')
+          emit('primary')
+        } else {
+          ElMessage.error(res.msg)
+        }
+      })
+  } else {
+    request
+      .post('/root/question/add', {
+        title: title.value,
+        status: status.value,
+        difficulty: difficulty.value,
+        timeLimit: timeLimit.value,
+        memoryLimit: memoryLimit.value,
+        examples: JSON.stringify(exampleList.value),
+        tip: tip.value,
+        description: content.value,
+        tagIds: selectedTagIds.value,
+        answer: answer.value
+      })
+      .then((res) => {
+        if (res.code == 200) {
+          ElMessage.success('添加成功！！！')
+          emit('primary')
+        } else {
+          ElMessage.error(res.msg)
+        }
+      })
+  }
+}
+
+function cancel() {
   emit('cancel')
 }
+// 监听props.id
+watch(
+  () => props.id,
+  (newValue, oldValue) => {
+    if (newValue) {
+      request.get(`/root/question/get/${newValue}`).then((res) => {
+        if (res.code == 200) {
+          title.value = res.data.title
+          tip.value = res.data.tip
+          editorType.value = res.data.editorType
+          status.value = res.data.status.toString()
+          difficulty.value = res.data.difficulty.toString()
+          timeLimit.value = res.data.timeLimit
+          memoryLimit.value = res.data.memoryLimit
+          content.value = res.data.description
+          answer.value = res.data.answer
+          // jsonjson转成数组
+          exampleList.value = JSON.parse(res.data.example)
+        } else {
+          ElMessage.error(res.msg)
+        }
+      })
+    }
+  }
+)
 </script>
 
 <style scoped>

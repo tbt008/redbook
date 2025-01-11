@@ -22,7 +22,7 @@ export default {
       () => props.value,
       (value) => {
         // 防止改变编辑器内容时光标重定向
-        console.log(value)
+
         if (value !== monacoEditor?.getValue()) {
           monacoEditor.setValue(value)
         }
