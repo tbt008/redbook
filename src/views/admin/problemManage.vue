@@ -199,7 +199,7 @@
             v-for="tag in group.tags"
             :key="tag.id"
             :checked="selectedTagIds.includes(tag.id)"
-            @change="(checked: boolean) => handleTagChange(checked, tag.id)"
+            @change="(checked) => handleTagChange(checked, tag.id)"
             class="tag-item"
           >
             {{ tag.name }}
@@ -217,7 +217,7 @@
   </el-dialog>
 </template>
 
-<script lang="ts" setup>
+<script lang="js" setup>
 import QuestionEditor from '@/components/questionEditor.vue'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -227,35 +227,34 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { Search, Check } from '@element-plus/icons-vue'
 // 工具和类型
 import request from '@/util/request'
-import { type Problem } from '@/types/problem'
-import { type Tag, type TagGroup } from '@/types/tag'
+
 const showUpdateQuestion = ref(false)
 const questionId = ref(0)
 // 状态变量
 const loading = ref(true)
-const difficulty = ref<number | null>(null)
-const selectedTagIds = ref<number[]>([])
+const difficulty = ref(null)
+const selectedTagIds = ref([])
 const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const sortField = ref('createTime')
 const sortOrder = ref('desc')
-const problems = ref<Problem[]>([])
-const allTags = ref<Tag[]>([])
+const problems = ref([])
+const allTags = ref([])
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 // 根据通过率返回不同的颜色
-const getProgressColor = (rate: number) => {
+const getProgressColor = (rate) => {
   if (rate >= 80) return '#67C23A'
   if (rate >= 60) return '#E6A23C'
   return '#F56C6C'
 }
-const addData = (row: any) => {
+const addData = (row) => {
   router.push(`/files/problemid=${row.id}`)
 }
-const onEdit = (row: any) => {
+const onEdit = (row) => {
   questionId.value = row.id
   showUpdateQuestion.value = true
 }
@@ -263,7 +262,7 @@ const cancel = () => {
   showAddQuestion.value = false
   getProblems()
 }
-const onDelete = (row: any) => {
+const onDelete = (row) => {
   ElMessageBox.confirm('确定真的删除？', '警告', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -287,8 +286,8 @@ const onDelete = (row: any) => {
 const tagSearchKeyword = ref('')
 
 // 修改计算属性，添加过滤逻辑
-const filteredGroupedTags = computed<TagGroup[]>(() => {
-  const groups: { [key: string]: Tag[] } = {}
+const filteredGroupedTags = computed(() => {
+  const groups = {}
 
   allTags.value.forEach((tag) => {
     // 如果有搜索关键词，进行过滤
@@ -318,7 +317,7 @@ const filteredGroupedTags = computed<TagGroup[]>(() => {
 const getProblems = async () => {
   loading.value = true
   try {
-    const response = (await request.post('/question/list', {
+    const response = await request.post('/question/list', {
       pageStart: currentPage.value,
       pageSize: pageSize.value,
       sortField: sortField.value,
@@ -326,7 +325,7 @@ const getProblems = async () => {
       difficulty: difficulty.value || undefined,
       tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
       title: searchKeyword.value || undefined
-    })) as any
+    })
 
     if (response.code === 200) {
       problems.value = response.data.list
@@ -341,7 +340,7 @@ const getProblems = async () => {
 // 获取所有标签
 const getTags = async () => {
   try {
-    const response = (await request.post('/tag/list', {})) as any
+    const response = await request.post('/tag/list', {})
     if (response.code === 200) {
       allTags.value = response.data
     }
@@ -351,14 +350,14 @@ const getTags = async () => {
 }
 
 // 分页大小改变处理
-const handleSizeChange = async (val: number) => {
+const handleSizeChange = async (val) => {
   pageSize.value = val
   currentPage.value = 1
   await getTotalCount()
 }
 
 // 当前页改变处理
-const handleCurrentChange = async (val: number) => {
+const handleCurrentChange = async (val) => {
   currentPage.value = val
   await getProblems()
 }
@@ -366,12 +365,12 @@ const handleCurrentChange = async (val: number) => {
 // 获取题目总数
 const getTotalCount = async () => {
   try {
-    const response = (await request.post('/root/question/list', {
+    const response = await request.post('/root/question/list', {
       pageStart: 1,
       difficulty: difficulty.value || undefined,
       tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
       title: searchKeyword.value || undefined
-    })) as any
+    })
 
     if (response.code === 200) {
       console.log(response)
@@ -408,7 +407,7 @@ onMounted(async () => {
 const showTagDialog = ref(false)
 const showAddQuestion = ref(false)
 // 标签选择处理
-const handleTagChange = (checked: true | false | undefined, tagId: number) => {
+const handleTagChange = (checked, tagId) => {
   if (checked) {
     selectedTagIds.value.push(tagId)
   } else {

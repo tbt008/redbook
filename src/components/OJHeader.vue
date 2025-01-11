@@ -84,6 +84,7 @@ const skip = (index) => {
 }
 onMounted(() => {
   userLogin()
+  loading.value = true
   skip(-1)
 })
 const handleClick = (index) => {

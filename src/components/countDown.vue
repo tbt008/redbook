@@ -2,21 +2,21 @@
   <div class="countDown" :endTime="endTime" :endText="endText">
     <div>
       <span class="time-block">
-        <span id="day"></span>
+        <span id="day">00</span>
         <span style="font-size: 20px">天</span>
       </span>
 
       <span class="time-block"
-        ><span id="hour"></span>
+        ><span id="hour">00</span>
         <span style="font-size: 20px">小时</span>
       </span>
 
       <span class="time-block"
-        ><span id="min"></span> <span style="font-size: 20px">分钟</span></span
+        ><span id="min">00</span> <span style="font-size: 20px">分钟</span></span
       >
 
       <span class="time-block">
-        <span id="sec"></span> <span style="font-size: 20px">秒</span></span
+        <span id="sec">00</span> <span style="font-size: 20px">秒</span></span
       >
     </div>
   </div>

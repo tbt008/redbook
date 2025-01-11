@@ -131,13 +131,13 @@
     </div>
   </div>
 </template>
-<script lang="ts" setup>
+<script lang="js" setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
 import { useRouter } from 'vue-router'
 import { onMounted } from 'vue'
-import type { UploadProps } from 'element-plus'
+// import type { UploadProps } from 'element-plus'
 import QuestionSelect from '@/components/questionSelect.vue'
 const router = useRouter()
 
@@ -202,7 +202,11 @@ function primary() {
     })
 }
 function cancel() {
-  router.push({ path: '/manage' })
+  emit('cancel')
+}
+function next() {
+
+emit('cancel')
 }
 const convert = () => {
   const languageList = language.value
@@ -220,9 +224,9 @@ const convert = () => {
 const selectedQuestion = (value) => {
   questionIds.value = value
 }
-const handleAvatarSuccess: UploadProps['onSuccess'] = (response, uploadFile) => {
-  cover.value = URL.createObjectURL(uploadFile.raw!)
-}
+// const handleAvatarSuccess: UploadProps['onSuccess'] = (response, uploadFile) => {
+//   cover.value = URL.createObjectURL(uploadFile.raw!)
+// }
 const saveQuestion = () => {
   request
     .post('/root/contest/edit/problem', {
@@ -241,16 +245,16 @@ const saveQuestion = () => {
       ElMessage.error('保存失败')
     })
 }
-const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
-  if (rawFile.type !== 'image/jpeg') {
-    ElMessage.error('Avatar picture must be JPG format!')
-    return false
-  } else if (rawFile.size / 1024 / 1024 > 2) {
-    ElMessage.error('Avatar picture size can not exceed 2MB!')
-    return false
-  }
-  return true
-}
+// const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
+//   if (rawFile.type !== 'image/jpeg') {
+//     ElMessage.error('Avatar picture must be JPG format!')
+//     return false
+//   } else if (rawFile.size / 1024 / 1024 > 2) {
+//     ElMessage.error('Avatar picture size can not exceed 2MB!')
+//     return false
+//   }
+//   return true
+// }
 </script>
 
 <style scoped>

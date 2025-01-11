@@ -49,21 +49,21 @@ const submitCode = async () => {
     // 提交代码
     let codeRecordId = 0
     request
-        .post(`/question/judge`, obj)
-        .then((res) => {
-          if (res.code != 200) {
-            ElMessage.error(res.msg)
-            judgeQuestionLoading.value = false
-          } else {
-            codeRecordId = res.data
-            submitStatus.value = '判题中'
+      .post(`/question/judge`, obj)
+      .then((res) => {
+        if (res.code != 200) {
+          ElMessage.error(res.msg)
+          judgeQuestionLoading.value = false
+        } else {
+          codeRecordId = res.data
+          submitStatus.value = '判题中'
 
-            whileGetResult(codeRecordId)
-          }
-        })
-        .catch((error) => {
-          ElMessage.error(error)
-        })
+          whileGetResult(codeRecordId)
+        }
+      })
+      .catch((error) => {
+        ElMessage.error(error)
+      })
   } else {
     let obj = {
       questionId: props.questionId,
@@ -75,20 +75,20 @@ const submitCode = async () => {
     // 提交代码
     let codeRecordId = 0
     request
-        .post(`/question/judge`, obj)
-        .then((res) => {
-          if (res.code != 200) {
-            ElMessage.error(res.msg)
-          } else {
-            codeRecordId = res.data
-            submitStatus.value = '判题中'
-            whileGetResult(codeRecordId)
-          }
-        })
-        .catch((error) => {
-          judgeQuestionLoading.value = false
-          ElMessage.error(error)
-        })
+      .post(`/question/judge`, obj)
+      .then((res) => {
+        if (res.code != 200) {
+          ElMessage.error(res.msg)
+        } else {
+          codeRecordId = res.data
+          submitStatus.value = '判题中'
+          whileGetResult(codeRecordId)
+        }
+      })
+      .catch((error) => {
+        judgeQuestionLoading.value = false
+        ElMessage.error(error)
+      })
   }
 }
 const isSubmit = ref(false)
@@ -109,21 +109,21 @@ const runCode = () => {
     language: props.language
   }
   request
-      .post(`/question/test`, obj)
-      .then((res) => {
-        if (res.code != 200) {
-          ElMessage.error(res.msg)
-          judgeQuestionLoading.value = false
-        } else {
-          judgeQuestionLoading.value = false
-          currentTab.value = 1
-          result.value = res.data
-        }
-      })
-      .catch((error) => {
+    .post(`/question/test`, obj)
+    .then((res) => {
+      if (res.code != 200) {
+        ElMessage.error(res.msg)
         judgeQuestionLoading.value = false
-        ElMessage.error(error)
-      })
+      } else {
+        judgeQuestionLoading.value = false
+        currentTab.value = 1
+        result.value = res.data
+      }
+    })
+    .catch((error) => {
+      judgeQuestionLoading.value = false
+      ElMessage.error(error)
+    })
 }
 const whileGetResult = async (recordId) => {
   // 获取题目id
@@ -135,42 +135,42 @@ const whileGetResult = async (recordId) => {
     if (count < maxRequests) {
       if (!props.contestId) {
         request
-            .get(`/record/get/one/${recordId}`)
-            .then((res) => {
-              // 获取结果  成功后
-              if (res.data.status != 1 && res.data.status != 0) {
-                clearInterval(intervalId)
-                if (res.data.result == 100) {
-                  emit('showACImgfun')
-                }
-                result.value = res.data.test
-                isSubmit.value = true
-                currentTab.value = 1
-                judgeQuestionLoading.value = false
+          .get(`/record/get/one/${recordId}`)
+          .then((res) => {
+            // 获取结果  成功后
+            if (res.data.status != 1 && res.data.status != 0) {
+              clearInterval(intervalId)
+              if (res.data.result == 100) {
+                emit('showACImgfun')
               }
-            })
-            .catch((error) => {
+              result.value = res.data.test
+              isSubmit.value = true
+              currentTab.value = 1
               judgeQuestionLoading.value = false
-              ElMessage.error(error)
-            })
+            }
+          })
+          .catch((error) => {
+            judgeQuestionLoading.value = false
+            ElMessage.error(error)
+          })
       } else {
         request
-            .get(`/contest/record/get/one/${recordId}`)
-            .then((res) => {
-              // 获取结果  成功后
-              if (res.data.status != 1 && res.data.status != 0) {
-                clearInterval(intervalId)
-                if (res.data.result == 100) {
-                  emit('showACImgfun')
-                }
-
-                judgeQuestionLoading.value = false
+          .get(`/contest/record/get/one/${recordId}`)
+          .then((res) => {
+            // 获取结果  成功后
+            if (res.data.status != 1 && res.data.status != 0) {
+              clearInterval(intervalId)
+              if (res.data.result == 100) {
+                emit('showACImgfun')
               }
-            })
-            .catch((error) => {
+
               judgeQuestionLoading.value = false
-              ElMessage.error(error)
-            })
+            }
+          })
+          .catch((error) => {
+            judgeQuestionLoading.value = false
+            ElMessage.error(error)
+          })
       }
       count++
     } else {
@@ -194,40 +194,40 @@ onMounted(() => {
       <div class="item-left">
         <div @click="currentTab = 0" class="item-left-item">
           <svg
-              aria-hidden="true"
-              focusable="false"
-              data-prefix="far"
-              width="18"
-              height="18"
-              data-icon="square-check"
-              class="svg-inline--fa fa-square-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-              role="img"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 448 512"
+            aria-hidden="true"
+            focusable="false"
+            data-prefix="far"
+            width="18"
+            height="18"
+            data-icon="square-check"
+            class="svg-inline--fa fa-square-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+            role="img"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 448 512"
           >
             <path
-                :fill="currentTab === 0 ? '#02B128' : '#98DDA7'"
-                d="M64 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16H384c8.8 0 16-7.2 16-16V96c0-8.8-7.2-16-16-16H64zM0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"
+              :fill="currentTab === 0 ? '#02B128' : '#98DDA7'"
+              d="M64 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16H384c8.8 0 16-7.2 16-16V96c0-8.8-7.2-16-16-16H64zM0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"
             ></path>
           </svg>
           <span :style="currentTab === 0 ? 'color: black' : 'color:gray'"> 测试用例</span>
         </div>
         <div @click="currentTab = 1" class="item-left-item">
           <svg
-              aria-hidden="true"
-              focusable="false"
-              data-prefix="far"
-              width="18"
-              height="18"
-              data-icon="terminal"
-              class="svg-inline--fa fa-terminal absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-              role="img"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 576 512"
+            aria-hidden="true"
+            focusable="false"
+            data-prefix="far"
+            width="18"
+            height="18"
+            data-icon="terminal"
+            class="svg-inline--fa fa-terminal absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+            role="img"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 576 512"
           >
             <path
-                :fill="currentTab === 1 ? '#02B128' : '#98DDA7'"
-                d="M6.3 72.2c-9-9.8-8.3-24.9 1.4-33.9s24.9-8.3 33.9 1.4l184 200c8.5 9.2 8.5 23.3 0 32.5l-184 200c-9 9.8-24.2 10.4-33.9 1.4s-10.4-24.2-1.4-33.9L175.4 256 6.3 72.2zM248 432H552c13.3 0 24 10.7 24 24s-10.7 24-24 24H248c-13.3 0-24-10.7-24-24s10.7-24 24-24z"
+              :fill="currentTab === 1 ? '#02B128' : '#98DDA7'"
+              d="M6.3 72.2c-9-9.8-8.3-24.9 1.4-33.9s24.9-8.3 33.9 1.4l184 200c8.5 9.2 8.5 23.3 0 32.5l-184 200c-9 9.8-24.2 10.4-33.9 1.4s-10.4-24.2-1.4-33.9L175.4 256 6.3 72.2zM248 432H552c13.3 0 24 10.7 24 24s-10.7 24-24 24H248c-13.3 0-24-10.7-24-24s10.7-24 24-24z"
             ></path>
           </svg>
           <span :style="currentTab === 1 ? 'color: black' : 'color:gray'"> 测试结果</span>
@@ -237,38 +237,38 @@ onMounted(() => {
             <div class="runFor">
               <div class="run" @click="runCode()" v-show="!judgeQuestionLoading">
                 <svg
-                    aria-hidden="true"
-                    focusable="false"
-                    data-prefix="fas"
-                    data-icon="play"
-                    role="img"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 384 512"
+                  aria-hidden="true"
+                  focusable="false"
+                  data-prefix="fas"
+                  data-icon="play"
+                  role="img"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 384 512"
                 >
                   <path
-                      fill="gray"
-                      d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"
+                    fill="gray"
+                    d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"
                   ></path>
                 </svg>
                 运行
               </div>
               <div @click="submitCode()" class="submit" v-show="!judgeQuestionLoading">
                 <svg
-                    aria-hidden="true"
-                    focusable="false"
-                    data-prefix="far"
-                    data-icon="cloud-arrow-up"
-                    width="20"
-                    height="20"
-                    role="img"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 640 512"
+                  aria-hidden="true"
+                  focusable="false"
+                  data-prefix="far"
+                  data-icon="cloud-arrow-up"
+                  width="20"
+                  height="20"
+                  role="img"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 640 512"
                 >
                   <path
-                      fill="currentColor"
-                      d="M354.9 121.7c13.8 16 36.5 21.1 55.9 12.5c8.9-3.9 18.7-6.2 29.2-6.2c39.8 0 72 32.2 72 72c0 4-.3 7.9-.9 11.7c-3.5 21.6 8.1 42.9 28.1 51.7C570.4 276.9 592 308 592 344c0 46.8-36.6 85.2-82.8 87.8c-.6 0-1.3 .1-1.9 .2H504 144c-53 0-96-43-96-96c0-41.7 26.6-77.3 64-90.5c19.2-6.8 32-24.9 32-45.3l0-.2v0 0c0-66.3 53.7-120 120-120c36.3 0 68.8 16.1 90.9 41.7zM512 480v-.2c71.4-4.1 128-63.3 128-135.8c0-55.7-33.5-103.7-81.5-124.7c1-6.3 1.5-12.8 1.5-19.3c0-66.3-53.7-120-120-120c-17.4 0-33.8 3.7-48.7 10.3C360.4 54.6 314.9 32 264 32C171.2 32 96 107.2 96 200l0 .2C40.1 220 0 273.3 0 336c0 79.5 64.5 144 144 144H464h40 8zM223 255c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l39-39V384c0 13.3 10.7 24 24 24s24-10.7 24-24V249.9l39 39c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0l-80 80z"
+                    fill="currentColor"
+                    d="M354.9 121.7c13.8 16 36.5 21.1 55.9 12.5c8.9-3.9 18.7-6.2 29.2-6.2c39.8 0 72 32.2 72 72c0 4-.3 7.9-.9 11.7c-3.5 21.6 8.1 42.9 28.1 51.7C570.4 276.9 592 308 592 344c0 46.8-36.6 85.2-82.8 87.8c-.6 0-1.3 .1-1.9 .2H504 144c-53 0-96-43-96-96c0-41.7 26.6-77.3 64-90.5c19.2-6.8 32-24.9 32-45.3l0-.2v0 0c0-66.3 53.7-120 120-120c36.3 0 68.8 16.1 90.9 41.7zM512 480v-.2c71.4-4.1 128-63.3 128-135.8c0-55.7-33.5-103.7-81.5-124.7c1-6.3 1.5-12.8 1.5-19.3c0-66.3-53.7-120-120-120c-17.4 0-33.8 3.7-48.7 10.3C360.4 54.6 314.9 32 264 32C171.2 32 96 107.2 96 200l0 .2C40.1 220 0 273.3 0 336c0 79.5 64.5 144 144 144H464h40 8zM223 255c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l39-39V384c0 13.3 10.7 24 24 24s24-10.7 24-24V249.9l39 39c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0l-80 80z"
                   ></path>
                 </svg>
                 提交
@@ -289,12 +289,12 @@ onMounted(() => {
     <div class="item-content" v-show="currentTab === 0">
       <div style="padding: 20px 30px; display: flex">
         <div
-            @click="choseTestcase(index)"
-            class="atag"
-            v-for="(item, index) in props.rep.examples"
-            :key="index"
-            style="font-size: 13px; font-weight: bold; border-radius: 10px"
-            closable
+          @click="choseTestcase(index)"
+          class="atag"
+          v-for="(item, index) in props.rep.examples"
+          :key="index"
+          style="font-size: 13px; font-weight: bold; border-radius: 10px"
+          closable
         >
           {{ 'Case ' + index }}
         </div>
@@ -305,11 +305,11 @@ onMounted(() => {
       </div>
       <div style="padding: 5px 30px">
         <el-input
-            v-model="input"
-            style="min-width: 240px"
-            autosize
-            type="textarea"
-            placeholder="请输入测试样例"
+          v-model="input"
+          style="min-width: 240px"
+          autosize
+          type="textarea"
+          placeholder="请输入测试样例"
         />
       </div>
     </div>
@@ -326,11 +326,11 @@ onMounted(() => {
           </div>
           <div style="padding: 5px 30px">
             <el-input
-                v-model="result.output"
-                style="min-width: 240px"
-                autosize
-                type="textarea"
-                placeholder="请输入测试样例"
+              v-model="result.output"
+              style="min-width: 240px"
+              autosize
+              type="textarea"
+              placeholder="请输入测试样例"
             />
           </div>
         </div>
@@ -338,7 +338,7 @@ onMounted(() => {
           <h2 style="color: red; font-weight: 400; padding: 15px 25px">执行错误</h2>
           <div style="padding: 0px 25px">
             <a-alert title="error" type="error" style="border-radius: 15px; width: 860px"
-            >you answer issue mistake</a-alert
+              >you answer issue mistake</a-alert
             >
           </div>
         </div>
@@ -350,15 +350,6 @@ onMounted(() => {
   </div>
 </template>
 <style lang="scss" scoped>
-.v-enter-active,
-.v-leave-active {
-  transition: opacity 0.5s ease;
-}
-
-.v-enter-from,
-.v-leave-to {
-  opacity: 0;
-}
 .containerss {
   height: 100%;
   z-index: 100;
