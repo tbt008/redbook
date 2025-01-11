@@ -1,23 +1,9 @@
 <template>
   <div class="problem-list-container">
     <div class="content-wrapper">
-      <div class="selected-tags-section">
-        <div class="section-title">已选题目</div>
-        <div class="tag-group-content">
-          <template v-if="selectedQuestion.length">
-            <el-check-tag
-              v-for="(item, index) in selectedQuestion"
-              :key="index"
-              :checked="true"
-              class="tag-item"
-            >
-              {{ item }}
-            </el-check-tag>
-          </template>
-          <div v-else class="no-tags-selected">暂未选择题目</div>
-        </div>
-      </div>
+      <!-- 筛选区域 -->
       <div class="filter-section">
+        <div style="font-size: 12px; line-height: 32px">筛选条件</div>
         <!-- elementplus el-select: 难度选择下拉框 -->
         <el-select v-model="difficulty" placeholder="难度" class="filter-item">
           <el-option label="全部" :value="null" />
@@ -41,10 +27,12 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
+        <el-button type="primary" @click="showAddQuestion = true">新增题目</el-button>
       </div>
 
       <!-- 已选标签显示区域 -->
       <div v-if="selectedTagIds.length" class="selected-tags-bar">
+        <div style="font-size: 12px; line-height: 24px">已选择：</div>
         <!-- elementplus el-tag: 已选标签展示 -->
         <el-tag
           v-for="tagId in selectedTagIds"
@@ -61,22 +49,17 @@
       <!-- elementplus el-table: 题目列表表格 -->
       <el-table :data="problems" style="width: 100%" v-loading="loading">
         <!-- 状态列 -->
-        <el-table-column label="选择" width="80">
+        <el-table-column label="题号" width="80">
           <template #default="{ row }">
-            <el-checkbox
-              v-model="row.isSelected"
-              label=""
-              size="large"
-              @change="changeQuestion(row.isSelected, row.questionId)"
-            />
+            {{ row.id }}
           </template>
         </el-table-column>
 
         <!-- 题目列 -->
-        <el-table-column label="题目" min-width="300">
+        <el-table-column label="题目" min-width="100">
           <template #default="{ row }">
-            <router-link :to="`/question?id=${row.questionId}`" class="problem-title">
-              {{ row.questionName }}
+            <router-link :to="`/question?id=${row.id}`" class="problem-title">
+              {{ row.title }}
             </router-link>
             <div class="problem-tags">
               <!-- elementplus el-tag: 题目标签 -->
@@ -92,11 +75,27 @@
             </div>
           </template>
         </el-table-column>
-
+        <!-- 作者 -->
+        <el-table-column label="作者" width="200">
+          <template #default="{ row }">
+            {{ row.uid }}
+          </template>
+        </el-table-column>
         <!-- 难度列 -->
         <el-table-column label="难度" width="100">
           <template #default="{ row }">
-            {{ row.difficultyName }}
+            <span
+              :class="[
+                'difficulty-label',
+                row.difficulty === 1 ? 'difficulty-entry' : '',
+                row.difficulty === 2 ? 'difficulty-easy' : '',
+                row.difficulty === 3 ? 'difficulty-medium' : '',
+                row.difficulty === 4 ? 'difficulty-hard' : '',
+                row.difficulty === 5 ? 'difficulty-expert' : ''
+              ]"
+            >
+              {{ row.difficultyName }}
+            </span>
           </template>
         </el-table-column>
 
@@ -111,6 +110,14 @@
             />
           </template>
         </el-table-column>
+        <el-table-column label="操作" width="150">
+          <template #default="{ row }">
+            <el-button :icon="Edit" circle plain type="primary" @click="onEdit(row)"> </el-button>
+
+            <el-button :icon="Delete" circle plain type="danger" @click="onDelete(row)"></el-button>
+            <el-button :icon="Plus" circle plain type="primary" @click="addData(row)"></el-button>
+          </template>
+        </el-table-column>
       </el-table>
 
       <!-- elementplus el-pagination: 分页器 -->
@@ -119,7 +126,7 @@
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :total="total"
-          :page-sizes="[10, , 50]"
+          :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
@@ -127,10 +134,40 @@
       </div>
     </div>
   </div>
-
+  <!-- 新增题目 -->
+  <el-dialog v-model="showAddQuestion" title="新增题目" width="70%" :close-on-click-modal="false">
+    <QuestionEditor @cancel="cancel" @primary="cancel"></QuestionEditor>
+  </el-dialog>
+  <!-- 修改题目 -->
+  <el-dialog
+    v-model="showUpdateQuestion"
+    title="修改题目"
+    width="70%"
+    :close-on-click-modal="false"
+  >
+    <QuestionEditor @cancel="cancel" @primary="cancel" :id="questionId"></QuestionEditor>
+  </el-dialog>
   <!-- elementplus el-dialog: 标签选择弹窗 -->
-  <el-dialog v-model="showTagDialog" title="选择标签" width="50%" :close-on-click-modal="false">
+  <el-dialog
+    v-model="showTagDialog"
+    title="选择标签"
+    width="45%"
+    :close-on-click-modal="false"
+    style="border-radius: 20px; font-weight: 600"
+  >
     <div class="tag-dialog-content">
+      <!-- 添加搜索输入框 -->
+      <el-input
+        v-model="tagSearchKeyword"
+        placeholder="搜索标签"
+        class="tag-search-input"
+        clearable
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+
       <!-- 已选标签区域 -->
       <div class="selected-tags-section">
         <div class="section-title">已选标签</div>
@@ -154,16 +191,15 @@
       <!-- elementplus el-divider: 分割线 -->
       <el-divider />
 
-      <!-- 标签分组 -->
-      <div v-for="group in groupedTags" :key="group.superName" class="tag-group">
+      <!-- 修改标签分组显示逻辑 -->
+      <div v-for="group in filteredGroupedTags" :key="group.superName" class="tag-group">
         <div class="tag-group-title">{{ group.superName }}</div>
         <div class="tag-group-content">
-          <!-- elementplus el-check-tag: 可选择的标签 -->
           <el-check-tag
             v-for="tag in group.tags"
             :key="tag.id"
             :checked="selectedTagIds.includes(tag.id)"
-            @change="(checked) => handleTagChange(checked, tag.id)"
+            @change="(checked: boolean) => handleTagChange(checked, tag.id)"
             class="tag-item"
           >
             {{ tag.name }}
@@ -181,72 +217,108 @@
   </el-dialog>
 </template>
 
-<script lang="js" setup>
+<script lang="ts" setup>
+import QuestionEditor from '@/components/questionEditor.vue'
+import { Delete, Edit, Plus } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 // Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
+// Element Plus 图标
+import { Search, Check } from '@element-plus/icons-vue'
 // 工具和类型
 import request from '@/util/request'
+import { type Problem } from '@/types/problem'
+import { type Tag, type TagGroup } from '@/types/tag'
+const showUpdateQuestion = ref(false)
+const questionId = ref(0)
 // 状态变量
 const loading = ref(true)
-const difficulty = ref(null)
-const selectedTagIds = ref([])
+const difficulty = ref<number | null>(null)
+const selectedTagIds = ref<number[]>([])
 const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const sortField = ref('createTime')
 const sortOrder = ref('desc')
-const problems = ref([])
-const allTags = ref([])
-const selectedQuestion = ref([])
-const emit = defineEmits(['selectedQuestion'])
+const problems = ref<Problem[]>([])
+const allTags = ref<Tag[]>([])
+import { useRouter } from 'vue-router'
 
-const props = defineProps({
-  contestId: {
-    type: Object
-  }
-})
-onMounted(async () => {
-  await getTags()
-
-  await getSelectedQuestion()
-  await getTotalCount()
-})
+const router = useRouter()
 // 根据通过率返回不同的颜色
-const getProgressColor = (rate) => {
-  if (rate >= 80) return '#67C23A' // 深绿色
-  if (rate >= 60) return '#E6A23C' // 浅绿色
-  return '#F56C6C' // 最浅绿色
+const getProgressColor = (rate: number) => {
+  if (rate >= 80) return '#67C23A'
+  if (rate >= 60) return '#E6A23C'
+  return '#F56C6C'
 }
-const changeQuestion = (isSelected, id) => {
-  if (isSelected == true) {
-    selectedQuestion.value.push(id)
-  } else {
-    selectedQuestion.value = selectedQuestion.value.filter((item) => item != id)
-  }
+const addData = (row: any) => {
+  router.push(`/files/problemid=${row.id}`)
 }
-// 计算标签分组
-const groupedTags = computed(() => {
-  const groups = {}
+const onEdit = (row: any) => {
+  questionId.value = row.id
+  showUpdateQuestion.value = true
+}
+const cancel = () => {
+  showAddQuestion.value = false
+  getProblems()
+}
+const onDelete = (row: any) => {
+  ElMessageBox.confirm('确定真的删除？', '警告', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+    .then(() => {
+      request.delete(`/root/question/delete/${row.id}`).then((res) => {
+        if (res.code === 200) {
+          ElMessage.success('删除成功')
+          getProblems()
+        } else {
+          ElMessage.error('删除失败')
+        }
+      })
+    })
+    .catch(() => {
+      ElMessage.error('删除失败')
+    })
+}
+// 添加标签搜索关键词
+const tagSearchKeyword = ref('')
+
+// 修改计算属性，添加过滤逻辑
+const filteredGroupedTags = computed<TagGroup[]>(() => {
+  const groups: { [key: string]: Tag[] } = {}
 
   allTags.value.forEach((tag) => {
+    // 如果有搜索关键词，进行过滤
+    if (
+      tagSearchKeyword.value &&
+      !tag.name.toLowerCase().includes(tagSearchKeyword.value.toLowerCase())
+    ) {
+      return
+    }
+
     if (!groups[tag.superName]) {
       groups[tag.superName] = []
     }
     groups[tag.superName].push(tag)
   })
 
-  return Object.entries(groups).map(([superName, tags]) => ({
-    superName,
-    tags
-  }))
+  // 只返回有标签的分组
+  return Object.entries(groups)
+    .filter(([_, tags]) => tags.length > 0)
+    .map(([superName, tags]) => ({
+      superName,
+      tags
+    }))
 })
 
 // 获取题目列表
 const getProblems = async () => {
   loading.value = true
   try {
-    const response = await request.post('/question/list', {
+    const response = (await request.post('/question/list', {
       pageStart: currentPage.value,
       pageSize: pageSize.value,
       sortField: sortField.value,
@@ -254,15 +326,10 @@ const getProblems = async () => {
       difficulty: difficulty.value || undefined,
       tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
       title: searchKeyword.value || undefined
-    })
+    })) as any
 
     if (response.code === 200) {
       problems.value = response.data.list
-      problems.value.forEach((problem) => {
-        problem.isSelected = selectedQuestion.value.some(
-          (contestQuestion) => contestQuestion.questionId === problem.id
-        )
-      })
     }
   } catch (error) {
     console.error('获取题目列表失败:', error)
@@ -274,7 +341,7 @@ const getProblems = async () => {
 // 获取所有标签
 const getTags = async () => {
   try {
-    const response = await request.post('/tag/list', {})
+    const response = (await request.post('/tag/list', {})) as any
     if (response.code === 200) {
       allTags.value = response.data
     }
@@ -284,25 +351,14 @@ const getTags = async () => {
 }
 
 // 分页大小改变处理
-const handleSizeChange = async (val) => {
+const handleSizeChange = async (val: number) => {
   pageSize.value = val
   currentPage.value = 1
   await getTotalCount()
 }
-const getSelectedQuestion = async () => {
-  try {
-    const response = await request.get(`/root/contest/problem/${props.contestId}`)
-    if (response.code === 200) {
-      selectedQuestion.value = response.data
-    }
-  } catch (error) {
-    console.error('获取已选题目失败:', error)
-  } finally {
-    loading.value = false
-  }
-}
+
 // 当前页改变处理
-const handleCurrentChange = async (val) => {
+const handleCurrentChange = async (val: number) => {
   currentPage.value = val
   await getProblems()
 }
@@ -310,25 +366,20 @@ const handleCurrentChange = async (val) => {
 // 获取题目总数
 const getTotalCount = async () => {
   try {
-    const response = await request.post('/question/list', {
+    const response = (await request.post('/root/question/list', {
       pageStart: 1,
       difficulty: difficulty.value || undefined,
       tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
       title: searchKeyword.value || undefined
-    })
+    })) as any
 
     if (response.code === 200) {
+      console.log(response)
       total.value = response.data.total
       const allData = response.data.list
       const start = (currentPage.value - 1) * pageSize.value
       const end = Math.min(start + pageSize.value, allData.length)
       problems.value = allData.slice(start, end)
-
-      problems.value.forEach((problem) => {
-        problem.isSelected = selectedQuestion.value.some(
-          (contestQuestion) => contestQuestion === problem.questionId
-        )
-      })
     }
   } catch (error) {
     console.error('获取题目总数失败:', error)
@@ -346,21 +397,18 @@ watch(
   },
   { deep: true }
 )
-// 监听 selectedQuestion 的变化
-watch(
-  selectedQuestion,
-  (newValue) => {
-    emit('selectedQuestion', newValue)
-  },
-  { deep: true }
-)
+
 // 组件挂载时初始化数据
+onMounted(async () => {
+  await getTags()
+  await getTotalCount()
+})
 
 // 标签选择相关
 const showTagDialog = ref(false)
-
+const showAddQuestion = ref(false)
 // 标签选择处理
-const handleTagChange = (checked, tagId) => {
+const handleTagChange = (checked: true | false | undefined, tagId: number) => {
   if (checked) {
     selectedTagIds.value.push(tagId)
   } else {
@@ -384,7 +432,8 @@ const clearTags = () => {
 
 .content-wrapper {
   background: white;
-  border-radius: 8px;
+  min-height: calc(100vh - 200px);
+  border-radius: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   padding: 20px;
 }
@@ -540,5 +589,44 @@ const clearTags = () => {
 .no-tags-selected {
   color: #909399;
   font-size: 14px;
+}
+
+/* 难度标签样式 */
+.difficulty-label {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.difficulty-entry {
+  background-color: #abafa8;
+  color: white;
+}
+
+.difficulty-easy {
+  background-color: #67c23a;
+  color: white;
+}
+
+.difficulty-medium {
+  background-color: #e6a23c;
+  color: white;
+}
+
+.difficulty-hard {
+  background-color: #409eff;
+  color: white;
+}
+
+.difficulty-expert {
+  background-color: #f56c6c;
+  color: white;
+}
+
+/* 添加搜索输入框样式 */
+.tag-search-input {
+  margin-bottom: 16px;
+  width: 100%;
 }
 </style>

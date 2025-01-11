@@ -17,20 +17,20 @@
           </el-input>
         </div>
 
-        <span class="contest-title">进行中</span>
+        <span v-if="constestList.length" class="contest-title">进行中</span>
         <div class="contest-item" v-for="(item, index) in constestList" :key="index">
           <img :src="item.cover" alt="" class="contest-item-img" />
           <div style="width: 100%; margin-left: 20px">
             <div class="contest-item-title">
               {{ item.title }}
               <el-tag v-if="item.isPassword" :type="primary" effect="dark"
-              ><el-icon><Lock /></el-icon>密码</el-tag
+                ><el-icon><Lock /></el-icon>密码</el-tag
               >
               <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="success" effect="dark"
-              ><el-icon><key /></el-icon>邀请</el-tag
+                ><el-icon><key /></el-icon>邀请</el-tag
               >
               <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark"
-              >IOI</el-tag
+                >IOI</el-tag
               >
               <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
             </div>
@@ -52,28 +52,28 @@
           </div>
           <div class="apply-button">
             <el-button
-                type="success"
-                round
-                style="width: 100px; height: 50px"
-                @click="inputInfo(item.contestId)"
-            >进入</el-button
+              type="success"
+              round
+              style="width: 100px; height: 50px"
+              @click="inputInfo(item.contestId)"
+              >进入</el-button
             >
           </div>
         </div>
-        <span class="contest-title">已结束</span>
+        <span v-if="oldConstestList.length" class="contest-title">已结束</span>
         <div class="contest-item" v-for="(item, index) in oldConstestList" :key="index">
           <img :src="item.cover" alt="" class="contest-item-img" />
           <div style="width: 100%; margin-left: 20px">
             <div class="contest-item-title">
               {{ item.title }}
               <el-tag v-if="item.isPassword" :type="primary" effect="dark"
-              ><el-icon><Lock /></el-icon>密码</el-tag
+                ><el-icon><Lock /></el-icon>密码</el-tag
               >
               <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="success" effect="dark"
-              ><el-icon><key /></el-icon>邀请</el-tag
+                ><el-icon><key /></el-icon>邀请</el-tag
               >
               <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark"
-              >IOI</el-tag
+                >IOI</el-tag
               >
               <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
             </div>
@@ -94,11 +94,11 @@
           </div>
           <div class="apply-button">
             <el-button
-                type="info"
-                round
-                style="width: 100px; height: 50px"
-                @click="inputInfo(item.contestId)"
-            >回顾比赛</el-button
+              type="info"
+              round
+              style="width: 100px; height: 50px"
+              @click="inputInfo(item.contestId)"
+              >回顾比赛</el-button
             >
           </div>
         </div>
@@ -146,11 +146,11 @@ onMounted(async () => {
 })
 
 watch(
-    [searchType, searchKeyword],
-    async () => {
-      getConstestList()
-    },
-    { deep: true }
+  [searchType, searchKeyword],
+  async () => {
+    getConstestList()
+  },
+  { deep: true }
 )
 const inputInfo = (id) => {
   // 进入该比赛详情页
