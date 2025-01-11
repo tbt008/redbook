@@ -500,6 +500,7 @@ onMounted(async () => {
   
   // 自动选中今天的日期
   const today = getBeijingDate() // 使用之前定义的获取北京时间的方法
+  console.log(today)
   handleDateClick(today)
 })
 
@@ -622,13 +623,17 @@ const isDailyQuestionCompleted = (dateStr: string) => {
   )
   return question?.completed || false
 }
-const getBeijingDate = () => {
+const getBeijingDate  = () => {
   const now = new Date();
-  const utc8Offset = 8 * 60; // 北京时间是 UTC+8
-  const localOffset = now.getTimezoneOffset(); // 当前时区的偏移，单位是分钟
-  const beijingTime = new Date(now.getTime() + (utc8Offset - localOffset) * 60 * 1000);
-  console.log(beijingTime.toISOString().split('T')[0])
-  return beijingTime.toISOString().split('T')[0]; // 格式化为 YYYY-MM-DD
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0'); // 月份从 0 开始，需要加 1
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
 // 获取当前日期的每日一题
@@ -652,7 +657,8 @@ const handleDateClick = (dateStr: string) => {
 
   // 无论是否找到题目都更新 selectedDailyQuestion
   selectedDailyQuestion.value = question ? {
-    ...question
+    ...question,
+    date: formattedDate // 确保日期被正确设置
   } : {
     date: formattedDate,
     questionTitle: isToday ? '今日暂无题目' : '当日暂无题目',
@@ -689,11 +695,16 @@ const changeMonth = (delta: number) => {
 }
 
 // 修改回到今日的方法
-const backToToday = () => {
-  // 无论是否在当前月份都执行以下操作
-  currentMonthDate.value = dayjs()
-  getDailyQuestions(currentMonthDate.value.format('YYYY-MM'))
+const backToToday = async () => {
+  // 获取北京时间的今天日期
   const today = getBeijingDate()
+  // 如果不在当前月，需要重新获取当月数据
+  const currentMonthStr = dayjs(today).format('YYYY-MM')
+  if (currentMonthDate.value.format('YYYY-MM') !== currentMonthStr) {
+    currentMonthDate.value = dayjs(today)
+    await getDailyQuestions(currentMonthStr)
+  }
+  // 选中今天的日期并触发相关操作
   handleDateClick(today)
 }
 
