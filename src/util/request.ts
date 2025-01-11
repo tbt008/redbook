@@ -2,8 +2,8 @@ import axios from 'axios'
 import router from '@/router/index' // 修改这里
 import { ElMessage } from 'element-plus'
 const request = axios.create({
-  // http://129.204.154.232
-  baseURL: '/api',
+  
+  baseURL: 'http://129.204.154.232',
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json;charset=UTF-8'

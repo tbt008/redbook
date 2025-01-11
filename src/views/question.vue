@@ -7,6 +7,7 @@ const clickToLike = ref(false)
 const router = useRouter()
 const clickToFavour = ref(false)
 const share = ref(false)
+import { marked } from 'marked'
 const article = ref({})
 const codeRecords = ref([])
 const props = defineProps({
@@ -84,7 +85,9 @@ const getRecord = () => {
 const initFun = () => {
   if (props.rep !== null) {
     article.value = props.rep
+    article.value.description = marked(article.value.description || '')
     article.value.example = props.rep.examples
+    article.value.tip = marked(article.value.tip || '')
     clickToLike.value = props.rep.isThumb
     clickToFavour.value = props.rep.isFavour
     getRecord()
@@ -163,7 +166,7 @@ onMounted(() => {})
           </div>
         </div>
         <div style="min-height: 505px">
-          <div v-html="rep.description" style="padding: 20px" />
+          <div v-html="article.description" style="padding: 20px"></div>
           <div style="padding: 10px" v-for="(item, index) in article.example" :key="index">
             <div style="font: 14px sans-serif; font-weight: bold">示例 {{ index + 1 }}</div>
 
