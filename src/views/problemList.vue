@@ -56,6 +56,7 @@
           style="width: 100%" 
           v-loading="loading"
           @cell-mouse-enter="handleMouseEnter"
+          @cell-mouse-leave="handleMouseLeave"
         >
           <!-- 状态列 -->
           <el-table-column label="状态" width="80">
@@ -147,21 +148,86 @@
       <div class="side-panel">
         <!-- 添加日历卡片 -->
         <el-card class="side-card calendar-card">
-
-          <el-calendar class="custom-calendar" />
+          <!-- 添加每日一题显示区域 -->
+          <div class="daily-question-header">
+            <div class="daily-title">每日一题</div>
+            <div class="daily-content">
+              <template v-if="selectedDailyQuestion && selectedDailyQuestion.questionTitle !== '今日暂无题目' && selectedDailyQuestion.questionTitle !== '当日暂无题目'">
+                <div class="question-name">
+                  <router-link 
+                    :to="`/question?id=${selectedDailyQuestion.questionId}`"
+                    class="daily-question-link"
+                  >
+                    {{ selectedDailyQuestion.questionTitle }}
+                  </router-link>
+                </div>
+                <div class="question-status">
+                  <el-tag :type="selectedDailyQuestion.completed ? 'success' : 'info'" size="small">
+                    {{ selectedDailyQuestion.completed ? '已完成' : '未完成' }}
+                  </el-tag>
+                </div>
+              </template>
+              <template v-else-if="selectedDailyQuestion">
+                <div class="no-daily">{{ selectedDailyQuestion.questionTitle }}</div>
+              </template>
+              <template v-else>
+                <div class="no-daily">今日暂无题目</div>
+              </template>
+            </div>
+          </div>
+          
+          <el-divider />
+          
+          <div class="custom-calendar">
+            <div class="calendar-header">
+              <el-button @click="changeMonth(-1)">上个月</el-button>
+              <span>{{ currentMonth }}</span>
+              <el-button @click="changeMonth(1)">下个月</el-button>
+            </div>
+            <div class="calendar-grid">
+              <div v-for="day in calendarDays" 
+                   :key="day.date" 
+                   class="calendar-cell"
+                   :class="{
+                     'completed': isDailyQuestionCompleted(day.date),
+                     'future': isFutureDate(day.date),
+                     'has-question': hasDailyQuestion(day.date),
+                     'selected': isSelectedDate(day.date)
+                   }"
+                   @click="handleDateClick(day.date)"
+              >
+                <span>{{ day.dayOfMonth }}</span>
+                <div v-if="isDailyQuestionCompleted(day.date)" class="check-icon">
+                  <el-icon><Check /></el-icon>
+                </div>
+              </div>
+            </div>
+          </div>
         </el-card>
         
         <!-- 统计图表卡片 -->
-        <el-card class="side-card stats-card">
-          <div class="stats-content">
+        <!-- <el-card class="side-card stats-card">
+          <div class="stats-content"> -->
             <!-- TODO 未来会传更多数据 -->
-            <ProblemStatsPie
+            <!-- <ProblemStatsPie
               :title="hoveredProblem?.questionName"
               :pass-person="hoveredProblem?.passPerson"
               :try-person="hoveredProblem?.tryPerson"
             />
           </div>
-        </el-card>
+        </el-card> -->
+        <!-- 悬浮 如果要原来的就用上面的 -->
+         <!-- 如果希望鼠标移走还在就去掉 handleMouseLeave -->
+        <div 
+          v-if="hoveredProblem" 
+          class="floating-stats-card"
+        >
+          <ProblemStatsPie
+            :title="hoveredProblem?.questionName"
+            :pass-person="hoveredProblem?.passPerson"
+            :try-person="hoveredProblem?.tryPerson"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -265,7 +331,7 @@ const sortOrder = ref('desc')
 const problems = ref<Problem[]>([])
 const allTags = ref<Tag[]>([])
 const hoveredProblem = ref<Problem | null>(null)
-
+const token = localStorage.getItem('authToken')
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate: number) => {
   if (rate >= 70) return '#67C23A'
@@ -392,6 +458,10 @@ onMounted(async () => {
   // 获取当前月份的每日一题
   const currentMonth = dayjs().format('YYYY-MM')
   await getDailyQuestions(currentMonth)
+  
+  // 自动选中今天的日期
+  const today = getBeijingDate() // 使用之前定义的获取北京时间的方法
+  handleDateClick(today)
 })
 
 // 标签选择相关
@@ -415,25 +485,186 @@ const clearTags = () => {
 const handleMouseEnter = (row: Problem) => {
   hoveredProblem.value = row
 }
-
+// 添加鼠标移开处理函数
+const handleMouseLeave = () => {
+  hoveredProblem.value = null
+}
 // 添加每日一题相关的状态
 const dailyQuestions = ref<any[]>([])
 
-// 添加获取每日一题的方法
-const getDailyQuestions = async (date: string) => {
+// 生成指定月份的假数据
+// const generateMockData = (monthStr: string) => {
+//   const today = dayjs()
+//   return [
+//     {
+//       dailyQuestionId: 1,
+//       date: today.subtract(1, 'day').format('YYYY-MM-DD'),
+//       questionId: 34,
+//       questionTitle: '两数之和',
+//       completed: true
+//     },
+//     {
+//       dailyQuestionId: 2,
+//       date: today.format('YYYY-MM-DD'),
+//       questionId: 35,
+//       questionTitle: '反转链表',
+//       completed: false
+//     },
+//     {
+//       dailyQuestionId: 3,
+//       date: today.add(1, 'day').format('YYYY-MM-DD'),
+//       questionId: 36,
+//       questionTitle: '***',
+//       completed: false
+//     }
+//   ]
+// }
+
+// 修改获取每日一题的方法
+const getDailyQuestions = async (monthStr: string) => {
+ 
   try {
     const response = await request.post('/userDailyQuestion/getDailyQuestion', {
-      date: date
-    })
-    console.log('每日一题数据:', response)
-    dailyQuestions.value = response.data
-  } catch (error) {
-    console.error('获取每日一题失败:', error)
+      "date": monthStr
+    },{
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    }) as any;
+
+    if (response.code === 200) {
+      dailyQuestions.value = response.data
+       console.log(response.data)
+    } else {
+       
+    }
+  } catch (error) { 
+    console.error('Error:', error);
   }
+  // 模拟异步请求
+  // return new Promise((resolve) => {
+  //   setTimeout(() => {
+  //     dailyQuestions.value = generateMockData(monthStr)
+  //     resolve(null)
+  //   }, 100)
+  // })
+}
+
+// // 处理月份变化
+// const handleMonthChange = async (date: Date) => {
+//   const monthStr = dayjs(date).format('YYYY-MM')
+//   await getDailyQuestions(monthStr)
+// }
+
+// 检查是否是未来日期
+const isFutureDate = (dateStr: string) => {
+  return dayjs(dateStr).isAfter(dayjs(), 'day')
+}
+
+// 检查指定日期是否有每日一题
+const hasDailyQuestion = (dateStr: string) => {
+  const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
+  return dailyQuestions.value.some(q => 
+    dayjs(q.date).format('YYYY-MM-DD') === formattedDate
+  )
+}
+
+// 获取指定日期的每日一题标题
+// const getDailyQuestionTitle = (dateStr: string) => {
+//   const question = dailyQuestions.value.find(q => q.date === dateStr)
+//   return question?.questionTitle || ''
+// }
+
+// 检查指定日期的每日一题是否已完成
+const isDailyQuestionCompleted = (dateStr: string) => {
+  const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
+  const question = dailyQuestions.value.find(q => 
+    dayjs(q.date).format('YYYY-MM-DD') === formattedDate
+  )
+  return question?.completed || false
+}
+const getBeijingDate = () => {
+  const now = new Date();
+  const utc8Offset = 8 * 60; // 北京时间是 UTC+8
+  const localOffset = now.getTimezoneOffset(); // 当前时区的偏移，单位是分钟
+  const beijingTime = new Date(now.getTime() + (utc8Offset - localOffset) * 60 * 1000);
+  console.log(beijingTime.toISOString().split('T')[0])
+  return beijingTime.toISOString().split('T')[0]; // 格式化为 YYYY-MM-DD
+};
+
+// 获取当前日期的每日一题
+const selectedDailyQuestion = ref<any>(null)
+
+const handleDateClick = (dateStr: string) => {
+  const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
+  
+  // 如果是未来日期，不做任何处理
+  if (isFutureDate(formattedDate)) {
+    return
+  }
+  
+  const question = dailyQuestions.value.find(q => {
+    const questionDate = dayjs(q.date).format('YYYY-MM-DD')
+    return questionDate === formattedDate
+  })
+
+  // 判断是否是今天
+  const isToday = dayjs(formattedDate).isSame(dayjs(), 'day')
+
+  // 无论是否找到题目都更新 selectedDailyQuestion
+  selectedDailyQuestion.value = question ? {
+    ...question
+  } : {
+    date: formattedDate,
+    questionTitle: isToday ? '今日暂无题目' : '当日暂无题目',
+    completed: false
+  }
+}
+
+// 添加新的状态和计算属性
+const currentMonthDate = ref(dayjs())
+const currentMonth = computed(() => currentMonthDate.value.format('YYYY年MM月'))
+
+const calendarDays = computed(() => {
+  const days = []
+  const startOfMonth = currentMonthDate.value.startOf('month')
+  const daysInMonth = currentMonthDate.value.daysInMonth()
+  
+  for (let i = 1; i <= daysInMonth; i++) {
+    const date = startOfMonth.add(i - 1, 'day')
+    days.push({
+      date: date.format('YYYY-MM-DD'),
+      dayOfMonth: i
+    })
+  }
+  return days
+})
+
+const isSelectedDate = (dateStr: string) => {
+  return selectedDailyQuestion.value?.date === dateStr
+}
+
+const changeMonth = (delta: number) => {
+  currentMonthDate.value = currentMonthDate.value.add(delta, 'month')
+  getDailyQuestions(currentMonthDate.value.format('YYYY-MM'))
 }
 </script>
 
 <style scoped>
+/* 可视化的悬浮效果 */
+.floating-stats-card {
+  position: fixed;
+  right: 20px;
+  top: 40%;
+  transform: translateY(-50%);
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  width: 350px;
+  z-index: 1000; /* 确保在日历上层 */
+  transition: opacity 0.3s ease;
+}
 /* 容器样式 */
 .problem-list-container {
   padding: 20px;
@@ -479,19 +710,58 @@ const getDailyQuestions = async (date: string) => {
   height: 350px;
 }
 
-.custom-calendar :deep(.el-calendar__body) {
-  padding: 8px;
+.custom-calendar {
+  padding: 0 16px 16px 16px;
 }
 
-.custom-calendar :deep(.el-calendar-table) {
-  font-size: 12px;
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-.custom-calendar :deep(.el-calendar-day) {
-  height: 32px;
-  padding: 4px;
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
 }
 
+.calendar-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.calendar-cell:hover:not(.future) {
+  background-color: #f5f7fa;
+}
+/* 已完成日历格子的悬浮效果 */
+.calendar-cell.completed:hover {
+  background-color: rgba(103, 194, 58, 0.623); /* 使用更深的绿色 */
+}
+.calendar-cell.selected {
+  background-color: #409EFF;
+  color: white;
+}
+.calendar-cell.completed {
+  background-color: rgba(103, 194, 58, 0.3);
+  color: #303133;
+}
+/* 修改组合样式，使用更深的绿色背景 */
+.calendar-cell.completed.selected {
+  background-color: rgba(103, 194, 58, 0.623);  /* 更深的绿色 */
+  color: white;  /* 文字改为白色以提高对比度 */
+}
+/* 当单元格被选中时隐藏勾勾图标 */
+/* .calendar-cell.selected .check-icon {
+  display: none;
+} */
 .side-card :deep(.el-card__body) {
   padding: 0;
 }
@@ -704,5 +974,77 @@ const getDailyQuestions = async (date: string) => {
 .submission-count-header {
   float: center;  /* 靠左浮动，使文字靠近题目列 */
   margin-left: 0;  /* 移除左边距 */
+}
+
+/* 每日一题头部样式 */
+.daily-question-header {
+  padding: 16px 16px 0px 16px;
+}
+
+.daily-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 12px;
+}
+
+.daily-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.question-name {
+  font-size: 14px;
+  color: #409EFF;
+  cursor: pointer;
+}
+
+.question-name:hover {
+  text-decoration: underline;
+}
+
+.no-daily {
+  color: #909399;
+  font-size: 14px;
+}
+
+/* 修改日历单元格样式，简化显示 */
+.calendar-cell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.check-icon {
+  /* 勾勾 */
+  color: #67C23A;
+  font-size: 12px;
+}
+
+.completed {
+  background-color: rgba(103, 194, 58, 0.1);
+}
+
+.future {
+  background-color: #F5F7FA;
+  color: #C0C4CC;
+}
+
+/* 添加链接样式 */
+.daily-question-link {
+  color: #409EFF;
+  text-decoration: none;
+}
+
+.daily-question-link:hover {
+  text-decoration: underline;
+}
+ 
+.question-name {
+  font-size: 14px;
 }
 </style>

@@ -20,9 +20,7 @@
       <br>
       <br>
       <span>3. 只支持对zip和rar的解压。</span>
-      <br>
-      <br>
-      <span>4. 点击文件名即可下载。</span>
+ 
       <template #footer>
         <div class="dialog-footer">
           <el-button type="primary" @click="dialogVisible = false">确认</el-button> 
@@ -194,29 +192,26 @@ const fetchFileList = async () => {
   messageClass.value = 'info';
 
   try {
-    const response = await fetch('http://120.26.170.155:12138/list_files', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: id }),
-    });
-
-    const result = await response.json();
-    if (response.ok) {
-      files.value = result.files || [];
+    const response = await request.post('/root/question/list/file', {
+      questionId: id
+    }) as any;
+    
+    if (response.code === 200) {
+      files.value = response.data || [];
+      // console.log(files.value);
       initializeGroupSelections(files.value);
       message.value = '文件列表获取成功';
       messageClass.value = 'success';
     } else {
       let msg = '获取文件列表失败';
-      if(result.error==="Invalid folder path")msg="文件夹 "+id+" 不存在";
+      if(response.msg === "Bad Request") msg = "文件夹 " + id + " 不存在";
       message.value = msg;
       messageClass.value = 'error';
     }
   } catch (error) {
     message.value = '获取文件列表过程中发生错误';
     messageClass.value = 'error';
-     
-    console.error('Error:', "error");
+    console.error('Error:', error);
   }
 };
 
@@ -233,21 +228,21 @@ const handleSubmit = async () => {
 
   const formData = new FormData();
   formData.append('file', fileInput.value.files[0]);
-  formData.append('path', id);
+  formData.append('questionId', id);
 
   try {
-    const response = await fetch('http://120.26.170.155:12138/upload', {
-      method: 'POST',
-      body: formData,
-    });
+    const response = await request.post('/root/quesion/save/file', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }) as any;
 
-    const result = await response.json();
-    if (response.ok) {
-      message.value = result.message || '文件上传成功';
+    if (response.code === 200) {
+      message.value = response.message || '文件上传成功';
       messageClass.value = 'success';
       await fetchFileList(); // 上传成功后重新获取文件列表
     } else {
-      message.value = result.error || '文件上传失败';
+      message.value = response.error || '文件上传失败';
       messageClass.value = 'error';
     }
   } catch (error) {
@@ -263,19 +258,17 @@ const extractRar = async (file: string) => {
   messageClass.value = 'info';
 
   try {
-    const response = await fetch('http://120.26.170.155:12138/extract_rar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: id, filename: file }),
-    });
+    const response = await request.post('/root/question/extract/rar', {
+      questionId: id,
+      folderName: file
+    }) as any;
 
-    const result = await response.json();
-    if (response.ok) {
-      message.value = result.message || 'RAR 文件解压成功';
+    if (response.code === 200) {
+      message.value = response.message || 'RAR 文件解压成功';
       messageClass.value = 'success';
       await fetchFileList();
     } else {
-      message.value = result.error || '解压失败';
+      message.value = response.error || '解压失败';
       messageClass.value = 'error';
     }
   } catch (error) {
@@ -291,19 +284,17 @@ const extractZip = async (file: string) => {
   messageClass.value = 'info';
 
   try {
-    const response = await fetch('http://120.26.170.155:12138/extract_zip', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: id, filename: file }),
-    });
+    const response = await request.post('/root/question/extract/zip', {
+      questionId: id,
+      folderName: file
+    }) as any;
 
-    const result = await response.json();
-    if (response.ok) {
-      message.value = result.message || 'ZIP 文件解压成功';
+    if (response.code === 200) {
+      message.value = response.message || 'ZIP 文件解压成功';
       messageClass.value = 'success';
       await fetchFileList();
     } else {
-      message.value = result.error || '解压失败';
+      message.value = response.error || '解压失败';
       messageClass.value = 'error';
     }
   } catch (error) {
@@ -318,19 +309,17 @@ const deleteFile = async (file: string) => {
   message.value = `正在删除文件 ${file}...`;
   messageClass.value = 'info';
   try {
-    const response = await fetch('http://120.26.170.155:12138/delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: id, filename: file }),
-    });
+    const response = await request.post('/root/question/delete/file', {
+      questionId: id,
+      folderName: file
+    }) as any;
 
-    const result = await response.json();
-    if (response.ok) {
-      message.value = result.message || '文件删除成功';
+    if (response.code === 200) {
+      message.value = response.message || '文件删除成功';
       messageClass.value = 'success';
       await fetchFileList();
     } else {
-      message.value = result.error || '删除文件失败';
+      message.value = response.error || '删除文件失败';
       messageClass.value = 'error';
     }
   } catch (error) {
@@ -342,26 +331,26 @@ const deleteFile = async (file: string) => {
 
 // 删除文件夹
 const deleteFolder = async (folder?: string) => {
-  message.value = `正在删除文件夹 ${folder}...`;
+  message.value = `正在删除文件夹 ${folder||id}...`;
   messageClass.value = 'info';
-  let path =id;
-  if(folder)
+  let path = id;
+  if (folder) {
     path += '/' + folder;
+  }
   console.log(path);
+  
   try {
-    const response = await fetch('http://120.26.170.155:12138/delete_folder', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder_name: path }),
-    });
+    const response = await request.post('/root/question/delete/folder', {
+      questionId: id,
+      folderName: path
+    }) as any;
 
-    const result = await response.json();
-    if (response.ok) {
-      message.value = result.message || '文件夹删除成功';
+    if (response.code === 200) {
+      message.value = response.message || '文件夹删除成功';
       messageClass.value = 'success';
       await fetchFileList();
     } else {
-      message.value = result.error || '删除文件夹失败';
+      message.value = response.error || '删除文件夹失败';
       messageClass.value = 'error';
     }
   } catch (error) {
@@ -369,81 +358,90 @@ const deleteFolder = async (folder?: string) => {
     messageClass.value = 'error';
     console.error('Error:', error);
   }
-
 };
-  //创建文件夹
-  const CreateFolder = async () => {
-    let folderName = id;
-    if (!folderName) {
-      message.value = '文件夹名称不能为空';
-      messageClass.value = 'error';
-      return;
-    }
-  
-    try {
-      // 发起 POST 请求创建文件夹
-      const response = await fetch('http://120.26.170.155:12138/create_folder', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ folder_name: folderName }),
-      });
-  
-      const result = await response.json();
-  
-      if (response.ok) {
-        message.value = result.message;
-        messageClass.value = 'success';
-      } else {
-        message.value = result.error || '创建失败';
-        messageClass.value = 'error';
-      }
-    } catch (error) {
-      message.value = '创建文件夹时发生错误';
+//创建文件夹
+const CreateFolder = async () => {
+  let folderName = id;
+  if (!folderName) {
+    message.value = '文件夹名称不能为空';
+    messageClass.value = 'error';
+    return;
+  }
+  try {
+    const response = await request.post('/root/question/create/folder', {
+      questionId: id,
+      folderName: folderName
+    }) as any;
+
+    if (response.code === 200) {
+      message.value = response.message || '创建文件夹成功';
+      messageClass.value = 'success'; 
+    } else {
+      message.value = response.error || '创建文件夹失败';
       messageClass.value = 'error';
     }
-  }; 
-  // 下载文件
-  const downloadFile = async (file: string) => {
-    let filename = file;
-    if (!filename) {
-      message.value = '文件不能为空';
-      messageClass.value = 'error';
-      return;
+  } catch (error) {
+    message.value = '创建文件夹时发生错误';
+    messageClass.value = 'error';
+    console.error('Error:', error);
+  }
+}; 
+ 
+
+const downloadFile = async (folderName: string) => {
+  if (!folderName) {
+    message.value = '文件不能为空';
+    messageClass.value = 'error';
+    return;
+  }
+
+  const questionId = Number(id);
+  if (isNaN(questionId)) {
+    message.value = '无效的问题ID';
+    messageClass.value = 'error';
+    return;
+  }
+  const token = localStorage.getItem('authToken');
+  console.log(token);
+  try {
+ 
+    const response = await request.post('/root/question/get/file', {
+      data: {
+        questionId,
+        folderName
+      },
+      headers: {
+        'auth-token': token
+      },
+      responseType: 'blob'
+    });
+
+    if (!response) {
+      throw new Error('下载失败');
     }
 
-    try {
-      // 发起 POST 请求下载文件
-      const response = await fetch('http://120.26.170.155:12138/get_file', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({                 
-          path: id,
-          filename: filename }),
-      });
-
-      if (response.ok) {
-        const blob = await response.blob(); // 获取文件的二进制内容
-        const fileURL = URL.createObjectURL(blob); // 创建一个 URL 对象
-        const link = document.createElement('a'); // 创建下载链接
-        link.href = fileURL;
-        link.download = filename; // 设置下载的文件名
-        link.click(); // 触发点击下载
-        message.value = '文件下载成功';
-        messageClass.value = 'success';
-      } else {
-        const result = await response.json();
-        message.value = result.error || '下载失败';
-        messageClass.value = 'error';
-      }
-    } catch (error) {
-      message.value = '下载文件时发生错误';
-      messageClass.value = 'error';
-    }
-  };
+    // 从 response.data 中获取 blob 数据
+    const blob = new Blob([response.data]);
+    const fileURL = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = fileURL;
+    link.download = folderName;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(fileURL);
+    
+    message.value = '文件下载成功';
+    messageClass.value = 'success';
+    
+  } catch (error) {
+    console.error('下载文件时发生错误:', error);
+    message.value = '下载文件时发生错误';
+    messageClass.value = 'error';
+  }
+};
 
 // 添加新的类型定义和排序函数
 interface FileGroup {
