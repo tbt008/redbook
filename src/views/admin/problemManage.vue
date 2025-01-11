@@ -367,6 +367,7 @@ const getTotalCount = async () => {
   try {
     const response = await request.post('/root/question/list', {
       pageStart: 1,
+      pageSize: 1000000,
       difficulty: difficulty.value || undefined,
       tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
       title: searchKeyword.value || undefined
