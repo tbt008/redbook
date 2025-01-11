@@ -492,16 +492,17 @@ watch(
 
 // 组件挂载时初始化数据
 onMounted(async () => {
+  // 自动选中今天的日期
+  const today = getBeijingDate() // 使用之前定义的获取北京时间的方法
+  console.log(today)
+  handleDateClick(today)
   await getTags()
   await getTotalCount()
   // 获取当前月份的每日一题
   const currentMonth = dayjs().format('YYYY-MM')
   await getDailyQuestions(currentMonth)
   
-  // 自动选中今天的日期
-  const today = getBeijingDate() // 使用之前定义的获取北京时间的方法
-  console.log(today)
-  handleDateClick(today)
+
 })
 
 // 标签选择相关
