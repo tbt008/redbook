@@ -634,6 +634,7 @@ const showWelcome = ref(true)
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background-color: var(--messages-bg-color);
 }
 
 .messages {
@@ -641,7 +642,6 @@ const showWelcome = ref(true)
   overflow-y: auto;
   padding: 0px;
   padding-bottom: 50px;
-  background-color: var(--messages-bg-color);
   transition: background-color 0.3s ease;
   position: relative;
 }
@@ -653,7 +653,7 @@ const showWelcome = ref(true)
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.1);
+  /* background-color: rgba(255, 255, 255, 0.1); */
   z-index: 0;
   pointer-events: none;
 }
@@ -760,6 +760,7 @@ const showWelcome = ref(true)
   position: sticky;
   bottom: 0;
   z-index: 2;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .input-wrapper {
