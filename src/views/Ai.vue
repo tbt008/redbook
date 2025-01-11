@@ -446,18 +446,18 @@ onMounted(() => {
     currentBgIndex.value = savedBgIndex
     
     // 应用保存的主题
-    const messagesEl = document.querySelector('.messages') as HTMLElement
+    // const messagesEl = document.querySelector('.messages') as HTMLElement
     const currentAI = selectedAI.value
     
-    if (useCustomBg.value[currentAI]) {
-      if (currentBgIndex.value[currentAI] === 1) {
-        messagesEl.style.backgroundImage = `url(${usagiAvatar})`
-      } else if (currentBgIndex.value[currentAI] === 2) {
-        messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
-      }
-      messagesEl.style.backgroundSize = 'cover'
-      messagesEl.style.backgroundPosition = 'center'
-    }
+    // if (useCustomBg.value[currentAI]) {
+    //   if (currentBgIndex.value[currentAI] === 1) {
+    //     messagesEl.style.backgroundImage = `url(${usagiAvatar})`
+    //   } else if (currentBgIndex.value[currentAI] === 2) {
+    //     messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
+    //   }
+    //   messagesEl.style.backgroundSize = 'cover'
+    //   messagesEl.style.backgroundPosition = 'center'
+    // }
   }
 })
 
