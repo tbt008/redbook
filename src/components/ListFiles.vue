@@ -145,7 +145,7 @@ const problemId = route.params.problemid as string;
 const titleid = problemId;
 const id = problemId;
 const name = ref('');
-
+import { ElMessage } from 'element-plus';
 // 添加获取题目详情的函数
 const fetchProblemDetails = async () => {
   try {
@@ -266,6 +266,7 @@ const extractRar = async (file: string) => {
     if (response.code === 200) {
       message.value = response.message || 'RAR 文件解压成功';
       messageClass.value = 'success';
+      ElMessage.success(response.message || 'RAR 文件解压成功');
       await fetchFileList();
     } else {
       message.value = response.error || '解压失败';
@@ -292,6 +293,7 @@ const extractZip = async (file: string) => {
     if (response.code === 200) {
       message.value = response.message || 'ZIP 文件解压成功';
       messageClass.value = 'success';
+      ElMessage.success(response.message || 'ZIP 文件解压成功');
       await fetchFileList();
     } else {
       message.value = response.error || '解压失败';
@@ -317,6 +319,7 @@ const deleteFile = async (file: string) => {
     if (response.code === 200) {
       message.value = response.message || '文件删除成功';
       messageClass.value = 'success';
+      ElMessage.success(response.message || '文件删除成功');
       await fetchFileList();
     } else {
       message.value = response.error || '删除文件失败';
@@ -348,6 +351,7 @@ const deleteFolder = async (folder?: string) => {
     if (response.code === 200) {
       message.value = response.message || '文件夹删除成功';
       messageClass.value = 'success';
+      ElMessage.success(response.message || '文件夹删除成功');
       await fetchFileList();
     } else {
       message.value = response.error || '删除文件夹失败';
@@ -449,7 +453,6 @@ interface FileGroup {
 }
 
 const groupFiles = (files: string[]): FileGroup[] => {
-  // 创建一个Map来存储不同后缀的文件
   const groupMap = new Map<string, string[]>();
   
   files.forEach(file => {
@@ -463,10 +466,23 @@ const groupFiles = (files: string[]): FileGroup[] => {
     groupMap.get(extension)?.push(file);
   });
 
+  // 自然排序比较函数
+  const naturalCompare = (a: string, b: string) => {
+    return a.split(/(\d+)/).map(part => {
+      const num = parseInt(part);
+      return isNaN(num) ? part : String(num).padStart(10, '0');
+    }).join('').localeCompare(
+      b.split(/(\d+)/).map(part => {
+        const num = parseInt(part);
+        return isNaN(num) ? part : String(num).padStart(10, '0');
+      }).join('')
+    );
+  };
+
   // 转换为数组并排序
   const groups = Array.from(groupMap.entries()).map(([ext, files]) => ({
     extension: ext,
-    files: files.sort()
+    files: files.sort(naturalCompare) // 使用自然排序
   }));
 
   // 确保文件夹始终在最前面
