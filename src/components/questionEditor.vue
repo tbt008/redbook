@@ -349,7 +349,7 @@ watch(
           content.value = res.data.description
           answer.value = res.data.answer
           // jsonjson转成数组
-          exampleList.value = JSON.parse(res.data.example)
+          exampleList.value = JSON.parse(res.data.example) || []
         } else {
           ElMessage.error(res.msg)
         }
