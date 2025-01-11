@@ -180,21 +180,60 @@
           
           <div class="custom-calendar">
             <div class="calendar-header">
-              <el-button @click="changeMonth(-1)">上个月</el-button>
-              <span>{{ currentMonth }}</span>
-              <el-button @click="changeMonth(1)">下个月</el-button>
+              <div class="calendar-nav">
+                <el-button text @click="changeMonth(-1)">
+                  <el-icon><ArrowLeft /></el-icon>
+                </el-button>
+                <div class="calendar-title">
+                  <span>{{ currentMonth }}</span>
+                  <el-button 
+                    class="today-btn"
+                    type="primary" 
+                    text
+                    size="small"
+                    @click="backToToday"
+                  >
+                    <el-icon><Calendar /></el-icon>
+                    今日
+                  </el-button>
+                </div>
+                <el-button text @click="changeMonth(1)">
+                  <el-icon><ArrowRight /></el-icon>
+                </el-button>
+              </div>
             </div>
+            
+            <!-- 添加星期标题行 -->
+            <div class="weekday-header">
+              <div class="weekday-cell">日</div>
+              <div class="weekday-cell">一</div>
+              <div class="weekday-cell">二</div>
+              <div class="weekday-cell">三</div>
+              <div class="weekday-cell">四</div>
+              <div class="weekday-cell">五</div>
+              <div class="weekday-cell">六</div>
+            </div>
+
+            <!-- 修改日历网格，添加空白日期填充 -->
             <div class="calendar-grid">
-              <div v-for="day in calendarDays" 
-                   :key="day.date" 
-                   class="calendar-cell"
-                   :class="{
-                     'completed': isDailyQuestionCompleted(day.date),
-                     'future': isFutureDate(day.date),
-                     'has-question': hasDailyQuestion(day.date),
-                     'selected': isSelectedDate(day.date)
-                   }"
-                   @click="handleDateClick(day.date)"
+              <!-- 添加空白填充单元格 -->
+              <div 
+                v-for="n in firstDayOfMonth" 
+                :key="'empty-' + n" 
+                class="calendar-cell empty"
+              ></div>
+              <!-- 现有的日期单元格 -->
+              <div
+                v-for="day in calendarDays"
+                :key="day.date"
+                class="calendar-cell"
+                :class="{
+                  'completed': isDailyQuestionCompleted(day.date),
+                  'future': isFutureDate(day.date),
+                  'has-question': hasDailyQuestion(day.date),
+                  'selected': isSelectedDate(day.date)
+                }"
+                @click="handleDateClick(day.date)"
               >
                 <span>{{ day.dayOfMonth }}</span>
                 <div v-if="isDailyQuestionCompleted(day.date)" class="check-icon">
@@ -310,7 +349,7 @@
 // Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
 // Element Plus 图标
-import { Search, Check } from '@element-plus/icons-vue'
+import { Search, Check, ArrowLeft, ArrowRight, Calendar } from '@element-plus/icons-vue'
 // 工具和类型
 import request from '@/util/request'
 import { type Problem } from '@/types/problem'
@@ -648,6 +687,21 @@ const changeMonth = (delta: number) => {
   currentMonthDate.value = currentMonthDate.value.add(delta, 'month')
   getDailyQuestions(currentMonthDate.value.format('YYYY-MM'))
 }
+
+// 修改回到今日的方法
+const backToToday = () => {
+  // 无论是否在当前月份都执行以下操作
+  currentMonthDate.value = dayjs()
+  getDailyQuestions(currentMonthDate.value.format('YYYY-MM'))
+  const today = getBeijingDate()
+  handleDateClick(today)
+}
+
+// 添加计算每月第一天是星期几的计算属性
+const firstDayOfMonth = computed(() => {
+  const firstDay = currentMonthDate.value.startOf('month').day()
+  return firstDay // 返回0-6，0表示周日
+})
 </script>
 
 <style scoped>
@@ -715,10 +769,51 @@ const changeMonth = (delta: number) => {
 }
 
 .calendar-header {
+  padding: 8px 0;
+}
+
+.calendar-nav {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 16px;
+}
+
+.calendar-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.calendar-title span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.today-btn {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.today-btn:hover {
+  background-color: var(--el-color-primary-light-9);
+}
+
+.today-btn :deep(.el-icon) {
+  font-size: 14px;
+}
+
+/* 禁用状态的样式 */
+.today-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .calendar-grid {
@@ -736,6 +831,7 @@ const changeMonth = (delta: number) => {
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.3s;
+  font-size: 14px;
 }
 
 .calendar-cell:hover:not(.future) {
@@ -1046,5 +1142,64 @@ const changeMonth = (delta: number) => {
  
 .question-name {
   font-size: 14px;
+}
+
+/* 添加日历头部中间区域样式 */
+.calendar-header-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.calendar-header-center span {
+  font-weight: bold;
+}
+
+/* 添加星期标题样式 */
+.weekday-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+}
+
+.weekday-cell {
+  text-align: center;
+  font-size: 12px;
+  color: #909399;
+  padding: 8px 0;
+  font-weight: 500;
+}
+
+/* 更新日历网格样式 */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+/* 空白填充单元格样式 */
+.calendar-cell.empty {
+  background: transparent;
+  cursor: default;
+}
+
+/* 调整日期单元格的样式以保持一致的大小 */
+.calendar-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s;
+  font-size: 14px;
+}
+
+/* 周末日期的特殊样式（可选） */
+.weekday-cell:first-child,
+.weekday-cell:last-child {
+  color: #ff9898;
 }
 </style>
