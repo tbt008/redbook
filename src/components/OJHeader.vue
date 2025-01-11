@@ -1,13 +1,25 @@
 <template>
   <div class="head-nav">
     <ul id="nav">
-      <li v-for="(link, index) in links" :key="index" class="navbar">
-        <a @click="handleClick(index)">{{ link.text }} </a>
+      <li
+        v-for="(link, index) in links"
+        :class="{ active: link.active }"
+        :key="index"
+        class="navbar"
+      >
+        <div>
+          <a @click="handleClick(index)">{{ link.text }} </a>
+        </div>
       </li>
     </ul>
     <div class="header-user" @click="handleUser">
-      <img v-if="userLogin" class="user-img" :src="userImg" alt="" />
-      <el-avatar v-else class="user-img"> 未登录 </el-avatar>
+      <div v-if="loading">
+        <img v-if="userImg" class="user-img" :src="userImg" alt="" />
+        <el-avatar v-else class="user-img"> 未登录 </el-avatar>
+      </div>
+      <div v-else>
+        <div class="user-img" alt="" />
+      </div>
     </div>
   </div>
 </template>
@@ -18,14 +30,14 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 const router = useRouter()
 const links = ref([
-  { path: '/', text: '主页' },
-  { path: '/problems', text: '题库' },
-  { path: '/contest', text: '竞赛' },
-  { path: '/discuss', text: '讨论' },
-  { path: '/about', text: '关于' }
+  { path: '/', text: '主页', active: false },
+  { path: '/problems', text: '题库', active: false },
+  { path: '/contest', text: '竞赛', active: false },
+  { path: '/discuss', text: '讨论', active: false },
+  { path: '/about', text: '关于', active: false }
 ])
 const userImg = ref(null)
-
+const loading = ref(false)
 const userLogin = () => {
   // 判断用户是否已登录
   if (localStorage.getItem('authToken') != null) {
@@ -33,22 +45,51 @@ const userLogin = () => {
     request.get('/user/get/user').then((res) => {
       if (res.code == 200) {
         userImg.value = res.data.avatar
-        localStorage.setItem('id',res.data.id)
+        loading.value = true
         return true
       } else {
         ElMessage.error('用户登录过期！')
+        loading.value = true
         return false
       }
     })
   } else {
+    loading.value = true
     return false
+  }
+}
+const skip = (index) => {
+  if (index != -1) {
+    for (let i = 0; i < links.value.length; i++) {
+      //前缀是否匹配
+      if (i == index) {
+        links.value[i].active = true
+      } else {
+        links.value[i].active = false
+      }
+    }
+  } else {
+    //导航栏高亮
+    const path = router.currentRoute.value.path
+    // alert(path)
+    for (let i = 0; i < links.value.length; i++) {
+      //前缀是否匹配
+      if (path.startsWith(links.value[i].path)) {
+        links.value[i].active = true
+      } else {
+        links.value[i].active = false
+      }
+    }
   }
 }
 onMounted(() => {
   userLogin()
+  skip(-1)
 })
 const handleClick = (index) => {
+  skip(index)
   router.push(links.value[index])
+
   // this.$router.push(links.value[index])
 }
 const handleUser = () => {
@@ -65,20 +106,24 @@ const handleUser = () => {
 </script>
 
 <style scoped>
+.active {
+  color: #0b66ef;
+  /* border-bottom: rgb(42, 120, 234) 4px solid; */
+}
 .user-img {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   margin-right: 40px;
-  margin-top: 7px;
+  margin-top: 10px;
   border-radius: 50%;
   display: flex;
 }
 .header-user {
   user-select: none;
-  transition: all 0.6s;
+  /* transition: all 0.6s; */
 }
 .header-user :hover {
-  transform: scale(1.1);
+  /* transform: scale(1.03); */
 }
 
 .head-ion {
@@ -117,7 +162,7 @@ const handleUser = () => {
   border: none;
   outline: none;
   /* color: rgb(70, 100, 180); */
-  color: rgb(122, 119, 119);
+  /* color: rgb(122, 119, 119); */
   display: inline-block;
   text-decoration: none;
   z-index: 3;

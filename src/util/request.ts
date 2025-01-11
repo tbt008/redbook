@@ -1,8 +1,9 @@
 import axios from 'axios'
 import router from '@/router/index' // 修改这里
-
+import { ElMessage } from 'element-plus'
 const request = axios.create({
-  baseURL: 'http://129.204.154.232',
+  // http://129.204.154.232
+  baseURL: '/api',
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json;charset=UTF-8'
@@ -28,8 +29,8 @@ request.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // 返回 401 清除token信息并跳转到登录页面
       localStorage.removeItem('auth-token')
-
-      router.push('/login')
+      ElMessage.error('用户未登录，或登录已过期！')
+      // router.push('/login')
     }
 
     return Promise.reject(error)

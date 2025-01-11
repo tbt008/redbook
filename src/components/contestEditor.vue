@@ -1,8 +1,8 @@
 <template>
   <el-steps
-      style="max-width: 600px; margin: auto; padding: 50px"
-      :active="active"
-      finish-status="success"
+    style="max-width: 600px; margin: auto; padding: 50px"
+    :active="active"
+    finish-status="success"
   >
     <el-step title="新建比赛" />
     <el-step title="添加题目" />
@@ -21,6 +21,16 @@
             <el-radio value="2" size="large">IOI赛制</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="语言限制">
+          <el-checkbox-group v-model="language">
+            <el-checkbox label="不限制" value="-1" />
+            <el-checkbox label="C" value="1" />
+            <el-checkbox label="C++" value="2" />
+            <el-checkbox label="Java" value="3" />
+            <el-checkbox label="Python" value="4" />
+          </el-checkbox-group>
+        </el-form-item>
+
         <el-form-item label="是否要密码">
           <el-radio-group v-model="isPassword">
             <el-radio value="1" size="large">是</el-radio>
@@ -30,29 +40,41 @@
         <el-form-item v-if="isPassword == '1'" label="密码">
           <el-radio-group>
             <el-input
-                v-model="password"
-                style="width: 240px"
-                placeholder="请输入密码"
+              v-model="password"
+              style="width: 240px"
+              placeholder="请输入密码"
             /> </el-radio-group
-          ></el-form-item>
+        ></el-form-item>
         <el-form-item label="是否要邀请"
-        ><el-radio-group v-model="isInvite">
-          <el-radio value="1" size="large">是</el-radio>
-          <el-radio value="2" size="large">否</el-radio>
-        </el-radio-group>
+          ><el-radio-group v-model="isInvite">
+            <el-radio value="true" size="large">是</el-radio>
+            <el-radio value="false" size="large">否</el-radio>
+          </el-radio-group>
         </el-form-item>
 
         <el-form-item label="比赛时间">
-          <el-date-picker v-model="startTime" type="datetime" placeholder="比赛开始时间" />至
-          <el-date-picker v-model="endTime" type="datetime" placeholder="比赛结束时间" />
+          <el-date-picker
+            v-model="startTime"
+            format="YYYY-MM-DD HH:mm:ss"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            type="datetime"
+            placeholder="比赛开始时间"
+          />至
+          <el-date-picker
+            v-model="endTime"
+            format="YYYY-MM-DD HH:mm:ss"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            type="datetime"
+            placeholder="比赛结束时间"
+          />
         </el-form-item>
         <el-form-item label="比赛封面">
           <el-upload
-              class="avatar-uploader"
-              action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
-              :show-file-list="false"
-              :on-success="handleAvatarSuccess"
-              :before-upload="beforeAvatarUpload"
+            class="avatar-uploader"
+            action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
+            :show-file-list="false"
+            :on-success="handleAvatarSuccess"
+            :before-upload="beforeAvatarUpload"
           >
             <img v-if="cover" :src="cover" class="avatar" />
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
@@ -60,10 +82,10 @@
         </el-form-item>
         <el-form-item label="比赛说明" prop="content">
           <mavon-editor
-              style="height: 500px"
-              ref="mavonEditorRef"
-              v-model="description"
-              :ishljs="true"
+            style="height: 500px"
+            ref="mavonEditorRef"
+            v-model="description"
+            :ishljs="true"
           />
         </el-form-item>
 
@@ -74,36 +96,36 @@
       </el-form>
     </div>
     <div v-if="active == 1">
-      <QuestionSelect></QuestionSelect>
+      <QuestionSelect @selectedQuestion="selectedQuestion" :contestId="contestId"></QuestionSelect>
       <el-button
-          @click="
+        @click="
           () => {
             active--
           }
         "
-          type="primary"
-      >上一步</el-button
+        type="primary"
+        >上一步</el-button
       >
       <el-button @click="saveQuestion" type="cancel">保存</el-button>
       <el-button
-          @click="
+        @click="
           () => {
             active++
           }
         "
-          type="cancel"
-      >跳过</el-button
+        type="cancel"
+        >跳过</el-button
       >
     </div>
     <div v-if="active == 2">
       <el-button
-          @click="
+        @click="
           () => {
             active--
           }
         "
-          type="primary"
-      >上一步</el-button
+        type="primary"
+        >上一步</el-button
       >
       <el-button @click="next" type="cancel">完成</el-button>
     </div>
@@ -120,14 +142,14 @@ import QuestionSelect from '@/components/questionSelect.vue'
 const router = useRouter()
 
 const title = ref('')
-const startTime = ref()
-const endTime = ref()
+const startTime = ref('')
+const endTime = ref('')
 const description = ref()
-const password = ref()
+const password = ref('')
 const isPassword = ref('1')
-const isInvite = ref()
+const isInvite = ref('false')
 const cover = ref()
-const language = ref()
+const language = ref([])
 const contestType = ref('1')
 const mavonEditorRef = ref()
 const active = ref(0)
@@ -135,31 +157,89 @@ onMounted(() => {})
 const contestId = ref()
 const questionIds = ref([])
 function primary() {
-  active.value++
+  if (startTime.value == '' || endTime.value == '') {
+    ElMessage.error('请输入比赛开始时间和结束时间')
+    return false
+  }
+  if (description.value == '') {
+    ElMessage.error('请输入比赛描述')
+    return false
+  }
+  if (title.value == '') {
+    ElMessage.error('请输入比赛名称')
+    return false
+  }
+  if (contestType.value == '') {
+    ElMessage.error('请选择比赛类型')
+    return false
+  }
+  if (isPassword.value == 1 && password.value == '') {
+    ElMessage.error('比赛密码不能为空')
+    return false
+  }
+  cover.value =
+    'https://uploadfiles.nowcoder.com/images/20231115/999991351_1700047623309/5F6F71EEA2A4D8090C0AC8B246CE423D'
+  request
+    .post('/root/contest/create', {
+      title: title.value,
+      startTime: startTime.value,
+      endTime: endTime.value,
+      description: description.value,
+      password: isPassword.value == 1 ? password.value : null,
+      isInvite: isInvite.value,
+      cover: cover.value,
+      language: convert(),
+      contestType: contestType.value
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        contestId.value = res.data
+        ElMessage.success('创建成功')
+        active.value++
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
 }
 function cancel() {
   router.push({ path: '/manage' })
 }
+const convert = () => {
+  const languageList = language.value
+  let s = 0
+  for (let i = 0; i < languageList.length; i++) {
+    if (languageList[i] == -1) {
+      s = -1
+      break
+    } else {
+      s += s << languageList[i]
+    }
+  }
+  return s
+}
+const selectedQuestion = (value) => {
+  questionIds.value = value
+}
 const handleAvatarSuccess: UploadProps['onSuccess'] = (response, uploadFile) => {
   cover.value = URL.createObjectURL(uploadFile.raw!)
 }
-// DOTO
-const next=()=>{
-  //不清楚干啥的，但是dvdv没写
-}
 const saveQuestion = () => {
   request
-      .post('/root/contest/edit/problem', {
-        contestId: contestId.value,
-        questionIds: questionIds.value
-      })
-      .then((res) => {
+    .post('/root/contest/edit/problem', {
+      contestId: contestId.value,
+      questionIds: questionIds.value
+    })
+    .then((res) => {
+      if (res.code == 200) {
         ElMessage.success('保存成功')
         active.value++
-      })
-      .catch(() => {
-        ElMessage.error('保存失败')
-      })
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+    .catch(() => {
+      ElMessage.error('保存失败')
+    })
 }
 const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
   if (rawFile.type !== 'image/jpeg') {

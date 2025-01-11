@@ -173,6 +173,13 @@ const memoryLimit = ref(1024)
 const status = ref('0')
 const difficulty = ref('1')
 const exampleList = ref([])
+const emit = defineEmits(['cancel', 'primary'])
+// 定义接收的 props
+const props = defineProps({
+  id: {
+    type: Object
+  }
+})
 
 const selectedTagIds = ref([])
 const tip = ref('')
@@ -197,6 +204,27 @@ const addExample = () => {
 
 onMounted(() => {
   getTags()
+  if (props.id) {
+    request.get(`/root/question/get/${props.id}`).then((res) => {
+      if (res.code == 200) {
+        title.value = res.data.title
+        tip.value = res.data.tip
+        editorType.value = res.data.editorType
+        status.value = res.data.status.toString()
+        difficulty.value = res.data.difficulty.toString()
+        timeLimit.value = res.data.timeLimit
+        memoryLimit.value = res.data.memoryLimit
+        content.value=res.data.description
+        answer.value=res.data.answer
+        // jsonjson转成数组
+        exampleList.value = JSON.parse(res.data.example)
+        
+      }else{
+        ElMessage.error(res.msg)
+      }
+      }
+    )
+  }
 })
 const answer = ref()
 const content = ref()
@@ -247,18 +275,18 @@ const getTags = async () => {
   }
 }
 function primary() {
-  if (editorType.value == '1') {
+  
     if (title.value == '') {
       alert('请输入标题')
       return
     }
 
-    if (router.currentRoute.value.query.id) {
-      const id = router.currentRoute.value.query.id
+    if (props.id) {
+      const id = props.id
 
       // 更新
       request
-          .post('/root/question/update', {
+          .put('/root/question/update', {
             id: id,
             title: title.value,
             status: status.value,
@@ -274,6 +302,7 @@ function primary() {
           .then((res) => {
             if (res.code == 200) {
               ElMessage.success('更新成功！！！')
+              emit('primary')
             } else {
               ElMessage.error(res.msg)
             }
@@ -294,16 +323,19 @@ function primary() {
           })
           .then((res) => {
             if (res.code == 200) {
-              ElMessage.success('更新成功！！！')
+              ElMessage.success('添加成功！！！')
+              emit('primary')
+             
             } else {
               ElMessage.error(res.msg)
             }
           })
     }
   }
-}
+
 function cancel() {
-  router.push({ path: '/manage' })
+
+  emit('cancel')
 }
 </script>
 
@@ -335,7 +367,7 @@ function cancel() {
 .manage-editor {
   background-color: aliceblue;
   margin: auto;
-  width: 70%;
+  width: 80%;
   border-radius: 15px;
   padding: 50px;
 }

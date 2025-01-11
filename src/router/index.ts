@@ -32,17 +32,6 @@ const router = createRouter({
       component: () => import('@/views/problems.vue')
     },
     {
-      path: '/question/editor',
-      name: 'questionEditor',
-      component: () => import('@/views/questionEditor.vue')
-    },
-
-    {
-      path: '/contest/editor',
-      name: 'contestEditor',
-      component: () => import('@/views/contestEditor.vue')
-    },
-    {
       path: '/circle',
       name: 'circle',
       component: () => import('@/views/circle.vue')
@@ -63,13 +52,48 @@ const router = createRouter({
       component: () => import('@/views/person/profile.vue')
     },
     {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('@/views/admin/admin.vue'),
+      children: [
+        {
+          path: 'problem',
+          name: 'problemManage',
+          component: () => import('@/views/admin/problemManage.vue')
+        },
+        {
+          path: 'contest',
+          name: 'contestManage',
+          component: () => import('@/views/admin/contestManage.vue')
+        },
+        {
+          path: 'user',
+          name: 'userManage',
+          component: () => import('@/views/admin/userManage.vue')
+        },
+        {
+          path: 'discussion',
+          name: 'discussionManage',
+          component: () => import('@/views/admin/discussionManage.vue')
+        }
+      ]
+    },
+    {
       path: '/ai',
       name: 'ai',
       component: () => import('@/views/Ai.vue')
     },
     { path: '/discuss', name: 'discussion', component: () => import('@/views/Discussion.vue') },
-    { path: '/discuss/:id', name: 'discussionDetail', component: () => import('@/views/DiscussionDetail.vue') },
-    { path: '/files/problemid=:problemid', name: 'ListFile',component: () => import('@/components/ListFiles.vue')  },
+    {
+      path: '/discuss/:id',
+      name: 'discussionDetail',
+      component: () => import('@/views/DiscussionDetail.vue')
+    },
+    {
+      path: '/files/problemid=:problemid',
+      name: 'ListFile',
+      component: () => import('@/components/ListFiles.vue')
+    }
   ]
 })
 
