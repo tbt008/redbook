@@ -103,7 +103,7 @@
             <!-- 用户消息布局 -->
             <template v-else>
               <div class="message-content-wrapper">
-                <div class="message-bubble user-bubble">
+                <div class="message-bubble user-bubble preserve-whitespace">
                   {{ message.content }}
                 </div>
                 <el-avatar 
@@ -151,7 +151,7 @@
             <!-- 用户消息布局 -->
             <template v-else>
               <div class="message-content-wrapper">
-                <div class="message-bubble user-bubble">
+                <div class="message-bubble user-bubble preserve-whitespace">
                   {{ message.content }}
                 </div>
                 <el-avatar 
@@ -273,13 +273,11 @@ const initDarkMode = () => {
   const savedMode = localStorage.getItem('darkMode')
   if (savedMode === 'true') {
     isDarkMode.value = true
-    document.documentElement.classList.add('dark')
-    document.documentElement.style.setProperty('--el-bg-color', '#2c2c2c')
-    document.documentElement.style.setProperty('--el-menu-bg-color', '#2c2c2c')
-    document.documentElement.style.setProperty('--el-text-color-primary', '#E5EAF3')
-    document.documentElement.style.setProperty('--messages-bg-color', '#141414')
-  } else {
-    document.documentElement.style.setProperty('--messages-bg-color', '#f5f5f5')
+    // 将样式应用到组件根元素而不是document
+    const container = document.querySelector('.layout-container')
+    if (container) {
+      container.classList.add('dark')
+    }
   }
 }
 
@@ -419,20 +417,12 @@ const deleteChat = async () => {
 // 主题切换
 const handleThemeChange = (command: string) => {
   isDarkMode.value = command === 'dark'
-  const html = document.documentElement
-
+  const container = document.querySelector('.layout-container')
+  
   if (isDarkMode.value) {
-    html.classList.add('dark')
-    html.style.setProperty('--el-bg-color', '#2c2c2c')
-    html.style.setProperty('--el-menu-bg-color', '#2c2c2c')
-    html.style.setProperty('--el-text-color-primary', '#E5EAF3')
-    html.style.setProperty('--messages-bg-color', '#141414')
+    container?.classList.add('dark')
   } else {
-    html.classList.remove('dark')
-    html.style.removeProperty('--el-bg-color')
-    html.style.removeProperty('--el-menu-bg-color')
-    html.style.removeProperty('--el-text-color-primary')
-    html.style.setProperty('--messages-bg-color', '#f5f5f5')
+    container?.classList.remove('dark')
   }
 
   localStorage.setItem('darkMode', isDarkMode.value.toString())
@@ -557,9 +547,24 @@ const showWelcome = ref(true)
 </script>
 
 <style scoped>
+/* 将所有暗色模式样式移到组件内 */
+.layout-container.dark {
+  --messages-bg-color: #242424;
+  --el-bg-color: #242424;
+  --el-menu-bg-color: #242424;
+  --el-text-color-primary: #e0e0e0;
+}
+
 .layout-container {
-  height: 100vh;
-  border: 1px solid var(--el-border-color-light);
+  height: 100vh; /* 占满整个视口高度 */
+  width: 100vw; /* 占满整个视口宽度 */
+  position: fixed; /* 固定定位，防止页面滚动 */
+  top: 0;
+  left: 0;
+  --messages-bg-color: #fafafa;
+  --el-bg-color: #ffffff;
+  --el-menu-bg-color: #ffffff;
+  --el-text-color-primary: #303133;
 }
 
 .aside {
@@ -602,6 +607,8 @@ const showWelcome = ref(true)
 }
 
 .main-container {
+  height: 100%;
+  width: 100%;
   background-color: var(--el-bg-color);
   transition: background-color 0.3s ease;
 }
@@ -623,16 +630,17 @@ const showWelcome = ref(true)
 }
 
 .main-content {
-  padding: 0;
-  position: relative;
+  height: calc(100vh - 60px); /* 减去header高度 */
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 0px;
+  padding-bottom: 50px;
   background-color: var(--messages-bg-color);
   transition: background-color 0.3s ease;
   position: relative;
@@ -684,15 +692,15 @@ const showWelcome = ref(true)
 }
 
 .user-bubble {
-  background-color: var(--el-color-primary-light-5);
-  color: var(--el-text-color-primary);
+  background-color: #e3f2fd;
+  color: #37474f;
 }
 
 .ai-bubble {
-  background-color: var(--el-bg-color-overlay);
-  color: var(--el-text-color-primary);
+  background-color: #f5f5f5;
+  color: #37474f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   margin-left: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .avatar {
@@ -745,10 +753,13 @@ const showWelcome = ref(true)
 }
 
 .input-section {
-  padding: 20px;
+  padding: 20px 20px 0px 20px;
   background-color: var(--el-bg-color);
   border-top: 1px solid var(--el-border-color-light);
   transition: background-color 0.3s ease;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
 }
 
 .input-wrapper {
@@ -762,8 +773,9 @@ const showWelcome = ref(true)
 }
 
 .custom-input :deep(.el-textarea__inner) {
-  background-color: var(--el-bg-color-overlay);
-  color: var(--el-text-color-primary);
+  background-color: #ffffff;
+  color: #37474f;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
   resize: none;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
@@ -945,5 +957,28 @@ const showWelcome = ref(true)
 
 .home-button {
   margin-left: 12px;
+}
+
+.preserve-whitespace {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 暗色模式下的消息气泡 */
+.layout-container.dark .user-bubble {
+  background-color: #1e3a5f;
+  color: #e0e0e0;
+}
+
+.layout-container.dark .ai-bubble {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+/* 暗色模式下的输入框 */
+.layout-container.dark .custom-input :deep(.el-textarea__inner) {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #3d3d3d;
 }
 </style>
