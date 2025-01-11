@@ -317,7 +317,7 @@ const filteredGroupedTags = computed(() => {
 const getProblems = async () => {
   loading.value = true
   try {
-    const response = await request.post('/question/list', {
+    const response = await request.post('/root/question/list', {
       pageStart: currentPage.value,
       pageSize: pageSize.value,
       sortField: sortField.value,
