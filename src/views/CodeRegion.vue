@@ -11,10 +11,10 @@
           <el-select v-model="choseLanguage" style="width: 100px">
             <!-- 选择语言 -->
             <el-option
-                v-for="item in languageList"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
+              v-for="item in languageList"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
             />
           </el-select>
         </div>
@@ -25,9 +25,9 @@
     </div>
     <div class="code-region">
       <codeEditor
-          @update:value="_handleDebounce"
-          :value="code"
-          :language="choseLanguage"
+        @update:value="_handleDebounce"
+        :value="code"
+        :language="choseLanguage"
       ></codeEditor>
     </div>
   </div>
@@ -84,15 +84,15 @@ const changeLanguageFun = () => {
   uploadCode()
 }
 watch(
-    () => code.value,
-    () => uploadCode(),
-    { deep: true }
+  () => code.value,
+  () => uploadCode(),
+  { deep: true }
 )
 
 watch(
-    () => choseLanguage,
-    () => changeLanguageFun(),
-    { deep: true }
+  () => choseLanguage,
+  () => changeLanguageFun(),
+  { deep: true }
 )
 onMounted(() => {
   uploadCode()

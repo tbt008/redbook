@@ -62,21 +62,21 @@ onMounted(async () => {
           <tbSplit class="right">
             <template #one>
               <codeRegion
-                  :loading="loading"
-                  :rep="awaitContent"
-                  @submitCode="codeNow"
-                  @changeLanuage="changeLanuage"
+                :loading="loading"
+                :rep="awaitContent"
+                @submitCode="codeNow"
+                @changeLanuage="changeLanuage"
               ></codeRegion>
             </template>
             <template #two>
               <div class="footer">
                 <codeTest
-                    @showACImgfun="showACImgfun"
-                    :language="language"
-                    :code="code"
-                    :rep="rep"
-                    :question-id="questionId"
-                    :contest-id="contestId"
+                  @showACImgfun="showACImgfun"
+                  :language="language"
+                  :code="code"
+                  :rep="rep"
+                  :question-id="questionId"
+                  :contest-id="contestId"
                 ></codeTest>
               </div>
             </template>

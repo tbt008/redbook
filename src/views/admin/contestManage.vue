@@ -87,7 +87,7 @@
   </div>
   <!-- 新增比赛 -->
   <el-dialog v-model="showAddContest" title="新增题目" width="70%" :close-on-click-modal="false">
-    <QuestionEditor @cancel="cancel" @primary="cancel"></QuestionEditor>
+    <ContestEditor @cancel="cancel" @primary="cancel"></ContestEditor>
   </el-dialog>
   <!-- 修改比赛 -->
   <el-dialog v-model="showUpdateContest" title="修改题目" width="70%" :close-on-click-modal="false">
@@ -95,8 +95,8 @@
   </el-dialog>
 </template>
 
-<script lang="ts" setup>
-import QuestionEditor from '@/components/questionEditor.vue'
+<script lang="js" setup>
+import ContestEditor from '@/components/contestEditor.vue'
 import { Delete, Edit } from '@element-plus/icons-vue'
 // Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
@@ -110,8 +110,8 @@ const questionId = ref(0)
 const contestList = ref([])
 // 状态变量
 const loading = ref(true)
-const difficulty = ref<number | null>(null)
-const selectedTagIds = ref<number[]>([])
+const difficulty = ref(null)
+const selectedTagIds = ref([])
 const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -143,13 +143,13 @@ const getContestList = async () => {
 }
 
 // 分页大小改变处理
-const handleSizeChange = async (val: number) => {
+const handleSizeChange = async (val) => {
   pageSize.value = val
   currentPage.value = 1
 }
 
 // 当前页改变处理
-const handleCurrentChange = async (val: number) => {
+const handleCurrentChange = async (val) => {
   currentPage.value = val
 }
 
