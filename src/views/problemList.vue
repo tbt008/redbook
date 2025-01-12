@@ -732,8 +732,9 @@ const firstDayOfMonth = computed(() => {
 <style scoped>
 /* 可视化的悬浮效果 */
 .floating-stats-card {
-  position: fixed;
-  right: 20px;
+  /* position: sticky; */
+  /* right: 20px; */ 
+  position: absolute;
   top: 40%;
   transform: translateY(-50%);
   background: white;
@@ -741,7 +742,7 @@ const firstDayOfMonth = computed(() => {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   padding: 20px;
   width: 350px;
-  z-index: 1000; /* 确保在日历上层 */
+  z-index: 3000; /* 确保在日历上层 */
   transition: opacity 0.3s ease;
 }
 /* 容器样式 */
