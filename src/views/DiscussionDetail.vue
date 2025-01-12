@@ -363,8 +363,8 @@ import type { FormInstance } from 'element-plus'
 const formRef = ref<FormInstance>()
 // 作者统计数据
 const authorStats = reactive({
-  articles: 0,
-  totalLikes: 0
+  articles: "null" as number | string,
+  totalLikes: "null" as number | string
 })
 // 表单验证规则
 const rules = {
@@ -673,6 +673,9 @@ const getAuthorStats = async () => {
       console.log(response.data.length)
     }
     else{
+      // 获取作者统计数据失败时，将文章总数和总获赞数设置为null
+      authorStats.articles = null
+      authorStats.totalLikes = null
       ElMessage.error(response.msg || '获取作者统计数据失败')
     }
   } catch (error) {
