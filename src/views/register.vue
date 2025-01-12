@@ -53,54 +53,76 @@
     <section class="wrapper">
       <header>
         <div class="logo">
-          <span>Logo</span>
+          <span>register</span>
         </div>
-        <h1>Welcome back!</h1>
-        <p>User Login</p>
+        <h1>加入我们！</h1>
+        <p>User Register</p>
       </header>
       <section class="main-content">
         <form action="">
-          <input v-model="id" type="username" placeholder="用户名" />
-          <!-- <div class="line"></div> -->
+          <input v-model="username" type="text" placeholder="用户名" />
           <input v-model="password" type="password" placeholder="密码" />
-
-          <input type="button" class="login-button" value="Login" @click="login" />
+          <input v-model="confirmPassword" type="password" placeholder="确认密码" /> 
+          <input type="button" class="login-button" value="注册" @click="register" />
         </form>
       </section>
       <footer>
-        <p><a href="" title="Forgot Password">Forgot Password?</a></p>
-        <p><a href="/register" title="Register">Register</a></p>
+        <p><a href="/login" title="Login">已有账号？立即登录</a></p>
       </footer>
     </section>
   </section>
 </template>
+
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const id = ref()
+const username = ref('')
 const password = ref('')
-const login = async () => {
-  let obj = {
-    uid: id.value,
-    password: password.value
+const confirmPassword = ref('') 
+
+const register = async () => {
+  // 表单验证
+  if (!username.value || !password.value || !confirmPassword.value ) {
+    ElMessage.warning('请填写所有必填项')
+    return
   }
-  request.post('/user/login', obj).then((res) => {
-    if (res.code == 200) {
-      //保存jwt
-      localStorage.setItem('authToken', res.data) 
-      ElMessage.success('登录成功！欢迎回来!')
-      router.go(-1)
+  
+  if (password.value !== confirmPassword.value) {
+    ElMessage.error('两次输入的密码不一致')
+    return
+  }
+  
+ 
+
+  const registerData = {
+    uid: username.value,
+    password: password.value, 
+  }
+
+  try {
+    const token = localStorage.getItem('authToken')
+    const res = await request.post('/user/register', registerData,{
+      headers: {
+        'auth-token': `Bearer ${token}`
+      }
+    })
+    if (res.code === 200) {
+      ElMessage.success('注册成功！')
+      router.push('/login')
     } else {
       ElMessage.error(res.msg)
     }
-  })
+  } catch (error) {
+    ElMessage.error('注册失败，请稍后重试')
+  }
 }
 </script>
+
 <style lang="scss" scoped>
 input {
   border-bottom: 1px solid var(--el-border-color);
@@ -200,7 +222,7 @@ input {
     }
     footer {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: flex-end;
       margin-top: 60px;
       p {
@@ -226,4 +248,4 @@ input {
     }
   }
 }
-</style>
+</style> 

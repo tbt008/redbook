@@ -31,6 +31,7 @@
 import request from '@/util/request'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 const router = useRouter()
 const links = ref([
   { path: '/', text: '主页', active: false },
@@ -123,6 +124,7 @@ const handleCommand = (command) => {
   } else if (command === 'logout') {
     request.post('/user/logout').then((res) => {
       if (res.code === 200) {
+        console.log(res)
         localStorage.removeItem('authToken')
         localStorage.removeItem('avatar')
         userImg.value = null

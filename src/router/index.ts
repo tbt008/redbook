@@ -93,6 +93,11 @@ const router = createRouter({
       path: '/files/problemid=:problemid',
       name: 'ListFile',
       component: () => import('@/components/ListFiles.vue')
+    },
+    {
+      path: '/register',
+      name: 'Register',
+      component: () => import('@/views/register.vue')
     }
   ]
 })
