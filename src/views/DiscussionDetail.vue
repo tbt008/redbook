@@ -1448,10 +1448,10 @@ onMounted(async () => {
   border: none;
 }
 
-/* 移除预览区域的padding */
+/* 修改评论内容的左边距 */
 .comment-content :deep(.v-show-content),
 .reply-content :deep(.v-show-content) {
-  padding: 0 !important;
+  padding: 0 0 0 16px !important; /* 添加左边距 16px */
   background-color: transparent !important;
 }
 
