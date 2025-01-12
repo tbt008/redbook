@@ -692,9 +692,21 @@ const isSelectedDate = (dateStr: string) => {
 }
 
 const changeMonth = (delta: number) => {
-  currentMonthDate.value = currentMonthDate.value.add(delta, 'month')
-  getDailyQuestions(currentMonthDate.value.format('YYYY-MM'))
-}
+  const targetMonth = currentMonthDate.value.add(delta, 'month'); // 计算目标月份
+  const currentMonth = dayjs(); // 当前月份（使用 dayjs 获取）
+
+  // 判断目标月份是否超出当前月份
+  if (targetMonth.isAfter(currentMonth, 'month')) {
+    // 如果目标月份晚于当前月份，则直接返回，不做任何修改
+    return;
+  }
+
+  // 更新当前月份
+  currentMonthDate.value = targetMonth;
+
+  // 调用 getDailyQuestions 方法获取数据
+  getDailyQuestions(currentMonthDate.value.format('YYYY-MM'));
+};
 
 // 修改回到今日的方法
 const backToToday = async () => {
