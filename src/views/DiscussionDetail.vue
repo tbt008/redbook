@@ -209,7 +209,7 @@
                       class="create-reply-button"
                     >
                       <el-icon><ChatLineRound /></el-icon>
-                      发表回复
+                      回复
                     </el-button>
                   </div>
                 </div>
@@ -347,8 +347,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { View, Star, Pointer, ArrowLeft, Edit, Delete, ChatLineRound, ArrowDown } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
-import request from '@/util/request'
-const Avatar = new URL('../views/imgs/bot.jpg', import.meta.url).href
+import request from '@/util/request' 
 const route = useRoute()
 const router = useRouter()
 const loading = ref<boolean>(true)
@@ -1395,6 +1394,7 @@ onMounted(async () => {
 }
 
 .reply-item {
+  /* 次级回复背景颜色 */
   background-color: #f9f9f9;
   border-radius: 8px;
   padding: 12px;
