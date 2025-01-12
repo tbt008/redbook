@@ -104,13 +104,8 @@ const register = async () => {
     password: password.value, 
   }
 
-  try {
-    const token = localStorage.getItem('authToken')
-    const res = await request.post('/user/register', registerData,{
-      headers: {
-        'auth-token': `Bearer ${token}`
-      }
-    })
+  try { 
+    const res = await request.post('/user/register', registerData)
     if (res.code === 200) {
       ElMessage.success('注册成功！')
       router.push('/login')

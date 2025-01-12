@@ -674,8 +674,8 @@ const getAuthorStats = async () => {
     }
     else{
       // 获取作者统计数据失败时，将文章总数和总获赞数设置为null
-      authorStats.articles = null
-      authorStats.totalLikes = null
+      authorStats.articles = "null"
+      authorStats.totalLikes = "null"
       ElMessage.error(response.msg || '获取作者统计数据失败')
     }
   } catch (error) {
