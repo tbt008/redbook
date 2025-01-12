@@ -140,6 +140,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router'; 
 import request from '@/util/request'
+import requestBlob from '@/util/requestblob'
 const route = useRoute();
 const problemId = route.params.problemid as string;
 const titleid = problemId;
@@ -406,10 +407,10 @@ const downloadFile = async (folderName: string) => {
     return;
   }
   const token = localStorage.getItem('authToken');
-  console.log(token);
+  // console.log(token);
   try {
  
-    const response = await request.post('/root/question/get/file', {
+    const response = await requestBlob.post('/root/question/get/file', {
       questionId,  // 直接传递参数，不要包在data对象里
       folderName
     }, {
@@ -425,6 +426,16 @@ const downloadFile = async (folderName: string) => {
 
     // 从 response.data 中获取 blob 数据
     const blob = new Blob([response.data]);
+    // 下载文件用的 debug 代码  
+    // const reader = new FileReader();
+    // reader.onload = () => {
+    //   console.log('Blob 内容:', reader.result); // 打印 Blob 实际内容
+    // };
+    // reader.readAsText(blob);
+    // console.log(blob);
+    // if (blob.size === 0) {
+    //   throw new Error('文件为空或未正确返回');
+    // }
     const fileURL = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = fileURL;
