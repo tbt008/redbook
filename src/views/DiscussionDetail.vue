@@ -877,7 +877,7 @@ onMounted(async () => {
   display: flex;
   gap: 24px;
   padding: 24px;
-  max-width: 1500px;
+  /* max-width: 1500px; */
   margin: 0 auto;
   min-height: 100vh;
   background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);

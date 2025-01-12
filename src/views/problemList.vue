@@ -735,7 +735,7 @@ const firstDayOfMonth = computed(() => {
   /* position: sticky; */
   /* right: 20px; */ 
   position: absolute;
-  top: 40%;
+  top: 60%;
   transform: translateY(-50%);
   background: white;
   border-radius: 20px;
