@@ -12,13 +12,16 @@
         </div>
       </li>
     </ul>
-    <div class="header-user" @click="handleUser">
-      <div v-if="loading">
-        <img v-if="userImg" class="user-img" :src="userImg" alt="" />
-        <el-avatar v-else class="user-img"> 未登录 </el-avatar>
+    <div class="header-user">
+      <div v-if="loading && userImg" class="user-menu-wrapper">
+        <img class="user-img" :src="userImg" alt="" @click="showMenu = !showMenu" />
+        <el-menu v-show="showMenu" class="user-menu" :class="{ show: showMenu }">
+          <el-menu-item @click="handleCommand('space')">我的空间</el-menu-item>
+          <el-menu-item @click="handleCommand('logout')">退出登录</el-menu-item>
+        </el-menu>
       </div>
-      <div v-else>
-        <div class="user-img" alt="" />
+      <div v-else @click="handleUser">
+        <el-avatar class="user-img"> 未登录 </el-avatar>
       </div>
     </div>
   </div>
@@ -38,6 +41,7 @@ const links = ref([
 ])
 const userImg = ref(null)
 const loading = ref(false)
+const showMenu = ref(false)
 const userLogin = () => {
   // 判断用户是否已登录
   if (localStorage.getItem('authToken') != null) {
@@ -88,6 +92,12 @@ onMounted(() => {
   userLogin()
   loading.value = true
   skip(-1)
+  document.addEventListener('click', (e) => {
+    const userMenu = document.querySelector('.user-menu-wrapper')
+    if (userMenu && !userMenu.contains(e.target)) {
+      showMenu.value = false
+    }
+  })
 })
 const handleClick = (index) => {
   skip(index)
@@ -104,6 +114,22 @@ const handleUser = () => {
     // 跳转登录页
     router.push('/login')
     // this.$router.push('/login')
+  }
+}
+const handleCommand = (command) => {
+  showMenu.value = false
+  if (command === 'space') {
+    router.push('/user')
+  } else if (command === 'logout') {
+    request.post('/user/logout').then((res) => {
+      if (res.code === 200) {
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('avatar')
+        userImg.value = null
+        ElMessage.success('退出成功')
+        router.push('/login')
+      }
+    })
   }
 }
 </script>
@@ -125,9 +151,8 @@ const handleUser = () => {
   user-select: none;
   /* transition: all 0.6s; */
 }
-.header-user :hover {
-  /* transform: scale(1.03); */
-}
+ 
+
 
 .head-ion {
   height: 100%;
@@ -193,5 +218,48 @@ const handleUser = () => {
 
 .squeeze {
   transform: scale(0.9);
+}
+
+.user-menu-wrapper {
+  position: relative; 
+}
+/* 下拉框样式 */
+.user-menu {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background-color: white;
+  min-width: 140px;
+  padding: 8px 0;
+  z-index: 2000;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.user-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+:deep(.el-menu) {
+  border: none !important;
+  border-radius: 8px;
+}
+
+:deep(.el-menu-item) {
+  height: 44px;
+  line-height: 44px;
+  font-size: 14px;
+  margin: 0 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+:deep(.el-menu-item:hover) {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: var(--el-color-primary);
 }
 </style>
