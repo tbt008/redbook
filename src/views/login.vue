@@ -94,7 +94,12 @@ const login = async () => {
       //保存jwt
       localStorage.setItem('authToken', res.data) 
       ElMessage.success('登录成功！欢迎回来!')
-      router.go(-1)
+      // 检查上一个路由是否为注册页
+      if (router.options.history.state.back === '/register') {
+        router.push('/')
+      } else {
+        router.go(-1)
+      }
     } else {
       ElMessage.error(res.msg)
     }
