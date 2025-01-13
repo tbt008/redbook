@@ -493,15 +493,17 @@ watch(
 
 // 组件挂载时初始化数据
 onMounted(async () => {
+  // 获取当前月份的每日一题
+  const currentMonth = dayjs().format('YYYY-MM')
+  await getDailyQuestions(currentMonth)
   // 自动选中今天的日期
   const today = getBeijingDate() // 使用之前定义的获取北京时间的方法
   console.log(today)
   handleDateClick(today)
+
   await getTags()
   await getTotalCount()
-  // 获取当前月份的每日一题
-  const currentMonth = dayjs().format('YYYY-MM')
-  await getDailyQuestions(currentMonth)
+
   
 
 })
@@ -868,7 +870,7 @@ const firstDayOfMonth = computed(() => {
   background-color: rgba(103, 194, 58, 0.623); /* 使用更深的绿色 */
 }
 .calendar-cell.selected {
-  background-color: #409EFF;
+  background-color: #ff4d4f;
   color: white;
 }
 .calendar-cell.completed {
