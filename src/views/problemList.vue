@@ -72,10 +72,16 @@
 
           <!-- 题目列 -->
           <el-table-column label="题目" min-width="300">
-            <template #default="{ row }">
-              <router-link :to="`/question?id=${row.questionId}`" class="problem-title">
+            <template #default="{ row }"> 
+              <a 
+                href="/question?id=${row.questionId}`" 
+                class="problem-title" 
+              >
                 {{ row.questionName }}
-              </router-link>
+              </a>  
+              <!-- <router-link :to="`/question?id=${row.questionId}`" class="problem-title">
+                {{ row.questionName }}
+              </router-link> -->
               <div class="problem-tags">
                 <!-- elementplus el-tag: 题目标签 -->
                 <el-tag
@@ -153,13 +159,19 @@
             <div class="daily-title">每日一题</div>
             <div class="daily-content">
               <template v-if="selectedDailyQuestion && selectedDailyQuestion.questionTitle !== '今日暂无题目' && selectedDailyQuestion.questionTitle !== '当日暂无题目'">
-                <div class="question-name">
-                  <router-link 
+                <div class="question-name"> 
+                  <a 
+                    href="/question?id=${selectedDailyQuestion.questionId}`" 
+                    class="daily-question-link" 
+                  >
+                    {{ selectedDailyQuestion.questionTitle }}
+                  </a> 
+                  <!-- <router-link 
                     :to="`/question?id=${selectedDailyQuestion.questionId}`"
                     class="daily-question-link"
                   >
                     {{ selectedDailyQuestion.questionTitle }}
-                  </router-link>
+                  </router-link> -->
                 </div>
                 <div class="question-status">
                   <el-tag :type="selectedDailyQuestion.completed ? 'success' : 'info'" size="small">
