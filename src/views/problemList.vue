@@ -74,7 +74,7 @@
           <el-table-column label="题目" min-width="300">
             <template #default="{ row }"> 
               <a 
-                href="/question?id=${row.questionId}`" 
+                :href="`/question?id=${row.questionId}`" 
                 class="problem-title" 
               >
                 {{ row.questionName }}
@@ -161,7 +161,7 @@
               <template v-if="selectedDailyQuestion && selectedDailyQuestion.questionTitle !== '今日暂无题目' && selectedDailyQuestion.questionTitle !== '当日暂无题目'">
                 <div class="question-name"> 
                   <a 
-                    href="/question?id=${selectedDailyQuestion.questionId}`" 
+                    :href="`/question?id=${selectedDailyQuestion.questionId}`" 
                     class="daily-question-link" 
                   >
                     {{ selectedDailyQuestion.questionTitle }}
