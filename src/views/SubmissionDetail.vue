@@ -3,6 +3,11 @@
     <!-- 测试用例结果展示 -->
     <div class="test-case-section">
       <testCase :test="testResult"></testCase>
+      <div class="author-info">
+        <el-tag size="small" type="info" effect="plain">
+          作者：{{ submissionData.userName }}
+        </el-tag>
+      </div>
     </div>
 
     <!-- 提交信息卡片 -->
@@ -27,6 +32,10 @@
         <div class="info-item">
           <span class="label">占用内存：</span>
           <span class="value">{{ formatMemory(submissionData.memory) }}</span>
+        </div>
+        <div class="info-item"> 
+          <span class="label">运行状态：</span>
+          <span class="value">正在设计中...</span>
         </div>
       </div>
     </el-card>
@@ -62,8 +71,7 @@ import { Document } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import testCase from '@/components/testCase.vue'
 import hljs from 'highlight.js'
-import 'highlight.js/styles/github.css'
-import 'highlight.js/lib/languages/cpp'
+import 'highlight.js/styles/github.css' 
 
 const route = useRoute()
 const submissionData = ref({
@@ -159,8 +167,9 @@ const copyCode = () => {
 }
 
 onMounted(() => {
-  getSubmissionDetail()
   getTestResult()
+  getSubmissionDetail()
+  
 })
 </script>
 
@@ -172,6 +181,7 @@ onMounted(() => {
 }
 
 .test-case-section {
+  position: relative;
   margin-bottom: 20px;
   border: 1px solid #e4e7ed;
   border-radius: 18px;
@@ -180,14 +190,38 @@ onMounted(() => {
   background-color: #fff;
 }
 
+.author-info {
+  position: absolute;
+  bottom: 16px;
+  right: 80px;
+}
+
+:deep(.el-tag) {
+  border-radius: 16px;
+  padding: 0 12px;
+  height: 32px;
+  line-height: 32px;
+  font-size: 13px;
+  border: 1px solid #e9e9eb;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);  /* 背景模糊效果 */
+  /* 字体加粗 */
+  font-weight: 600; 
+}
+
 .submission-info {
   margin-bottom: 20px;
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: 1.5fr 0.8fr 1fr 1fr 1fr;
+  gap: 8px 16px;
+}
+
+.info-item:last-child {
+  grid-column: 1 / -1;   /* 运行状态占据整行 */
+  margin-top: 16px;      
 }
 
 .info-item {

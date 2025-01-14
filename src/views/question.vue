@@ -102,6 +102,10 @@ watch(
   () => initFun()
 )
 onMounted(() => {})
+
+const goToSubmissionDetail = (row) => {
+  router.push(`/submission/${row.submitId}`)
+}
 </script>
 
 <template>
@@ -204,7 +208,7 @@ onMounted(() => {})
       <!-- <questionSolve></questionSolve> -->
     </div>
     <div class="content" v-show="currentTab === 2" style="height: 701px">
-      <el-table :data="codeRecords" style="width: 100%">
+      <el-table :data="codeRecords" style="width: 100%" @row-click="goToSubmissionDetail">
         <el-table-column label="运行状态" prop="result">
           <template #default="{ row }">
             <el-tag v-if="row.result == 100" type="success">答案正确</el-tag>
