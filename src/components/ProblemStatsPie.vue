@@ -49,6 +49,49 @@ const initChart = () => {
 const updateChart = () => {
   if (!chart) return
 
+  const chartData = []
+  if (props.passPerson && props.passPerson > 0) {
+    chartData.push({ 
+      value: props.passPerson, 
+      name: 'AC',
+      itemStyle: { 
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [{
+            offset: 0, color: '#95eb75' 
+          }, {
+            offset: 1, color: '#67C23A'
+          }]
+        }
+      }
+    })
+  }
+  
+  if (waPerson.value > 0) {
+    chartData.push({ 
+      value: waPerson.value, 
+      name: 'WA',
+      itemStyle: { 
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [{
+            offset: 0, color: '#ff7875'
+          }, {
+            offset: 1, color: '#F56C6C'
+          }]
+        }
+      }
+    })
+  }
+
   const option = {
     tooltip: {
       trigger: 'item',
@@ -56,20 +99,23 @@ const updateChart = () => {
     },
     series: [{
       type: 'pie',
-      radius: ['50%', '95%'],
+      radius: ['40%', '80%'],
+      center: ['50%', '50%'],
       silent: true,
       labelLine: {
         show: true,
-        length: 10,
-        length2: 10,
+        length: 8,
+        length2: 8,
         smooth: true
+        
       },
       label: { 
         show: true,
         position: 'outside',
         fontSize: 10,
         formatter: '{b}',
-        color: '#606266'
+        color: '#606266',
+        padding: [0, 0, 0, 0]
       },
       itemStyle: {
         borderRadius: 15,
@@ -83,44 +129,7 @@ const updateChart = () => {
           shadowColor: 'rgba(0, 0, 0, 0.5)'
         }
       },
-      data: props.passPerson && props.tryPerson ? [
-        { 
-          value: props.passPerson, 
-          name: 'AC',
-          itemStyle: { 
-            color: {
-              type: 'linear',
-              x: 0,
-              y: 0,
-              x2: 0,
-              y2: 1,
-              colorStops: [{
-                offset: 0, color: '#95eb75' 
-              }, {
-                offset: 1, color: '#67C23A'
-              }]
-            }
-          }
-        },
-        { 
-          value: props.tryPerson - props.passPerson, 
-          name: 'WA',
-          itemStyle: { 
-            color: {
-              type: 'linear',
-              x: 0,
-              y: 0,
-              x2: 0,
-              y2: 1,
-              colorStops: [{
-                offset: 0, color: '#ff7875'
-              }, {
-                offset: 1, color: '#F56C6C'
-              }]
-            }
-          }
-        }
-      ] : [
+      data: chartData.length > 0 ? chartData : [
         { 
           value: 1, 
           itemStyle: { 
@@ -161,7 +170,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   /* padding: 10px; */
-  height: 335px;
+  height: 300px;
   padding-top: 0;
 }
 
@@ -177,9 +186,9 @@ onMounted(() => {
 }
 
 .pie-chart {
-  width: 100%;  /* 改为100%宽度 */
-  height: calc(100%);  /* 减去标题和底部数据的高度 */
-  flex: 1;  /* 添加flex属性使其自动填充剩余空间 */
+  width: 100%;
+  height: 220px;
+  margin: 0 auto;
 }
 .stats-numbers {
   display: flex;

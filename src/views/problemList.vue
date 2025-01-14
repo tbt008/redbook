@@ -755,7 +755,7 @@ const firstDayOfMonth = computed(() => {
   border-radius: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   padding: 20px;
-  width: 350px;
+  width: 300px;
   z-index: 3000; /* 确保在日历上层 */
   transition: opacity 0.3s ease;
 }
