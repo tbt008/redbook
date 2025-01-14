@@ -76,6 +76,7 @@
               <a 
                 :href="`/question?id=${row.questionId}`" 
                 class="problem-title" 
+                @click.prevent="handleQuestionClick(row.questionId)"
               >
                 {{ row.questionName }}
               </a>  
@@ -163,6 +164,7 @@
                   <a 
                     :href="`/question?id=${selectedDailyQuestion.questionId}`" 
                     class="daily-question-link" 
+                    @click.prevent="handleQuestionClick(selectedDailyQuestion.questionId)"
                   >
                     {{ selectedDailyQuestion.questionTitle }}
                   </a> 
@@ -360,6 +362,8 @@
 <script lang="ts" setup>
 // Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
+// 添加 ElLoading 导入
+import { ElLoading } from 'element-plus'
 // Element Plus 图标
 import { Search, Check, ArrowLeft, ArrowRight, Calendar } from '@element-plus/icons-vue'
 // 工具和类型
@@ -383,6 +387,21 @@ const problems = ref<Problem[]>([])
 const allTags = ref<Tag[]>([])
 const hoveredProblem = ref<Problem | null>(null)
 const token = localStorage.getItem('authToken')
+// 添加题目点击处理
+// https://element-plus.org/zh-CN/component/loading.html 详细一点
+const handleQuestionClick = (questionId: number) => {
+  const loading = ElLoading.service({
+    lock: true,
+    text: '加载中...',
+    background: 'rgba(255, 255, 255, 0.7)'
+  })
+  
+  // 使用 setTimeout 模拟短暂延迟，确保加载动画能够显示
+  setTimeout(() => {
+    window.location.href = `/question?id=${questionId}`
+    loading.close()
+  }, 500)
+}
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate: number) => {
   if (rate >= 70) return '#67C23A'
