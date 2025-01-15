@@ -35,7 +35,13 @@
         </div>
         <div class="info-item"> 
           <span class="label">运行状态：</span>
-          <span class="value">正在设计中...</span>
+          <span class="value">           
+            <el-tag v-if="submissionData.result == 100" type="success">答案正确</el-tag>
+            <el-tag v-else-if="submissionData.result < 100 && submissionData.result > 0" type="primary">部分正确</el-tag>
+            <el-tag v-if="submissionData.result == 0" type="danger">答案错误</el-tag>
+            <el-tag v-if="submissionData.result == -1" type="danger">等待判题</el-tag>
+            <el-tag v-if="submissionData.result == -2" type="warning">编译错误</el-tag> 
+        </span>
         </div>
       </div>
     </el-card>
@@ -167,8 +173,9 @@ const copyCode = () => {
 }
 
 onMounted(() => {
-  getTestResult()
   getSubmissionDetail()
+  getTestResult()
+  
   
 })
 </script>
