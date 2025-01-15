@@ -86,6 +86,7 @@ const initFun = () => {
   if (props.rep !== null) {
     article.value = props.rep
     article.value.description = marked(article.value.description || '')
+
     article.value.example = props.rep.examples
     article.value.tip = marked(article.value.tip || '')
     clickToLike.value = props.rep.isThumb

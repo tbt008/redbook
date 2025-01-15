@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 
-import userProfileProcess from '@/components/userProfileProcess.vue'
+import userSolveProcess from '@/components/userSolveProcess.vue'
 import medalShow from '@/components/medalShow.vue'
 const loading = ref(false)
 const test = async (data1, data2) => {
@@ -18,7 +18,7 @@ onMounted(() => {})
 <template>
   <div class="item-2-middle">
     <div class="item-item2">
-      <userProfileProcess></userProfileProcess>
+      <userSolveProcess></userSolveProcess>
     </div>
     <div class="item-item2">
       <el-skeleton :loading="loading" animated>

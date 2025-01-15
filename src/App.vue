@@ -3,7 +3,7 @@ import Header from '@/components/OJHeader.vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const hideHeaderPaths = ['/ai'] // 在这里添加不需要显示导航栏的路径
+const hideHeaderPaths = ['/ai', '/login'] // 在这里添加不需要显示导航栏的路径
 </script>
 
 <template>

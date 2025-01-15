@@ -1,149 +1,39 @@
 <script setup>
 // 计算公式还没有搞明白
 import { ref, onMounted } from 'vue'
-
-const innerShadow = ref(
-  'inset 2px 2px 5px #c8d0e7,\
-                        inset -1px -1px 2px #ffffff '
-)
-const outerShadow = ref(
-  ' 2px 2px 10px #c8d0e7,\
-                        -2px -2px 1px #ffffff'
-)
-
-const bgStyle = ref('#E9EDF1')
-const green = ref('#00AF9B')
-const organ = ref('#FFC08C')
-const red = ref('#FF2D55')
-const loading = ref(true)
-const getInfo = ref([
-  {
-    tag: '简单',
-    num: 0,
-    totalNum: 0
-  },
-  {
-    tag: '入门',
-    num: 0,
-    totalNum: 0
-  },
-  {
-    tag: '简单',
-    num: 0,
-    totalNum: 0
-  },
-  {
-    tag: '普及',
-    num: 0,
-    totalNum: 0
-  },
-  {
-    tag: '提高',
-    num: 0,
-    totalNum: 0
-  },
-  {
-    tag: '困难',
-    num: 0,
-    totalNum: 0
-  }
-])
-const allRadio = ref('')
-const allDot = ref('')
-const easyRadio = ref('')
-const easyDot = ref('')
-const middleRadio = ref('')
-const middleDot = ref('')
-const hardRadio = ref('')
-const hardDot = ref('')
-const showPass = ref(0)
-const color = ref('#B0B0AF')
-const threeColor = ref(['#00AF9B', '#FFA116', '#FF2D55'])
-const allQuestion = ref(0)
-const allPassQuestion = ref(0)
-const totalProgressLength = ref(316.6725394728)
-const easyLine = ref(0)
-const middleLine = ref(0)
-const hardLine = ref(0)
-function changeShowType(type) {
-  showPass.value = type
-}
-const changeColor = () => {
-  if (showPass.value === 1) {
-    return 'color: #1C1C1C;'
-  } else if (showPass.value === 2) {
-    return 'color: #00AF9B;'
-  } else if (showPass.value === 3) {
-    return 'color: #FFA116;'
-  } else if (showPass.value === 4) {
-    return 'color: #FF2D55;'
-  }
-}
-const passRadioFun = (refValue, refDotValue, submitNum, passNum) => {
-  if (submitNum === 0) {
-    refValue.value = 0
-    refDotValue.value = '.0%'
-  } else {
-    let result = ((passNum * 100) / submitNum).toFixed(1)
-    refValue.value = result.substring(0, result.indexOf('.'))
-    refDotValue.value = result.substring(result.indexOf('.'), result.length) + '%'
-  }
-}
-const funRadio = () => {
-  if (showPass.value === 1) return allRadio.value
-  else if (showPass.value === 2) return easyRadio.value
-  else if (showPass.value === 3) return middleRadio.value
-  else return hardRadio.value
-}
-const funDot = () => {
-  if (showPass.value === 1) return allDot.value
-  else if (showPass.value === 2) return easyDot.value
-  else if (showPass.value === 3) return middleDot.value
-  else return hardDot.value
-}
-const strokeDasharray = (type) => {
-  if (type === 0) {
-    return easyLine.value + ' ' + (totalProgressLength.value - easyLine.value + 1)
-  } else if (type === 1) {
-    return middleLine.value + ' ' + (totalProgressLength.value - middleLine.value + 1)
-  } else {
-    return hardLine.value + ' ' + (totalProgressLength.value - hardLine.value + 1)
-  }
-}
-const strokeDashoffset = (type) => {
-  if (type === 0) {
-    return 79.1681348682
-  } else if (type === 1) {
-    return -1 * easyLine.value + 79.1681348682
-  } else {
-    return -1 * (middleLine.value + easyLine.value) + 79.1681348682
-  }
-}
+import request from '@/util/request'
+const loading = ref(false)
+const acInfo = ref({
+  submitNumberTotal: 0,
+  acNumberTotal: 0,
+  base: 0,
+  allBase: 0,
+  easy: 0,
+  allEasy: 0,
+  popular: 0,
+  allPopular: 0,
+  increase: 0,
+  allIncrease: 0,
+  hard: 0,
+  allHard: 0,
+  rating: 0,
+  passRate: 0
+})
+const format = (percentage) => (percentage === 100 ? '' : ``)
 onMounted(async () => {
-  let reps = await getPersonSolvePbMsg()
-  let repPb = await getAllProblemMsg()
-
-  for (let i = 0; i < 3; ++i) {
-    getInfo.value[i].num = 12
-    getInfo.value[i].totalNum = 15
-    allQuestion.value += 1
-    allPassQuestion.value += 1
-  }
-  let tryNumTotal = 20
-  let passNumTotal = 20
-  // dataShow
-  passRadioFun(easyRadio, easyDot, 12, 23)
-  passRadioFun(middleRadio, middleDot, 1, 4)
-  passRadioFun(hardRadio, hardDot, 1, 12)
-  passRadioFun(allRadio, allDot, 123, 125)
-  easyLine.value = (12 * 316.6725394728) / allQuestion.value
-  middleLine.value = (20 * 316.6725394728) / allQuestion.value
-  hardLine.value = (25 * 316.6725394728) / allQuestion.value
+  request.get('/user/ac/info').then((res) => {
+    if (res.code == 200) {
+      acInfo.value = res.data
+    } else {
+      ElMessage.error('用户做题信息异常！')
+    }
+  })
 })
 </script>
 
 <template>
   <div class="item">
+    <!-- 左边 -->
     <div class="item-processor">
       <el-skeleton :loading="loading" animated>
         <template #template>
@@ -153,98 +43,33 @@ onMounted(async () => {
           />
         </template>
         <template #default>
-          <svg height="120px" width="120px">
-            <circle
-              cx="50%"
-              cy="50%"
-              r="42%"
-              stroke-width="5"
-              stroke-linecap="round"
-              stroke="#DFDFDF"
-              fill="none"
-            />
-            <circle
-              v-if="getInfo[0].num !== 0"
-              @mouseover="changeShowType(2)"
-              @mouseleave="changeShowType(0)"
-              cx="60px"
-              cy="60px"
-              r="50.4px"
-              :stroke-width="showPass === 2 ? '9' : '5'"
-              stroke-linecap="round"
-              stroke="#00AF9B"
-              :stroke-dasharray="strokeDasharray(0)"
-              :stroke-dashoffset="strokeDashoffset(0)"
-              fill="none"
-            />
-            <circle
-              v-if="getInfo[1].num !== 0"
-              @mouseover="changeShowType(3)"
-              @mouseleave="changeShowType(0)"
-              cx="60px"
-              cy="60px"
-              r="50.4px"
-              :stroke-width="showPass === 3 ? '9' : '5'"
-              stroke-linecap="round"
-              stroke="#FFA116"
-              :stroke-dasharray="strokeDasharray(1)"
-              :stroke-dashoffset="strokeDashoffset(1)"
-              fill="none"
-            />
-            <circle
-              v-if="getInfo[2].num !== 0"
-              @mouseover="changeShowType(4)"
-              @mouseleave="changeShowType(0)"
-              cx="60px"
-              cy="60px"
-              r="50.4px"
-              :stroke-width="showPass === 4 ? '9' : '5'"
-              stroke-linecap="round"
-              stroke="#FF2D55"
-              :stroke-dasharray="strokeDasharray(2)"
-              :stroke-dashoffset="strokeDashoffset(2)"
-              fill="none"
-            />
-            <!-- <circle @mouseover="changeShowType(2)" @mouseleave="changeShowType(0)" cx="50%" cy="50%" r="42%" :stroke-width="showPass === 2 ? '9' : '5'" stroke-linecap="round" stroke="#00AF9B" stroke-dasharray="21.907286758913628 281.986496142629" stroke-dashoffset="65" fill="none"/>
-                        <circle @mouseover="changeShowType(3)" @mouseleave="changeShowType(0)" cx="50%" cy="50%" r="42%" :stroke-width="showPass === 3 ? '9' : '5'" stroke-linecap="round" stroke="#FFA116" stroke-dasharray="41.182602670466615 268.711180231076" stroke-dashoffset="45.092713241086372" fill="none"/>
-                        <circle @mouseover="changeShowType(4)" @mouseleave="changeShowType(0)" cx="50%" cy="50%" r="42%" :stroke-width="showPass === 4 ? '9' : '5'" stroke-linecap="round" stroke="#FF2D55" stroke-dasharray="19.275315911552983 284.61846698998966" stroke-dashoffset="-2" fill="none"/> -->
-          </svg>
-          <div class="svg-middle" @mouseover="changeShowType(1)" @mouseleave="changeShowType(0)">
-            <div v-show="showPass === 0" class="up">
-              <div style="font-size: 12px; color: #8a8a8e">全部</div>
-            </div>
-            <div v-show="showPass === 0" class="mi">
-              <div style="font-size: 25px">{{ allPassQuestion }}</div>
-            </div>
-            <div v-show="showPass === 0" class="do">
-              <div style="color: #8a8a8e; font-size: small">{{ allQuestion }}</div>
-            </div>
-            <div
-              v-show="showPass !== 0"
-              style="
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                position: relative;
-                left: 14px;
-                top: 7px;
-              "
-            >
-              <div style="display: flex; font-size: 20px" :style="changeColor()">
-                {{ funRadio() }}
-                <div style="font-size: 10px; top: 10px; position: relative">{{ funDot() }}</div>
-              </div>
-              <div style="color: #8a8a8e; font-size: 12px; position: relative; left: -10px">
-                提交通过率
-              </div>
-            </div>
+          <div
+            style="
+              width: 100%;
+              display: flex;
+              font-size: 30px;
+              color: black;
+              center-align: center;
+              justify-content: center;
+            "
+          >
+            {{ acInfo.acNumberTotal }}
+
+            {{ '/' + acInfo.submitNumberTotal }}
           </div>
+          <el-progress
+            type="dashboard"
+            :percentage="
+              Math.floor((acInfo.acNumberTotal / acInfo.submitNumberTotal) * 100 * 100) / 100
+            "
+          >
+            <template #default="{ percentage }">
+              <span class="percentage-value">{{ percentage }}%</span>
+              <span class="percentage-label">通过率</span>
+            </template>
+          </el-progress>
         </template>
       </el-skeleton>
-      <!-- <svg width="100%" height="100%">
-                <circle cx="50%" cy="50%" r="45%"></circle>
-            </svg> -->
-      <!-- 后续在解决这里的数据问题 -->
     </div>
     <div class="item-digest-wrapper">
       <el-skeleton :loading="loading" animated>
@@ -259,16 +84,75 @@ onMounted(async () => {
           />
         </template>
         <template #default>
-          <div v-for="(item, index) in getInfo" :key="item.id" class="item-digest">
-            <div class="item-digest-up-tag">
-              <div :style="{ color: threeColor[index] }">{{ item.tag }}</div>
+          <div class="font-item">
+            <div style="display: flex; font-size: medium; color: black">
+              <div style="font-size: 14px; margin-right: 20px; color: rgb(171, 175, 168)">入门</div>
+              {{ acInfo.base }}
+              <div style="font-size: small; color: rgb(204, 204, 204)">
+                {{ '/' + acInfo.allBase }}
+              </div>
             </div>
-            <div class="item-digest-down-num">
-              <div>{{ item.num }}</div>
+            <el-progress
+              :percentage="(acInfo.base / acInfo.allBase) * 100"
+              :format="format"
+              :color="`#909399`"
+            />
+          </div>
+          <div class="font-item">
+            <div style="display: flex; font-size: medium; color: black">
+              <div style="font-size: 14px; margin-right: 20px; color: rgb(103, 194, 58)">简单</div>
+              {{ acInfo.easy }}
+              <div style="font-size: small; color: rgb(204, 204, 204)">
+                {{ '/' + acInfo.allEasy }}
+              </div>
             </div>
-            <div class="item-digest-down-down">
-              <div>{{ item.totalNum }}</div>
+            <el-progress
+              :percentage="(acInfo.easy / acInfo.allEasy) * 100"
+              :color="`#67c23a`"
+              :format="format"
+            />
+          </div>
+          <div class="font-item">
+            <div style="display: flex; font-size: medium; color: black">
+              <div style="font-size: 14px; margin-right: 20px; color: rgb(230, 162, 60)">普及</div>
+              {{ acInfo.popular }}
+              <div style="font-size: small; color: rgb(204, 204, 204)">
+                {{ '/' + acInfo.allPopular }}
+              </div>
             </div>
+            <el-progress
+              :percentage="(acInfo.popular / acInfo.allPopular) * 100"
+              :color="`#e6a23c`"
+              :format="format"
+            />
+          </div>
+          <div class="font-item">
+            <div style="display: flex; font-size: medium; color: black">
+              <div style="font-size: 14px; margin-right: 20px; color: rgb(64, 158, 255)">提高</div>
+              {{ acInfo.increase }}
+              <div style="font-size: small; color: rgb(204, 204, 204)">
+                {{ '/' + acInfo.allIncrease }}
+              </div>
+            </div>
+            <el-progress
+              :percentage="(acInfo.increase / acInfo.allIncrease) * 100"
+              :format="format"
+              :color="`#1989fa`"
+            />
+          </div>
+          <div class="font-item">
+            <div style="display: flex; font-size: medium; color: black">
+              <div style="font-size: 14px; margin-right: 20px; color: rgb(245, 108, 108)">困难</div>
+              {{ acInfo.hard }}
+              <div style="font-size: small; color: rgb(204, 204, 204)">
+                {{ '/' + acInfo.allHard }}
+              </div>
+            </div>
+            <el-progress
+              :percentage="acInfo.allHard == 0 ? 0 : (acInfo.hard / acInfo.allHard) * 100"
+              :format="format"
+              :color="`#f56c6c`"
+            />
           </div>
         </template>
       </el-skeleton>
@@ -276,99 +160,35 @@ onMounted(async () => {
   </div>
 </template>
 
-<style lang="scss" scoped>
-span {
-  font-family: 'my_font';
+<style scoped>
+.item-digest-wrapper {
+  width: 50%;
+}
+.item-processor {
+  display: flex;
+  center-align: center;
+  justify-content: center;
+  width: 50%;
+  flex-wrap: wrap;
+  margin-top: 40px;
+}
+.font-item {
+  margin-top: 10px;
+  margin-left: 10px;
+  display: block;
 }
 .item {
-  width: 290px;
-  height: 165px;
-  border-radius: 15px;
   display: flex;
-  align-items: center;
-  padding-left: 20px;
-  gap: 10px;
-  .item-processor {
-    width: 45%;
-    height: 70%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    .svg-middle {
-      position: absolute;
-      width: 60px;
-      height: 60px;
-      gap: 5px;
-      .up {
-        display: flex;
-        justify-content: center;
-        position: relative;
-      }
-      .do {
-        position: relative;
-        display: flex;
-        width: 30px;
-        left: 16px;
-        justify-content: center;
-        border-top: 2px solid rgb(210, 217, 223);
-        top: 3px;
-      }
-      .mi {
-        // top: 5px;
-        position: relative;
-        display: flex;
-        justify-content: center;
-      }
-    }
-    .svg-middle:hover {
-      // background-color: rgb(210, 217, 223);
-    }
-  }
-  .item-digest-wrapper {
-    display: flex;
-    gap: 5px;
-    width: 45%;
-    // background-color: aquamarine;
-    height: 70%;
-    .item-digest {
-      width: 30%;
-      height: 100%;
-      position: relative;
-      display: flex;
-      flex-direction: column;
+  width: 100%;
+}
+.percentage-value {
+  display: block;
 
-      .item-digest-up-tag {
-        top: 5px;
-        width: 100%;
-        height: 40%;
-        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-      .item-digest-down-num {
-        top: 10px;
-        width: 100%;
-        justify-content: center;
-        display: flex;
-        align-items: center;
-        height: 40%;
-        position: relative;
-        bottom: 5px;
-      }
-      .item-digest-down-down {
-        justify-content: center;
-        align-items: center;
-        border-top: 2px solid rgb(210, 217, 223);
-        width: 100%;
-        height: 20%;
-        color: rgb(210, 217, 223);
-        display: flex;
-        position: relative;
-        font-size: smaller;
-        top: 0px;
-      }
-    }
-  }
+  font-size: 28px;
+}
+.percentage-label {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
 }
 </style>

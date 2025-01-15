@@ -29,17 +29,24 @@
 
 <script lang="js" setup>
 import request from '@/util/request'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+// import store from '@/views/var.js'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 const router = useRouter()
 const links = ref([
-  { path: '/', text: '主页', active: false },
+  { path: '/home', text: '主页', active: false },
   { path: '/problems', text: '题库', active: false },
   { path: '/contest', text: '竞赛', active: false },
   { path: '/discuss', text: '讨论', active: false },
   { path: '/about', text: '关于', active: false }
 ])
+// const props = defineProps({
+//   loginUpdate: {
+//     type: Boolean,
+//     default: false
+//   }
+// })
 const userImg = ref(null)
 const loading = ref(false)
 const showMenu = ref(false)
@@ -79,7 +86,7 @@ const skip = (index) => {
   } else {
     //导航栏高亮
     const path = router.currentRoute.value.path
-    // alert(path)
+
     for (let i = 0; i < links.value.length; i++) {
       //前缀是否匹配
       if (path.startsWith(links.value[i].path)) {
@@ -93,6 +100,9 @@ const skip = (index) => {
 onMounted(() => {
   userLogin()
   loading.value = true
+})
+// 监听路由变化
+router.afterEach(() => {
   skip(-1)
   document.addEventListener('click', (e) => {
     const userMenu = document.querySelector('.user-menu-wrapper')
@@ -118,6 +128,15 @@ const handleUser = () => {
     // this.$router.push('/login')
   }
 }
+//监听loginUpdate
+// watch(
+//   () => props.loginUpdate,
+//   (newValue) => {
+//     if (newValue) {
+//       userLogin()
+//     }
+//   }
+// )
 const handleCommand = (command) => {
   showMenu.value = false
   if (command === 'space') {
@@ -154,8 +173,6 @@ const handleCommand = (command) => {
   user-select: none;
   /* transition: all 0.6s; */
 }
- 
-
 
 .head-ion {
   height: 100%;
@@ -224,7 +241,7 @@ const handleCommand = (command) => {
 }
 
 .user-menu-wrapper {
-  position: relative; 
+  position: relative;
 }
 /* 下拉框样式 */
 .user-menu {

@@ -142,7 +142,7 @@
   <el-dialog
     v-model="showUpdateQuestion"
     title="修改题目"
-    width="70%"
+    width="90%"
     :close-on-click-modal="false"
   >
     <QuestionEditor @cancel="cancel" @primary="cancel" :id="questionId"></QuestionEditor>
@@ -259,7 +259,7 @@ const onEdit = (row) => {
   showUpdateQuestion.value = true
 }
 const cancel = () => {
-  showAddQuestion.value = false
+  showUpdateQuestion.value = false
   getProblems()
 }
 const onDelete = (row) => {

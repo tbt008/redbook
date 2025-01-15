@@ -9,6 +9,7 @@ const router = useRouter()
 const loading = ref(true)
 const nowTheme = ref(false)
 const pageLoading = ref(true)
+import { ElMessage } from 'element-plus'
 const changeTheme = () => {
   nowTheme.value = !nowTheme.value
   if (nowTheme.value) {
@@ -56,7 +57,15 @@ onMounted(async () => {
       ElMessage.error('用户登录异常！')
     }
   })
+  request.get('/record/get/all').then((res) => {
+    if (res.code == 200) {
+      codeRecord.value = res.data
+    } else {
+      ElMessage.error('用户提交记录异常！')
+    }
+  })
 })
+const codeRecord = ref([])
 </script>
 
 <template>
@@ -148,7 +157,9 @@ onMounted(async () => {
                     <div>已关注</div>
                   </div>
                 </div>
-                <!-- <el-button type="success" round plain style=" width: 280px; position: relative;">编辑个人信息</el-button> -->
+                <el-button type="success" round plain style="width: 280px; position: relative"
+                  >编辑个人信息</el-button
+                >
                 <!-- <el-button type="info" plain round   style=" width: 280px;  position: relative; left: -11px"></el-button> -->
 
                 <span>个人简介</span>
@@ -368,7 +379,39 @@ onMounted(async () => {
             <!-- <personPostSubmit></personPostSubmit> -->
           </div>
           <div class="t4">
-            <!-- <personBottom></personBottom> -->
+            <el-table :data="codeRecord" style="width: 100%">
+              <el-table-column label="序号" prop="submitId"> </el-table-column>
+              <el-table-column label="运行状态" prop="result">
+                <template #default="{ row }">
+                  <el-tag v-if="row.result == 100" type="success">答案正确</el-tag>
+                  <el-tag v-else-if="row.result < 100 && row.result > 0" type="primary"
+                    >部分正确</el-tag
+                  >
+                  <el-tag v-if="row.result == 0" type="danger">答案错误</el-tag>
+                  <el-tag v-if="row.result == -1" type="danger">等待判题</el-tag>
+                  <el-tag v-if="row.result == -2" type="warning">编译错误</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="题目" prop="questionName">
+                <!-- <template #default="{ row }">
+                  <a :href="`/question?id=${row.questionId}`" class="problem-title">
+                    {{ row.questionName }}
+                  </a>
+                </template> -->
+              </el-table-column>
+              <el-table-column label="语言" prop="language">
+                <template #default="{ row }">
+                  <div v-if="row.language == 1">C</div>
+                  <div v-if="row.language == 2">C++</div>
+                  <div v-if="row.language == 3">Java</div>
+                  <div v-if="row.language == 4">Python</div>
+                </template>
+              </el-table-column>
+              <el-table-column label="提交时间" prop="createTime"> </el-table-column>
+              <template #empty>
+                <el-empty description="没有数据" />
+              </template>
+            </el-table>
           </div>
         </div>
       </div>
@@ -377,6 +420,12 @@ onMounted(async () => {
 </template>
 
 <style lang="scss" scoped>
+/* 题目标题样式 */
+.problem-title {
+  color: #409eff;
+  text-decoration: none;
+  font-weight: 500;
+}
 .v-enter-active,
 .v-leave-active {
   transition: opacity 0.5s ease;

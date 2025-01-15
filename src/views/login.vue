@@ -1,4 +1,5 @@
 <template>
+  <oj-header></oj-header>
   <section class="container">
     <div class="svg-top">
       <svg
@@ -79,7 +80,8 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
 import { useRouter } from 'vue-router'
-
+import store from '@/views/var.js'
+import ojHeader from '@/components/OJHeader.vue'
 const router = useRouter()
 
 const id = ref()
@@ -92,8 +94,10 @@ const login = async () => {
   request.post('/user/login', obj).then((res) => {
     if (res.code == 200) {
       //保存jwt
-      localStorage.setItem('authToken', res.data) 
+      localStorage.setItem('authToken', res.data)
       ElMessage.success('登录成功！欢迎回来!')
+      store.changeLoginStatus(true)
+
       // 检查上一个路由是否为注册页
       if (router.options.history.state.back === '/register') {
         router.push('/')

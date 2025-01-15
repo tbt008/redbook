@@ -44,7 +44,7 @@
                 主办方:ptuCode.com
               </div>
               <div>
-                <el-icon><UserFilled /></el-icon>参与人数：{{ item.userNumber }}
+                <el-icon><UserFilled /></el-icon>参与人数：{{ item.participationNumber }}
               </div>
               <div>语言:{{ item.language }}</div>
               <!-- <div>赛制:{{ item.contestType }}</div> -->
@@ -127,9 +127,18 @@ const getConstestList = async () => {
     pageStart: pageStart,
     pageSize: pageSize
   }
-  request.post(`/contest/list`, obj).then((res) => {
-    constestList.value = res.data.list
-  })
+  request
+    .post(`/contest/list`, obj)
+    .then((res) => {
+      if (res.code == 200) {
+        constestList.value = res.data.list
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+    .catch((error) => {
+      ElMessage.error(error)
+    })
   let obj1 = {
     status: 1,
     title: searchKeyword.value || undefined,
@@ -137,9 +146,18 @@ const getConstestList = async () => {
     pageStart: pageStart,
     pageSize: pageSize
   }
-  request.post(`/contest/list`, obj1).then((res) => {
-    oldConstestList.value = res.data.list
-  })
+  request
+    .post(`/contest/list`, obj1)
+    .then((res) => {
+      if (res.code == 200) {
+        oldConstestList.value = res.data.list
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+    .catch((error) => {
+      ElMessage.error(error)
+    })
 }
 onMounted(async () => {
   getConstestList()

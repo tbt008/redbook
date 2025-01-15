@@ -11,7 +11,7 @@
             <el-radio value="2">ACM</el-radio>
           </el-radio-group>
         </el-form-item>
-
+        <el-switch v-model="value1" inactive-text="只显示自己" />
         <el-button type="primary" @click="showAddContest = true">新增比赛</el-button>
       </div>
 
@@ -37,7 +37,7 @@
             {{ row.id }}
           </template>
         </el-table-column>
-        <el-table-column label="比赛名" min-width="100">
+        <el-table-column label="比赛名" width="250">
           <template #default="{ row }">
             <router-link :to="`/question?id=${row.id}`" class="problem-title">
               {{ row.title }}
@@ -50,9 +50,10 @@
             {{ row.uid }}
           </template>
         </el-table-column>
-        <el-table-column label="邀请" width="100">
+
+        <el-table-column label="人数" width="100">
           <template #default="{ row }">
-            {{ row.isInvite == 1 ? '是' : '否' }}
+            {{ row.participationNumber }}
           </template>
         </el-table-column>
 
@@ -61,7 +62,16 @@
             {{ row.type == 1 ? 'IOI' : 'ACM' }}
           </template>
         </el-table-column>
-
+        <el-table-column label="邀请" width="100">
+          <template #default="{ row }">
+            {{ row.isInvite == 1 ? '是' : '否' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="成员名单" width="100">
+          <template #default="{ row }">
+            <el-button :icon="Plus" circle plain type="primary" @click="addData(row)"></el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="150">
           <template #default="{ row }">
             <el-button :icon="Edit" circle plain type="primary" @click="onEdit(row)"> </el-button>
@@ -97,11 +107,9 @@
 
 <script lang="js" setup>
 import ContestEditor from '@/components/contestEditor.vue'
-import { Delete, Edit } from '@element-plus/icons-vue'
+import { Delete, Edit, Plus } from '@element-plus/icons-vue'
 // Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
-// Element Plus 图标
-import { Search, Check } from '@element-plus/icons-vue'
 // 工具和类型
 import request from '@/util/request'
 import { ElMessage } from 'element-plus'

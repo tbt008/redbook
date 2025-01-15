@@ -4,7 +4,8 @@ import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import testCase from '@/components/testCase.vue'
 const currentTab = ref(0)
-
+import { useRouter } from 'vue-router'
+const router = useRouter()
 const currentClick = ref(0)
 const judgeQuestionLoading = ref(false)
 const props = defineProps({
@@ -134,6 +135,7 @@ const whileGetResult = async (recordId) => {
   const intervalId = setInterval(() => {
     if (count < maxRequests) {
       if (!props.contestId) {
+        // 普通提交
         request
           .get(`/record/get/one/${recordId}`)
           .then((res) => {
@@ -142,6 +144,20 @@ const whileGetResult = async (recordId) => {
               clearInterval(intervalId)
               if (res.data.result == 100) {
                 emit('showACImgfun')
+
+                if (router.currentRoute.value.query.daily) {
+                  request
+                    .post('/userDailyQuestion/updateDailyQuestion', {
+                      dailyQuestionId: router.currentRoute.value.query.daily
+                    })
+                    .then((res) => {
+                      if (res.data.result == 200) {
+                        console.log('每日一题更新成功')
+                      } else {
+                        console.log('每日一题更新错误')
+                      }
+                    })
+                }
               }
               result.value = res.data.test
               isSubmit.value = true
@@ -163,7 +179,9 @@ const whileGetResult = async (recordId) => {
               if (res.data.result == 100) {
                 emit('showACImgfun')
               }
-
+              result.value = res.data.test
+              isSubmit.value = true
+              currentTab.value = 1
               judgeQuestionLoading.value = false
             }
           })
@@ -181,6 +199,7 @@ const whileGetResult = async (recordId) => {
 
   //  recordId
 }
+
 const testList = ref([])
 const questionInfo = ref({})
 onMounted(() => {
@@ -193,44 +212,58 @@ onMounted(() => {
     <div class="item">
       <div class="item-left">
         <div @click="currentTab = 0" class="item-left-item">
-          <svg
-            aria-hidden="true"
-            focusable="false"
-            data-prefix="far"
-            width="18"
-            height="18"
-            data-icon="square-check"
-            class="svg-inline--fa fa-square-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-            role="img"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 448 512"
-          >
-            <path
-              :fill="currentTab === 0 ? '#02B128' : '#98DDA7'"
-              d="M64 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16H384c8.8 0 16-7.2 16-16V96c0-8.8-7.2-16-16-16H64zM0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"
-            ></path>
-          </svg>
-          <span :style="currentTab === 0 ? 'color: black' : 'color:gray'"> 测试用例</span>
+          <div :style="currentTab === 0 ? 'color: black' : 'color:gray'">
+            <div style="display: flex; align-items: center; margin-left: 10px">
+              <svg
+                t="1736855777789"
+                class="icon"
+                viewBox="0 0 1024 1024"
+                version="1.1"
+                xmlns="http://www.w3.org/2000/svg"
+                p-id="4367"
+                width="20"
+                height="20"
+              >
+                <path
+                  d="M832 960H192c-38.4 0-64-25.6-64-64V128c0-38.4 25.6-64 64-64h640c38.4 0 64 25.6 64 64v768c0 38.4-25.6 64-64 64zM192 128v768h640V128H192z"
+                  fill="#52c41b"
+                  p-id="4368"
+                ></path>
+                <path
+                  d="M723.2 646.4H300.8c-19.2 0-28.8-12.8-28.8-28.8s12.8-28.8 28.8-28.8h419.2c19.2 0 28.8 12.8 28.8 28.8s-9.6 28.8-25.6 28.8zM723.2 796.8H300.8c-19.2 0-28.8-12.8-28.8-28.8s12.8-32 28.8-32h419.2c19.2 0 28.8 12.8 28.8 28.8s-9.6 32-25.6 32zM361.6 467.2c-9.6 0-16-3.2-22.4-9.6l-89.6-89.6c-12.8-12.8-12.8-28.8 0-41.6l89.6-89.6c12.8-12.8 32-12.8 44.8 0s12.8 28.8 0 41.6l-70.4 70.4L384 416c12.8 12.8 12.8 28.8 0 41.6-6.4 9.6-12.8 9.6-22.4 9.6zM662.4 467.2c-9.6 0-16-3.2-22.4-9.6-12.8-12.8-12.8-28.8 0-41.6l70.4-70.4L640 278.4c-12.8-12.8-12.8-28.8 0-41.6s28.8-12.8 41.6 0l89.6 89.6c12.8 12.8 12.8 28.8 0 41.6l-89.6 89.6c-3.2 9.6-9.6 9.6-19.2 9.6zM460.8 467.2c-6.4 0-9.6 0-16-3.2-16-9.6-19.2-25.6-12.8-41.6l102.4-179.2c9.6-16 28.8-19.2 44.8-12.8 16 9.6 19.2 25.6 12.8 41.6l-102.4 179.2c-6.4 12.8-19.2 16-28.8 16z"
+                  fill="#52c41b"
+                  p-id="4369"
+                ></path></svg
+              >测试用例
+            </div>
+          </div>
         </div>
         <div @click="currentTab = 1" class="item-left-item">
-          <svg
-            aria-hidden="true"
-            focusable="false"
-            data-prefix="far"
-            width="18"
-            height="18"
-            data-icon="terminal"
-            class="svg-inline--fa fa-terminal absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-            role="img"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 576 512"
-          >
-            <path
-              :fill="currentTab === 1 ? '#02B128' : '#98DDA7'"
-              d="M6.3 72.2c-9-9.8-8.3-24.9 1.4-33.9s24.9-8.3 33.9 1.4l184 200c8.5 9.2 8.5 23.3 0 32.5l-184 200c-9 9.8-24.2 10.4-33.9 1.4s-10.4-24.2-1.4-33.9L175.4 256 6.3 72.2zM248 432H552c13.3 0 24 10.7 24 24s-10.7 24-24 24H248c-13.3 0-24-10.7-24-24s10.7-24 24-24z"
-            ></path>
-          </svg>
-          <span :style="currentTab === 1 ? 'color: black' : 'color:gray'"> 测试结果</span>
+          <div :style="currentTab === 1 ? 'color: black' : 'color:gray'">
+            <div style="display: flex; align-items: center; margin-left: 10px">
+              <svg
+                t="1736855887810"
+                class="icon"
+                viewBox="0 0 1024 1024"
+                version="1.1"
+                xmlns="http://www.w3.org/2000/svg"
+                p-id="6363"
+                width="18"
+                height="18"
+              >
+                <path
+                  d="M284.672 227.328v56.832H739.84V227.328H284.672z m0 171.008v56.832H512v-56.832h-227.328z m568.832 227.328h56.832v-56.832h-56.832v56.832zM113.664 910.336c0 31.232 25.6 56.832 56.832 56.832h398.336v-56.832H170.496V113.664h683.008v398.848h56.32V113.664c0-31.232-25.6-56.832-56.832-56.832H170.496c-31.232 0-56.832 25.6-56.832 56.832v796.672z"
+                  fill="#5661D7"
+                  p-id="6364"
+                ></path>
+                <path
+                  d="M863.744 880.128l-98.816-98.816a170.8032 170.8032 0 0 0 0-197.632c-54.784-76.8-161.28-94.72-238.08-40.448-76.8 54.784-94.72 161.28-40.448 238.08 54.784 76.8 161.28 94.72 238.08 40.448l98.816 98.816 0.512 0.512c11.264 10.752 29.184 10.752 40.448-0.512 11.264-11.264 10.752-29.184-0.512-40.448z m-238.08-83.456A113.408 113.408 0 0 1 512 683.008a113.408 113.408 0 0 1 113.664-113.664c62.976 0 113.664 51.2 113.664 113.664 0 62.464-50.688 113.664-113.664 113.664z"
+                  fill="#FAC858"
+                  p-id="6365"
+                ></path></svg
+              >测试结果
+            </div>
+          </div>
         </div>
         <div class="top">
           <div class="runAndTest">
@@ -543,6 +576,7 @@ onMounted(() => {
       }
       .item-left-item {
         border-radius: 10px;
+
         height: 80%;
         padding-left: 10px;
         padding-right: 10px;
