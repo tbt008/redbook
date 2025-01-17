@@ -62,7 +62,16 @@
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <div v-if="row.isPass === 1" class="status-icon success">
-                <Check style="width: 12px; height: 12px" />
+                <!-- <Check style="width: 12px; height: 12px" /> -->        
+                <!-- 修改为svg 如果要普通打勾就用上面那个 -->
+                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="check-mark">
+                  <path 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round" 
+                    stroke-width="2"
+                    d="M21.6 12a9.6 9.6 0 01-9.6 9.6 9.6 9.6 0 110-19.2c1.507 0 2.932.347 4.2.965M19.8 6l-8.4 8.4L9 12"
+                  />
+                </svg>
               </div>
               <div v-else-if="row.isPass === 2" class="status-icon pending">
                 <div class="dash"></div>
@@ -601,10 +610,6 @@ const getDailyQuestions = async (monthStr: string) => {
   try {
     const response = await request.post('/userDailyQuestion/getDailyQuestion', {
       "date": monthStr
-    },{
-      headers: {
-        'auth-token': `Bearer ${token}`
-      }
     }) as any;
 
     if (response.code === 200) {
@@ -763,6 +768,19 @@ const firstDayOfMonth = computed(() => {
 </script>
 
 <style scoped>
+.status-icon.success .check-mark {
+  width: 18px;  /* 4.5 的相对大小 */
+  height: 18px;
+  fill: none;  /* 重要：不填充 */
+  stroke: #2cbb5d;  /* LeetCode 的绿色 */
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+
+
 /* 可视化的悬浮效果 */
 .floating-stats-card {
   /* position: sticky; */
@@ -976,31 +994,32 @@ const firstDayOfMonth = computed(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   margin-left: 5px;
 }
 
 .status-icon.success {
-  background-color: #00b8a3;
-  color: white;
+  background-color: rgba(45, 181, 93, 0.1);  /* 更柔和的绿色背景 */
+  color: #2db55d;  /* LeetCode 风格的绿色 */
 }
 
-.status-icon.fail {
-  background-color: rgba(245, 108, 108, 0.1);
-  color: #f56c6c;
+.status-icon.success :deep(svg) {
+  width: 14px;
+  height: 14px;
+  font-weight: bold;
 }
 
 .status-icon.pending {
-  background-color: #ffd591;
+  background-color: rgba(255, 192, 30, 0.1);  /* 淡黄色背景 */
   position: relative;
 }
 
 .status-icon.pending .dash {
   width: 10px;
   height: 2px;
-  background-color: #fff;
+  background-color: #ffc01e;  /* 黄色横线 */
   position: absolute;
   top: 50%;
   left: 50%;
