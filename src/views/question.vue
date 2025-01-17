@@ -219,8 +219,22 @@ const goToSubmissionDetail = (row) => {
             <el-tag v-if="row.result == -2" type="warning">编译错误</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="时间(ms)" prop="runtime"> </el-table-column>
-        <el-table-column label="内存(kb)" prop="memory"> </el-table-column>
+        <el-table-column label="时间(ms)" prop="runtime">
+          <template #default="{ row }">
+            <div v-if="row.runtime == null">N/A</div>
+            <div v-else>
+              {{ row.runtime }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="内存(kb)" prop="memory">
+          <template #default="{ row }">
+            <div v-if="row.memory == null">N/A</div>
+            <div v-else>
+              {{ row.memory }}
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="语言" prop="language">
           <template #default="{ row }">
             <div v-if="row.language == 1">C</div>

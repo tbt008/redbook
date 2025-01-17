@@ -17,8 +17,8 @@
 
         <el-form-item label="使用赛制">
           <el-radio-group v-model="contestType">
-            <el-radio value="1" size="large">ACM赛制</el-radio>
-            <el-radio value="2" size="large">IOI赛制</el-radio>
+            <el-radio value="1" size="large">IOI赛制</el-radio>
+            <el-radio value="2" size="large">ACM赛制</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="语言限制">
@@ -91,6 +91,16 @@
 
         <el-form-item>
           <el-button @click="primary" type="primary">创建</el-button>
+          <el-button
+            v-if="props.id !== undefined"
+            @click="
+              () => {
+                active++
+              }
+            "
+            type="cancel"
+            >跳过</el-button
+          >
           <el-button @click="cancel" type="cancel">取消</el-button>
         </el-form-item>
       </el-form>
@@ -132,19 +142,15 @@
   </div>
 </template>
 <script lang="js" setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
-import { useRouter } from 'vue-router'
 import { onMounted } from 'vue'
-// import type { UploadProps } from 'element-plus'
 import QuestionSelect from '@/components/questionSelect.vue'
-const router = useRouter()
-
 const title = ref('')
 const startTime = ref('')
 const endTime = ref('')
-const description = ref()
+const description = ref('')
 const password = ref('')
 const isPassword = ref('1')
 const isInvite = ref('false')
@@ -153,9 +159,38 @@ const language = ref([])
 const contestType = ref('1')
 const mavonEditorRef = ref()
 const active = ref(0)
-onMounted(() => {})
+const getContest = () => {
+  request.get(`/root/contest/get/${contestId.value}`).then((res) => {
+    if (res.code == 200) {
+      title.value = res.data.title
+      startTime.value = res.data.startTime
+      endTime.value = res.data.endTime
+      description.value = res.data.description
+      cover.value = res.data.cover
+      language.value = unConvert(res.data.language)
+
+      contestType.value = res.data.type == 1 ? '1' : '2'
+      if (res.data.password) {
+        isPassword.value = '1'
+        password.value = res.data.password
+      }
+      isInvite.value = String(res.data.isInvite)
+    }
+  })
+}
+onMounted(() => {
+  if (props.id) {
+    contestId.value = props.id
+    getContest()
+  }
+})
 const contestId = ref()
 const questionIds = ref([])
+const props = defineProps({
+  id: {
+    type: Object
+  }
+})
 function primary() {
   if (startTime.value == '' || endTime.value == '') {
     ElMessage.error('请输入比赛开始时间和结束时间')
@@ -179,34 +214,57 @@ function primary() {
   }
   cover.value =
     'https://uploadfiles.nowcoder.com/images/20231115/999991351_1700047623309/5F6F71EEA2A4D8090C0AC8B246CE423D'
-  request
-    .post('/root/contest/create', {
-      title: title.value,
-      startTime: startTime.value,
-      endTime: endTime.value,
-      description: description.value,
-      password: isPassword.value == 1 ? password.value : null,
-      isInvite: isInvite.value,
-      cover: cover.value,
-      language: convert(),
-      contestType: contestType.value
-    })
-    .then((res) => {
-      if (res.code == 200) {
-        contestId.value = res.data
-        ElMessage.success('创建成功')
-        active.value++
-      } else {
-        ElMessage.error(res.msg)
-      }
-    })
+  if (props.id == contestId.value) {
+    request
+      .post('/root/contest/edit', {
+        title: title.value,
+        startTime: startTime.value,
+        endTime: endTime.value,
+        description: description.value,
+        password: isPassword.value == 1 ? password.value : null,
+        isInvite: isInvite.value,
+        cover: cover.value,
+        language: convert(),
+        contestType: contestType.value
+      })
+      .then((res) => {
+        if (res.code == 200) {
+          contestId.value = res.data
+          ElMessage.success('更新成功')
+          active.value++
+        } else {
+          ElMessage.error(res.msg)
+        }
+      })
+  } else {
+    request
+      .post('/root/contest/create', {
+        title: title.value,
+        startTime: startTime.value,
+        endTime: endTime.value,
+        description: description.value,
+        password: isPassword.value == 1 ? password.value : null,
+        isInvite: isInvite.value,
+        cover: cover.value,
+        language: convert(),
+        contestType: contestType.value
+      })
+      .then((res) => {
+        if (res.code == 200) {
+          contestId.value = res.data
+          ElMessage.success('创建成功')
+          active.value++
+        } else {
+          ElMessage.error(res.msg)
+        }
+      })
+  }
 }
 function cancel() {
   emit('cancel')
 }
 function next() {
-
-emit('cancel')
+  emit('cancel')
 }
 const convert = () => {
   const languageList = language.value
@@ -216,17 +274,37 @@ const convert = () => {
       s = -1
       break
     } else {
-      s += s << languageList[i]
+      s += 1 << languageList[i]
     }
   }
   return s
 }
+const unConvert = (lang) => {
+  if (lang == -1) {
+    language.value.push('-1')
+    return language.value
+  } else {
+    if (((1 << 1) & lang) != 0) {
+      language.value.push('1')
+    }
+    if (((1 << 2) & lang) != 0) {
+      language.value.push('2')
+    }
+    if (((1 << 3) & lang) != 0) {
+      language.value.push('3')
+    }
+    if (((1 << 4) & lang) != 0) {
+      language.value.push('4')
+    }
+  }
+
+  return language.value
+}
+
 const selectedQuestion = (value) => {
   questionIds.value = value
 }
-// const handleAvatarSuccess: UploadProps['onSuccess'] = (response, uploadFile) => {
-//   cover.value = URL.createObjectURL(uploadFile.raw!)
-// }
+
 const saveQuestion = () => {
   request
     .post('/root/contest/edit/problem', {
@@ -245,16 +323,15 @@ const saveQuestion = () => {
       ElMessage.error('保存失败')
     })
 }
-// const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
-//   if (rawFile.type !== 'image/jpeg') {
-//     ElMessage.error('Avatar picture must be JPG format!')
-//     return false
-//   } else if (rawFile.size / 1024 / 1024 > 2) {
-//     ElMessage.error('Avatar picture size can not exceed 2MB!')
-//     return false
-//   }
-//   return true
-// }
+watch(
+  () => props.id,
+  (newValue, oldValue) => {
+    if (newValue) {
+      contestId.value = props.id
+      getContest()
+    }
+  }
+)
 </script>
 
 <style scoped>

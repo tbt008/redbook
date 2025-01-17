@@ -65,12 +65,12 @@
           <!-- <div class="line"></div> -->
           <input v-model="password" type="password" placeholder="密码" />
 
-          <input type="button" class="login-button" value="Login" @click="login" />
+          <input type="button" class="login-button" value="登录" @click="login" />
         </form>
       </section>
       <footer>
-        <p><a href="" title="Forgot Password">Forgot Password?</a></p>
-        <p><a href="/register" title="Register">Register</a></p>
+        <p><a href="" title="Forgot Password">忘记密码?</a></p>
+        <p><a href="/register" title="Register">注册</a></p>
       </footer>
     </section>
   </section>

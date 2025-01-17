@@ -3,7 +3,7 @@
     <div class="content-wrapper">
       <!-- 筛选区域 -->
       <div class="filter-section">
-        <div style="font-size: 12px; line-height: 32px">筛选条件</div>
+        <div style="font-size: 12px; line-height: 22px">筛选条件</div>
         <el-form-item label="赛制">
           <el-radio-group v-model="searchType">
             <el-radio value="">全部</el-radio>
@@ -11,24 +11,24 @@
             <el-radio value="2">ACM</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-switch v-model="value1" inactive-text="只显示自己" />
-        <el-button type="primary" @click="showAddContest = true">新增比赛</el-button>
-      </div>
+        <el-switch v-model="isSelf" inactive-text="只显示自己" />
 
-      <!-- 已选标签显示区域 -->
-      <div v-if="selectedTagIds.length" class="selected-tags-bar">
-        <div style="font-size: 12px; line-height: 24px">已选择：</div>
-        <!-- elementplus el-tag: 已选标签展示 -->
-        <el-tag
-          v-for="tagId in selectedTagIds"
-          :key="tagId"
-          closable
-          type="primary"
-          class="selected-tag"
-          @close="handleTagChange(false, tagId)"
-        >
-          {{ allTags.find((tag) => tag.id === tagId)?.name }}
-        </el-tag>
+        <el-select v-model="status" placeholder="Select" style="width: 140px">
+          <el-option
+            v-for="item in statusList"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+        <el-input
+          v-model="inputContestName"
+          style="width: 240px; height: 33px"
+          placeholder="输入比赛名后回车查询"
+          @change="searchContestName"
+          :suffix-icon="Search"
+        />
+        <el-button type="primary" @click="showAddContest = true">新增比赛</el-button>
       </div>
 
       <el-table :data="contestList" style="width: 100%" v-loading="loading">
@@ -69,7 +69,13 @@
         </el-table-column>
         <el-table-column label="成员名单" width="100">
           <template #default="{ row }">
-            <el-button :icon="Plus" circle plain type="primary" @click="addData(row)"></el-button>
+            <el-button
+              :icon="Plus"
+              circle
+              plain
+              type="primary"
+              @click="updateMember(row)"
+            ></el-button>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150">
@@ -96,17 +102,22 @@
     </div>
   </div>
   <!-- 新增比赛 -->
-  <el-dialog v-model="showAddContest" title="新增题目" width="70%" :close-on-click-modal="false">
+  <el-dialog v-model="showAddContest" title="新增比赛" width="70%" :close-on-click-modal="false">
     <ContestEditor @cancel="cancel" @primary="cancel"></ContestEditor>
   </el-dialog>
   <!-- 修改比赛 -->
-  <el-dialog v-model="showUpdateContest" title="修改题目" width="70%" :close-on-click-modal="false">
-    <QuestionEditor @cancel="cancel" @primary="cancel" :id="questionId"></QuestionEditor>
+  <el-dialog v-model="showUpdateContest" title="修改比赛" width="70%" :close-on-click-modal="false">
+    <ContestEditor @cancel="cancel" @primary="cancel" :id="contestId"></ContestEditor>
+  </el-dialog>
+  <!-- 成员名单 -->
+  <el-dialog v-model="showUpdateMember" title="成员名单" width="50%" :close-on-click-modal="false">
+    <ContestMember @cancel="cancel" @primary="cancel" :id="contestId"></ContestMember>
   </el-dialog>
 </template>
 
 <script lang="js" setup>
 import ContestEditor from '@/components/contestEditor.vue'
+import ContestMember from '@/components/contestMember.vue'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
 // Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
@@ -114,65 +125,120 @@ import { ref, computed, onMounted, watch } from 'vue'
 import request from '@/util/request'
 import { ElMessage } from 'element-plus'
 const showUpdateContest = ref(false)
-const questionId = ref(0)
 const contestList = ref([])
-// 状态变量
+const showUpdateMember = ref(false)
+const contestId = ref(0)
+const searchType = ref('')
 const loading = ref(true)
-const difficulty = ref(null)
-const selectedTagIds = ref([])
-const searchKeyword = ref('')
+const inputContestName = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
-
+const isSelf = ref(false)
+const statusList = ref([
+  { label: '全部', value: 2 },
+  { label: '已结束', value: 1 },
+  { label: '进行中', value: 0 },
+  { label: '未开始', value: -1 }
+])
+const status = ref(2)
 const onEdit = (row) => {
+  contestId.value = row.id
   showUpdateContest.value = true
+}
+const searchContestName = (value) => {
+  getContestList()
 }
 const cancel = () => {
   showAddContest.value = false
 }
 const onDelete = (row) => {
-  request.delete(`/root/question/delete/${row.id}`).then((res) => {
-    if (res.code === 200) {
-      ElMessage.success('删除成功')
-    } else {
-      ElMessage.error('删除失败')
-    }
-  })
+  request
+    .delete(`/root/contest/delete/${row.id}`)
+    .then((res) => {
+      if (res.code === 200) {
+        ElMessage.success('删除成功')
+      } else {
+        ElMessage.error('删除失败: ' + res.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('删除失败：' + err)
+    })
+}
+const updateMember = (row) => {
+  contestId.value = row.id
+  showUpdateMember.value = true
 }
 const getContestList = async () => {
   request
     .post(`/root/contest/get/all`, {
-      status: 1
+      pageStart: currentPage.value,
+      pageSize: pageSize.value,
+      status: status.value,
+      isSelf: isSelf.value == true ? 1 : 0,
+      type: searchType.value,
+      title: inputContestName.value
     })
     .then((res) => {
-      contestList.value = res.data.list
+      if (res.code == 200) {
+        contestList.value = res.data.list
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error(err)
     })
 }
-
+const getContestListTotal = async () => {
+  request
+    .post(`/root/contest/get/all`, {
+      pageStart: 1,
+      pageSize: 1000000,
+      status: status.value,
+      isSelf: isSelf.value == true ? 1 : 0,
+      type: searchType.value,
+      title: inputContestName.value
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        total.value = res.data.total
+        const allData = res.data.list
+        const start = (currentPage.value - 1) * pageSize.value
+        const end = Math.min(start + pageSize.value, allData.length)
+        contestList.value = allData.slice(start, end)
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+}
 // 分页大小改变处理
 const handleSizeChange = async (val) => {
   pageSize.value = val
   currentPage.value = 1
+  getContestListTotal()
 }
 
 // 当前页改变处理
 const handleCurrentChange = async (val) => {
   currentPage.value = val
+  getContestList()
 }
 
 // 监听筛选条件变化
 watch(
-  [difficulty, selectedTagIds, searchKeyword],
+  [isSelf, status, searchType],
   async () => {
     currentPage.value = 1
+    getContestListTotal()
   },
   { deep: true }
 )
 
 // 组件挂载时初始化数据
 onMounted(async () => {
-  getContestList()
+  getContestListTotal()
   loading.value = false
 })
 
@@ -346,39 +412,6 @@ const showAddContest = ref(false)
 .no-tags-selected {
   color: #909399;
   font-size: 14px;
-}
-
-/* 难度标签样式 */
-.difficulty-label {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.difficulty-entry {
-  background-color: #abafa8;
-  color: white;
-}
-
-.difficulty-easy {
-  background-color: #67c23a;
-  color: white;
-}
-
-.difficulty-medium {
-  background-color: #e6a23c;
-  color: white;
-}
-
-.difficulty-hard {
-  background-color: #409eff;
-  color: white;
-}
-
-.difficulty-expert {
-  background-color: #f56c6c;
-  color: white;
 }
 
 /* 添加搜索输入框样式 */
