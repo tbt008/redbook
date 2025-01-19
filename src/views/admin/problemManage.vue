@@ -3,7 +3,7 @@
     <div class="content-wrapper">
       <!-- 筛选区域 -->
       <div class="filter-section">
-        <div style="font-size: 12px; line-height: 32px">筛选条件</div>
+        <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
         <!-- elementplus el-select: 难度选择下拉框 -->
         <el-select v-model="difficulty" placeholder="难度" class="filter-item">
           <el-option label="全部" :value="null" />
@@ -431,8 +431,8 @@ const clearTags = () => {
 <style scoped>
 /* 容器样式 */
 .problem-list-container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 20px; 
+  min-height: 100vh;
   margin: 0 auto;
 }
 

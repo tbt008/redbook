@@ -3,7 +3,7 @@
     <div class="content-wrapper">
       <!-- 筛选区域 -->
       <div class="filter-section">
-        <div style="font-size: 12px; line-height: 22px">筛选条件</div>
+        <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
         <el-form-item label="赛制">
           <el-radio-group v-model="searchType">
             <el-radio value="">全部</el-radio>
@@ -248,8 +248,8 @@ const showAddContest = ref(false)
 <style scoped>
 /* 容器样式 */
 .problem-list-container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 20px; 
+  min-height: 100vh;
   margin: 0 auto;
 }
 

@@ -2,15 +2,15 @@
   <div class="user-management-container">
     <!-- 筛选区域 -->
     <div class="filter-section">
-      <div style="font-size: 12px;line-height: 32px;">筛选条件</div>
-      <el-select v-model="filterType" placeholder="所有" class="filter-item">
+      <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
+      <el-select v-model="filterType" placeholder="所有" class="filter-item" @change="getUserList">
         <el-option label="所有" value="all" />
         <el-option label="超级管理员" value="superadmin" /> 
         <el-option label="管理员" value="admin" /> 
         <el-option label="用户" value="user" />
       </el-select>
 
-      <el-input
+      <!-- <el-input
         v-model="searchKeyword"
         placeholder="请输入用户姓名或用户账号"
         class="search-input"
@@ -19,41 +19,55 @@
         <template #prefix>
           <el-icon><Search /></el-icon>
         </template>
-      </el-input>
+      </el-input> -->
 
       <el-button type="primary" @click="handleAddUser">
         <el-icon><Plus /></el-icon>添加用户
       </el-button>
+      
+      <!-- 新增批量导入按钮 -->
+      <el-upload
+        class="upload-excel"
+        :action="null"
+        :auto-upload="false"
+        :show-file-list="false"
+        accept=".xlsx,.xls"
+        :on-change="handleExcelUpload"
+      >
+        <el-button type="success">
+          <el-icon><Upload /></el-icon>批量导入
+        </el-button>
+      </el-upload>
     </div>
 
     <!-- 用户列表表格 -->
     <el-table
-      :data="filterUsers"
+      :data="users"
       class="user-table"
       v-loading="loading"
     >
-      <el-table-column label="头像" width="80">
+      <el-table-column label="头像" width="80" align="center">
         <template #default="{ row }">
           <el-avatar :src="row.avatar" :size="40" />
         </template>
       </el-table-column>
-      <el-table-column prop="nickname" label="姓名" />
-      <el-table-column prop="uid" label="用户账号" />
-      <el-table-column prop="class" label="班级" />
-      <el-table-column label="用户角色">
+      <el-table-column prop="userName" label="姓名" align="center" />
+      <el-table-column prop="uid" label="用户账号" align="center" />
+      <el-table-column prop="className" label="班级" align="center" />
+      <el-table-column label="用户角色" align="center">
         <template #default="{ row }">
-          <el-tag :type="getTagType(row.role)">{{ getRoleName(row.role) }}</el-tag>
+          <el-tag :type="getTagType(row.roleId)">{{ getRoleName(row.roleId) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="status" label="禁用">
+      <el-table-column prop="status" label="禁用" align="center">
         <template #default="{ row }">
           <el-switch
-            v-model="row.status"
+            :model-value="row.isDelete === '0'"
             @change="(val:any) => handleStatusToggle(row)"
           />
         </template>
       </el-table-column> 
-      <el-table-column label="操作" width="280">
+      <el-table-column label="操作" width="220" align="center">
         <template #default="{ row }">
           <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
           <el-button type="warning" link @click="handleResetPassword(row)">重置密码</el-button>
@@ -62,10 +76,52 @@
       </el-table-column>
     </el-table>
 
+    <!-- 添加分页组件 -->
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
+
     <!-- 编辑对话框 -->
     <el-dialog
+      v-model="dialogEditVisible"
+      title="编辑用户"
+      width="500px"
+      @close="resetForm"
+    >
+      <el-form
+        ref="formRef"
+        :model="userFormEdit"
+        :rules="rules"
+        label-width="80px"
+      >
+        <el-form-item label="用户姓名" prop="name">
+          <el-input v-model="userFormEdit.name" />
+        </el-form-item>
+        <el-form-item label="用户角色" prop="roleId">
+          <el-select v-model="userFormEdit.roleId" style="width: 150px;">
+            <el-option label="超级管理员" :value="10001" /> 
+            <el-option label="管理员" :value="10002" /> 
+            <el-option label="用户" :value="10003" />
+          </el-select>
+        </el-form-item> 
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogEditVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitEditForm">确定</el-button>
+      </template>
+    </el-dialog>
+    <!-- 添加对话框 -->
+    <el-dialog
       v-model="dialogVisible"
-      :title="dialogTitle"
+      title="添加用户"
       width="500px"
       @close="resetForm"
     >
@@ -75,16 +131,22 @@
         :rules="rules"
         label-width="80px"
       >
+        <el-form-item label="用户账号" prop="uid">
+          <el-input v-model="userForm.uid" />
+        </el-form-item>
         <el-form-item label="用户姓名" prop="name">
           <el-input v-model="userForm.name" />
         </el-form-item>
-        <el-form-item label="用户角色" prop="role">
-          <el-select v-model="userForm.role" style="width: 150px;">
-            <el-option label="超级管理员" value="superadmin" />
-            <el-option label="管理员" value="admin" />
-            <el-option label="普通用户" value="user" />
+        <!-- <el-form-item label="用户角色" prop="roleId">
+          <el-select v-model="userForm.roleId" style="width: 150px;">
+            <el-option label="超级管理员" :value="10001" /> 
+            <el-option label="管理员" :value="10002" /> 
+            <el-option label="用户" :value="10003" />
           </el-select>
-        </el-form-item> 
+        </el-form-item> -->
+        <el-form-item label="班级" prop="className">
+          <el-input v-model="userForm.className" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -97,23 +159,29 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus } from '@element-plus/icons-vue'
+import { Search, Plus, Upload } from '@element-plus/icons-vue'
 import request from '@/util/request'
 
 // 获取角色标签类型
-const getTagType = (role: string) => {
+const getTagType = (role: number) => {
   switch(role) {
-    case 'superadmin': return 'danger' 
-    case 'admin': return 'success'
+    // case 'superadmin': return 'danger' 
+    // case 'admin': return 'success'
+    // default: return 'info'
+    case 10001: return 'danger' 
+    case 10002: return 'success'
     default: return 'info'
   }
 }
 
 // 获取角色名称
-const getRoleName = (role: string) => {
+const getRoleName = (role: number) => {
   switch(role) {
-    case 'admin': return '管理员' 
-    case 'superadmin': return '超级管理员'
+    // case 'admin': return '管理员' 
+    // case 'superadmin': return '超级管理员'
+    // default: return '用户'
+    case 10001: return '超级管理员' 
+    case 10002: return '管理员'
     default: return '用户'
   }
 }
@@ -127,24 +195,27 @@ const pageSize = ref(10)
 const searchKeyword = ref('')
 const filterType = ref('all')
 const dialogVisible = ref(false)
-const dialogTitle = ref('')
-const sortField = ref('string')
-const sortOrder = ref('desc')
-const globalRegisterStatus = ref(0)
+const dialogEditVisible = ref(false)
+const dialogTitle = ref('') 
 
 // 表单相关
 const formRef = ref()
 const userForm = ref({
   uid: '',
+  name: '', 
+  isDelete: 0,
+  className: ''
+})
+const userFormEdit = ref({
+  uid: '',
   name: '',
-  role: 'user',
-  status: 1
+  roleId: 10003
 })
 // 表单验证规则
 const rules = {
   uid: [
     { required: true, message: '请输入用户账号', trigger: 'blur' },
-    { min: 3, message: '账号长度至少为3位', trigger: 'blur' }
+    { min: 12, message: '账号长度至少为12位', trigger: 'blur' }
   ],
   name: [
     { required: true, message: '请输入用户姓名', trigger: 'blur' }
@@ -152,8 +223,11 @@ const rules = {
   password: [
     { required: false, min: 6, message: '密码长度至少为6位', trigger: 'blur' }
   ],
-  role: [
+  roleId: [
     { required: true, message: '请选择用户角色', trigger: 'change' }
+  ],
+  className: [
+    { required: true, message: '请输入班级', trigger: 'blur' }
   ]
 }
 
@@ -161,300 +235,34 @@ const rules = {
 const getUserList = async () => {
   loading.value = true
   try {
-    // 模拟后端响应数据
-    // const mockResponse = {
-    //   code: 200,
-    //   data: {
-    //     list: [
-    //       {
-    //         uid: '10001',
-    //         nickname: '张三',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '智能223',
-    //         role: 'superadmin',
-    //         status: true
-    //       },
-    //       {
-    //         uid: '10002',
-    //         nickname: '李四',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '软工227',
-    //         role: 'admin',
-    //         status: false
-    //       },
-    //       {
-    //         uid: '10003',
-    //         nickname: '王五',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '计科221',
-    //         role: 'user',
-    //         status: true
-    //       },
-    //       {
-    //         uid: '10004',
-    //         nickname: '赵六',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '计科221',
-    //         role: 'user',
-    //         status: true
-    //       },
-    //       {
-    //         uid: '10005',
-    //         nickname: '孙七',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '计科221',
-    //         role: 'user',
-    //         status: true
-    //       },
-    //       {
-    //         uid: '10006',
-    //         nickname: '周八',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '计科221',
-    //         role: 'user',
-    //         status: true
-    //       },
-    //       {
-    //         uid: '10007',
-    //         nickname: '吴九',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '计科221',
-    //         role: 'user',
-    //         status: true
-    //       },
-    //       {
-    //         uid: '10008',
-    //         nickname: '郑十',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '计科221',
-    //         role: 'user',
-    //         status: true
-    //       },
-    //       {
-    //         uid: '10009',
-    //         nickname: '陈十一',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '计科221',
-    //         role: 'user',
-    //         status: true
-    //       },
-    //       {
-    //         uid: '10010',
-    //         nickname: '赵十二',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '计科221',
-    //         role: 'user',
-    //         status: true
-    //       },
-    //       {
-    //         uid: '10011',
-    //         nickname: '赵十三',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '计科221',
-    //         role: 'user',
-    //         status: true
-    //       },
-    //       {
-    //         uid: '10012',
-    //         nickname: '赵十四',
-    //         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    //         class: '计科221',
-    //         role: 'user',
-    //         status: true
-    //       }
-
-    //     ],
-    //     total: 12
-    //   }
-    // }
-
-    // // 使用模拟数据
-    // users.value = mockResponse.data.list as any
-    // total.value = mockResponse.data.total
-
-    // 当后端接口准备好后，替换为实际的API调用
+    let roleId = null  
+    if(filterType.value === 'all'){
+      roleId = null
+    }else if(filterType.value === 'superadmin'){
+      roleId = 10001
+    }else if(filterType.value === 'admin'){
+      roleId = 10002
+    }else if(filterType.value === 'user'){
+      roleId = 10003
+    }
+    
     const response = await request.post('/user/admin/list', {
       pageStart: currentPage.value,
       pageSize: pageSize.value,
-      sortField: sortField.value,
-      sortOrder: sortOrder.value, 
-      key:"string" 
+      roleId: roleId,
+      // sortField: sortField.value,
+      // sortOrder: sortOrder.value, 
+      // key:"string" 
     })as any
     if (response.code === 200) {
       users.value = response.data.list
-      total.value = response.data.total
+      total.value = response.data.total 
     }
   } catch (error) {
     console.error('获取用户列表失败:', error)
     ElMessage.error('获取用户列表失败')
   } finally {
     loading.value = false
-  }
-}
-
-// 获取用户详情
-const getUserDetail = async (id: string) => {
-  try {
-    const response = await request.get(`/root/user/get/${id}`)as any
-    if (response.code === 200) {
-      return response.data
-    }
-  } catch (error) {
-    console.error('获取用户详情失败:', error)
-    ElMessage.error('获取用户详情失败')
-  }
-}
-
-// 编辑用户
-const handleEdit = async (row: any) => {
-  dialogVisible.value = true
-  const userDetail = await getUserDetail(row.uid)
-  if (userDetail) {
-    userForm.value = {
-      uid: userDetail.uid, 
-      name: userDetail.name,
-      role: userDetail.role,
-      status: userDetail.status
-    }
-    dialogTitle.value = '编辑用户'
-    dialogVisible.value = true
-  }
-}
-
-// 切换用户状态
-const handleStatusToggle = async (row: any) => {
-  try {
-    const response = await request.get(`/root/user/stop/${row.uid}`)as any
-    if (response.code === 200) {
-      ElMessage.success(row.status ? '用户已停用' : '用户已启用')
-      getUserList()
-    }
-  } catch (error) {
-    console.error('操作失败:', error)
-    ElMessage.error('操作失败')
-  }
-}
-
-// 删除用户
-const handleDelete = (row: any) => {
-  ElMessageBox.confirm(
-    '确定要删除该用户吗？此操作不可恢复',
-    '警告',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  ).then(async () => {
-    try {
-      const response = await request.post(`/root/user/delete/${row.uid}`)as any
-      if (response.code === 200) {
-        ElMessage.success('删除成功')
-        getUserList()
-      }
-    } catch (error) {
-      console.error('删除失败:', error)
-      ElMessage.error('删除失败')
-    }
-  }).catch(() => {})
-}
-
-// 提交表单
-const submitForm = async () => {
-  if (!formRef.value) return
-  
-  await formRef.value.validate(async (valid: boolean) => {
-    if (valid) {
-      try {
-        const url = dialogTitle.value === '添加用户' ? '/root/user/add' : '/root/user/update'
-        const response = await request.post(url, userForm.value) as any
-        if (response.code === 200) {
-          ElMessage.success(dialogTitle.value === '添加用户' ? '添加成功' : '更新成功')
-          dialogVisible.value = false
-          getUserList()
-        }
-      } catch (error) {
-        console.error('操作失败:', error)
-        ElMessage.error('操作失败')
-      }
-    }
-  })
-}
-
-// 重置表单
-const resetForm = () => {
-  if (formRef.value) {
-    formRef.value.resetFields()
-  }
-  userForm.value = {
-    uid: '', 
-    name: '',
-    role: 'user',
-    status: 1
-  }
-}
-
-// 分页处理
-const handleSizeChange = (val: number) => {
-  pageSize.value = val
-  currentPage.value = 1
-  getUserList()
-}
-
-const handleCurrentChange = (val: number) => {
-  currentPage.value = val
-  getUserList()
-}
-
-// 添加用户
-const handleAddUser = () => {
-  userForm.value = {
-    uid: '', 
-    name: '',
-    role: 'user',
-    status: 1
-  }
-  dialogTitle.value = '添加用户'
-  dialogVisible.value = true
-}
-
-// Excel导入处理
-const handleExcelUpload = (file: any) => {
-  const formData = new FormData()
-  formData.append('file', file.raw)
-  // TODO: 实现Excel导入逻辑
-  ElMessage.warning('Excel导入功能尚未实现')
-}
-
-// 获取全局注册状态
-const getGlobalRegisterStatus = async () => {
-  try {
-    //TODO
-    return 
-  } catch (error) {
-    console.error('获取注册状态失败:', error)
-  }
-}
-
-// 切换全局注册状态
-const handleGlobalStatusChange = async (value: number) => {
-  try {
-    //TODO
-    return
-  } catch (error) {
-    console.error('修改注册状态失败:', error)
-    globalRegisterStatus.value = value ? 0 : 1
-  }
-}
-
-// 切换用户角色
-const handleRoleToggle = async (row: any) => {
-  try {
-    //TODO
-    return
-  } catch (error) {
-    console.error('修改角色失败:', error)
-    ElMessage.error('操作失败')
   }
 }
 
@@ -471,9 +279,11 @@ const handleResetPassword = async (row: any) => {
       }
     )
     
-    const response = await request.post(`/root/user/reset-password/${row.uid}`) as any
+    const response = await request.post('/user/reset/password',{uid:row.uid}) as any
     if (response.code === 200) {
       ElMessage.success('密码重置成功')
+    }else{
+      ElMessage.error(response.msg)
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -482,32 +292,180 @@ const handleResetPassword = async (row: any) => {
     }
   }
 }
+ 
+
+// 编辑用户
+const handleEdit = async (row: any) => { 
+  // 数据回显
+  userFormEdit.value = {
+    uid: row.uid,
+    name: row.userName,
+    roleId: row.roleId
+  }
+  dialogEditVisible.value = true
+}
+
+// 切换用户状态
+const handleStatusToggle = async (row: any) => {
+  try {
+    const response = await request.post('/user/admin/disable',{uid:row.uid})as any
+    if (response.code === 200) {
+      ElMessage.success(row.isDelete ? '用户已停用' : '用户已启用')
+      getUserList()
+    }
+  } catch (error) {
+    console.error('操作失败:', error)
+    ElMessage.error('操作失败')
+  }
+}
+ 
+ 
+const submitEditForm = async () => {
+  if (!formRef.value) return
+  
+  await formRef.value.validate(async (valid: boolean) => {
+    if (valid) {
+      try { 
+        const response = await request.post('/user/admin/update', {
+          uid: userFormEdit.value.uid,
+          userName: userFormEdit.value.name,
+          roleId: userFormEdit.value.roleId
+        }) as any
+        
+        if (response.code === 200) {
+          ElMessage.success('更新成功')
+          dialogEditVisible.value = false
+          getUserList()
+        }else{
+          ElMessage.error(response.msg)
+        }
+      } catch (error) {
+        console.error('操作失败:', error)
+        ElMessage.error('操作失败')
+      }
+    }
+  })
+}
+// 添加用户
+const handleAddUser = () => {
+  userForm.value = {
+    uid: '', 
+    name: '', 
+    isDelete: 0,
+    className: ''
+  }
+  dialogTitle.value = '添加用户'
+  dialogVisible.value = true
+}
+// 提交表单
+const submitForm = async () => {
+  if (!formRef.value) return
+  
+  await formRef.value.validate(async (valid: boolean) => {
+    if (valid) {
+      try {
+         
+        const response = await request.post('/user/admin/add', userForm.value) as any
+        if (response.code === 200) {
+          ElMessage.success(dialogTitle.value === '添加用户' ? '添加成功' : '更新成功')
+          dialogVisible.value = false
+          getUserList()
+        }else{
+          ElMessage.error(response.msg)
+        }
+      } catch (error) {
+        console.error('操作失败:', error)
+        ElMessage.error('操作失败')
+      }
+    }
+  })
+}
+
+// 重置表单
+const resetForm = () => {
+  if (formRef.value) {
+    formRef.value.resetFields()
+  }
+  userForm.value = {
+    uid: '', 
+    name: '', 
+    isDelete: 0,
+    className: ''
+  }
+  userFormEdit.value = {
+    uid: '', 
+    name: '',
+    roleId: 10003
+  }
+}
+
+// 分页处理
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1
+  getUserList()
+}
+
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  getUserList()
+}
+
+
+
+// Excel导入处理
+const handleExcelUpload = async (file: any) => {
+  const formData = new FormData()
+  formData.append('file', file.raw)
+  
+  try {
+    const response = await request.post('/user/admin/addByExcel', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }) as any
+    
+    if (response.code === 200) {
+      ElMessage.success('批量导入成功')
+      getUserList()
+    } else {
+      ElMessage.error(response.msg || '导入失败')
+    }
+  } catch (error) {
+    console.error('批量导入失败:', error)
+    ElMessage.error('批量导入失败')
+  }
+}
+
+ 
+ 
+
+ 
 
 // 添加筛选和搜索逻辑
 const filterUsers = computed(() => {
   let filteredList = [...users.value]
   
   // 按角色筛选
-  if (filterType.value !== 'all') {
-    filteredList = filteredList.filter((user: any) => user.role === filterType.value)
-  }
-  
-  // 按关键词搜索
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    filteredList = filteredList.filter((user: any) => 
-      user.nickname.toLowerCase().includes(keyword) || 
-      user.uid.toLowerCase().includes(keyword)
-    )
-  }
+  // if (filterType.value !== 'all') {
+  //   filteredList = filteredList.filter((user: any) => user.roleId === filterType.value)
+  // }
+  // console.log(filteredList)
+  // // 按关键词搜索
+  // if (searchKeyword.value) {
+  //   const keyword = searchKeyword.value.toLowerCase()
+  //   filteredList = filteredList.filter((user: any) => 
+  //     String(user.userName).includes(keyword) || 
+  //     String(user.uid).includes(keyword)
+  //   )
+  // }
   
   return filteredList
 })
 
 // 组件挂载时获取数据
 onMounted(() => {
-  getUserList()
-  getGlobalRegisterStatus()
+  getUserList() 
 })
 </script>
 
@@ -536,20 +494,22 @@ onMounted(() => {
 
 .user-table {
   background: white;
-  border-radius: 8px;
-  padding: 20px; 
+  /* border-radius: 8px; */ 
 }
 
- 
- 
+.pagination-container {
+  margin-top: 20px;
+  /* 居中 */
+  display: flex;
+  justify-content: center;
+}
 
- 
-
- 
 /* 分割线 */
- 
-
 :deep(.el-table td) {
   border-bottom: 1px solid #e4e7ed;
+}
+
+.upload-excel {
+  display: inline-block;
 }
 </style> 
