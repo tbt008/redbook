@@ -498,10 +498,13 @@ const handleCurrentChange = async (val: number) => {
 
 // 获取题目总数
 const getTotalCount = async () => {
+  loading.value = true
   try {
     const response = (await request.post('/question/list', {
-      pageStart: 1,
-      pageSize: 1000000,
+      pageStart: currentPage.value,
+      pageSize: pageSize.value,
+      sortField: sortField.value,
+      sortOrder: sortOrder.value,
       difficulty: difficulty.value || undefined,
       tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
       title: searchKeyword.value || undefined
@@ -509,13 +512,10 @@ const getTotalCount = async () => {
 
     if (response.code === 200) {
       total.value = response.data.total
-      const allData = response.data.list
-      const start = (currentPage.value - 1) * pageSize.value
-      const end = Math.min(start + pageSize.value, allData.length)
-      problems.value = allData.slice(start, end)
+      problems.value = response.data.list
     }
   } catch (error) {
-    console.error('获取题目总数失败:', error)
+    console.error('获取题目列表失败:', error)
   } finally {
     loading.value = false
   }
