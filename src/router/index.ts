@@ -77,6 +77,11 @@ const router = createRouter({
           path: 'discussion',
           name: 'discussionManage',
           component: () => import('@/views/admin/discussionManage.vue')
+        },
+        {
+          path: 'excel',
+          name: 'excelManager',
+          component: () => import('@/views/admin/excelManager.vue')
         }
       ]
     },
