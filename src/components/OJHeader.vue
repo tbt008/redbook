@@ -17,6 +17,7 @@
         <img class="user-img" :src="userImg" alt="" @click="showMenu = !showMenu" />
         <el-menu v-show="showMenu" class="user-menu" :class="{ show: showMenu }">
           <el-menu-item @click="handleCommand('space')">我的空间</el-menu-item>
+          <el-menu-item @click="handleCommand('password')">修改密码</el-menu-item>
           <el-menu-item @click="handleCommand('logout')">退出登录</el-menu-item>
         </el-menu>
       </div>
@@ -25,6 +26,49 @@
       </div>
     </div>
   </div>
+  <el-dialog
+    v-model="dialogVisible"
+    title="修改密码"
+    width="400px"
+    :close-on-click-modal="false"
+  >
+    <el-form
+      ref="passwordFormRef"
+      :model="passwordForm"
+      :rules="passwordRules"
+      label-width="80px"
+    >
+      <el-form-item label="原密码" prop="oldPassword">
+        <el-input
+          v-model="passwordForm.oldPassword"
+          type="password"
+          placeholder="请输入原密码"
+        />
+      </el-form-item>
+      <el-form-item label="新密码" prop="newPassword">
+        <el-input
+          v-model="passwordForm.newPassword"
+          type="password"
+          placeholder="请输入新密码"
+        />
+      </el-form-item>
+      <el-form-item label="确认密码" prop="confirmPassword">
+        <el-input
+          v-model="passwordForm.confirmPassword"
+          type="password"
+          placeholder="请确认新密码"
+        />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleModifyPassword(passwordFormRef)">
+          确认
+        </el-button>
+      </span>
+    </template>
+  </el-dialog>
 </template>
 
 <script lang="js" setup>
@@ -41,6 +85,7 @@ const links = ref([
   { path: '/discuss', text: '讨论', active: false },
   { path: '/about', text: '关于', active: false }
 ])
+const passwordFormRef = ref(null)
 // const props = defineProps({
 //   loginUpdate: {
 //     type: Boolean,
@@ -50,6 +95,32 @@ const links = ref([
 const userImg = ref(null)
 const loading = ref(false)
 const showMenu = ref(false)
+const dialogVisible = ref(false)
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+const passwordRules = {
+  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能小于6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value !== passwordForm.value.newPassword) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback() //回调函数 验证通过
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+}
 const userLogin = () => {
   // 判断用户是否已登录
   if (localStorage.getItem('authToken') != null) {
@@ -137,6 +208,41 @@ const handleUser = () => {
 //     }
 //   }
 // )
+const handleModifyPassword = async (formEl) => {
+  if (!formEl) return
+  
+  try {
+    const valid = await formEl.validate()
+    if (valid) {
+      const res = await request.post('/user/modify/password', {
+        uid: localStorage.getItem('uid'),
+        oldPassword: passwordForm.value.oldPassword,
+        newPassword: passwordForm.value.newPassword
+      })
+      
+      if (res.code === 200) {
+        ElMessage.success('密码修改成功，请重新登录')
+        dialogVisible.value = false
+        // 清空表单
+        passwordForm.value = {
+          oldPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }
+        // 退出登录
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('avatar')
+        userImg.value = null
+        router.push('/login')
+      } else {
+        ElMessage.error(res.msg || '修改失败')
+      }
+    }
+  } catch (error) {
+    console.error('修改密码失败:', error)
+    ElMessage.error('修改密码失败')
+  }
+}
 const handleCommand = (command) => {
   showMenu.value = false
   if (command === 'space') {
@@ -152,6 +258,8 @@ const handleCommand = (command) => {
         router.push('/login')
       }
     })
+  } else if (command === 'password') {
+    dialogVisible.value = true
   }
 }
 </script>
