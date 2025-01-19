@@ -39,7 +39,8 @@ import codeEditor from '@/components/codeEditor.vue'
 import { debounce } from '@/utils/optimizeUtils'
 const currentTab = ref(0)
 const clickToLike = ref(false)
-const choseLanguage = useStorage('ptuCode_' + window.location.pathname.split('/')[2], 0)
+const choseLanguage = useStorage('ptuCode_language', 1)
+
 const languageList = ref([
   { label: 'C', value: 1 },
   { label: 'C++', value: 2 },
@@ -57,13 +58,98 @@ const props = defineProps({
     default: null
   }
 })
+const getIdFromUrl = (url) => {
+  // 查找第一个 '?id=' 的位置
+  const startIndex = url.indexOf('?id=')
 
+  if (startIndex === -1) {
+    // 如果未找到 '?id='，则返回 null 或其他表示未找到的值
+    return null
+  }
+
+  // 从 '?id=' 的下一个字符开始
+  const substring = url.substring(startIndex + 4)
+
+  // 查找第一个 '&' 的位置
+  const endIndex = substring.indexOf('&')
+
+  if (endIndex === -1) {
+    // 如果未找到 '&'，则返回从 '?id=' 后的所有字符
+    return decodeURIComponent(substring)
+  } else {
+    // 返回从 '?id=' 到 '&' 之间的字符
+    return decodeURIComponent(substring.substring(0, endIndex))
+  }
+}
 const clickTitleTab = (index) => {
   currentTab.value = index
 }
 
-var key = 'AttackCode_' + choseLanguage.value + '_' + window.location.pathname.split('/')[2]
+var key = 'ptuCode_' + choseLanguage.value + '_' + getIdFromUrl(window.location.href)
+
 var code = useStorage(key, '')
+if (code.value === '') {
+  if (choseLanguage.value == 1) {
+    code.value = `#include<stdio.h>
+int main(){
+	
+	
+	
+	
+	return 0;
+} `
+  } else if (choseLanguage.value == 2) {
+    code.value = `#include<bits/stdc++.h>
+using namespace std;
+int main(){
+	
+
+	
+	
+	return 0;
+} `
+  } else if (choseLanguage.value == 3) {
+    code.value = `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+     
+    }
+}`
+  }
+}
+const initCode = () => {
+  if (code.value === '') {
+    if (choseLanguage.value == 1) {
+      code.value = `#include<stdio.h>
+int main(){
+	
+	
+	
+	
+	return 0;
+} `
+    } else if (choseLanguage.value == 2) {
+      code.value = `#include<bits/stdc++.h>
+using namespace std;
+int main(){
+	
+
+	
+	
+	return 0;
+} `
+    } else if (choseLanguage.value == 3) {
+      code.value = `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+     
+    }
+}`
+    }
+  }
+}
 const clickFooter = (type) => {
   if (type === 1) {
     clickToLike.value = !clickToLike.value
@@ -77,8 +163,9 @@ const uploadCode = () => {
   emit('submitCode', code.value)
 }
 const changeLanguageFun = () => {
-  key = 'AttackCode_' + choseLanguage.value + '_' + window.location.pathname.split('/')[2]
+  var key = 'ptuCode_' + choseLanguage.value + '_' + getIdFromUrl(window.location.href)
   code = useStorage(key, '')
+  initCode()
   emit('changeLanuage', choseLanguage.value)
   uploadCode()
 }

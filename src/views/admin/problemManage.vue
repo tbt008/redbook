@@ -81,6 +81,12 @@
             {{ row.uid }}
           </template>
         </el-table-column>
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <div v-if="row.status == 0">正常</div>
+            <div v-else>比赛</div>
+          </template>
+        </el-table-column>
         <!-- 难度列 -->
         <el-table-column label="难度" width="100">
           <template #default="{ row }">

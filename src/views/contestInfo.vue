@@ -125,7 +125,7 @@
                   padding: 30px;
                 "
               >
-                {{ constestInfo.announcement }}
+                {{ constestInfo.description }}
               </div>
             </template>
           </el-skeleton>
@@ -173,34 +173,81 @@
             <el-scrollbar height="600px">
               <el-table :data="codeRecordList" style="width: 100%">
                 <el-table-column label="用户名" prop="uid"> </el-table-column>
-                <el-table-column
-                  label="题号"
-                  prop="displayTitle"
-                  :filters="displayTitle"
-                  :filter-method="filterHandler"
-                >
+                <el-table-column label="题号" prop="displayTitle">
+                  <template #header>
+                    <el-dropdown :hide-on-click="false">
+                      <span class="el-dropdown-link">
+                        题号
+                        <el-icon class="el-icon--right">
+                          <arrow-down />
+                        </el-icon>
+                      </span>
+                      <template #dropdown>
+                        <el-dropdown-menu>
+                          <el-dropdown-item v-for="(item, index) in displayTitle" :key="index">
+                            <el-checkbox
+                              @click="handleCommand(index)"
+                              v-bind="item.checked"
+                              label=""
+                              size="large"
+                            />
+                            {{ item.text }}</el-dropdown-item
+                          >
+                        </el-dropdown-menu>
+                      </template>
+                    </el-dropdown>
+                  </template>
                   <template #default="{ row }">
                     <el-link>{{ row.displayTitle }}</el-link>
                   </template>
                 </el-table-column>
-                <el-table-column
-                  label="运行状态"
-                  prop="result"
-                  :filters="[
-                    { text: '答案正确', value: '答案正确' },
-                    { text: '部分正确', value: '部分正确' },
-                    { text: '答案错误', value: '答案错误' },
-                    { text: '编译错误', value: '编译错误' },
-                    { text: '正在判题', value: '正在判题' }
-                  ]"
-                  :filter-method="filterHandler"
-                >
+                <el-table-column label="运行状态" prop="runningCondition">
+                  <template #header>
+                    <el-dropdown :hide-on-click="false">
+                      <span class="el-dropdown-link">
+                        运行状态
+                        <el-icon class="el-icon--right">
+                          <arrow-down />
+                        </el-icon>
+                      </span>
+                      <template #dropdown>
+                        <el-dropdown-menu>
+                          <el-dropdown-item>
+                            <el-checkbox label="" size="large" />
+                            答案正确</el-dropdown-item
+                          >
+                          <el-dropdown-item>
+                            <el-checkbox label="" size="large" />部分正确</el-dropdown-item
+                          >
+                          <el-dropdown-item>
+                            <el-checkbox label="" size="large" />答案错误</el-dropdown-item
+                          >
+                          <el-dropdown-item>
+                            <el-checkbox label="" size="large" />编译错误</el-dropdown-item
+                          >
+                          <el-dropdown-item>
+                            <el-checkbox label="" size="large" />正在判题</el-dropdown-item
+                          >
+                        </el-dropdown-menu>
+                      </template>
+                    </el-dropdown>
+                  </template>
                   <template #default="{ row }">
-                    <el-tag v-if="row.result == '答案正确'" type="success">答案正确</el-tag>
-                    <el-tag v-else-if="row.result == '部分正确'" type="primary">部分正确</el-tag>
-                    <el-tag v-else-if="row.result == '答案错误'" type="danger">答案错误</el-tag>
-                    <el-tag v-else-if="row.result == '编译错误'" type="warning">编译错误</el-tag>
-                    <el-tag v-else-if="row.result == '正在判题'" type="primary">正在判题</el-tag>
+                    <el-tag v-if="row.runningCondition == '答案正确'" type="success"
+                      >答案正确</el-tag
+                    >
+                    <el-tag v-else-if="row.runningCondition == '部分正确'" type="primary"
+                      >部分正确</el-tag
+                    >
+                    <el-tag v-else-if="row.runningCondition == '答案错误'" type="danger"
+                      >答案错误</el-tag
+                    >
+                    <el-tag v-else-if="row.runningCondition == '编译错误'" type="warning"
+                      >编译错误</el-tag
+                    >
+                    <el-tag v-else-if="row.runningCondition == '正在判题'" type="primary"
+                      >正在判题</el-tag
+                    >
                   </template>
                 </el-table-column>
 
@@ -304,10 +351,49 @@ const codeRecordList = ref([])
 const rankinglist = ref([])
 const inputUser = ref('')
 const loading = ref(true)
-
+const checkedQuestionName = ref([])
 const selectTab = ref('first')
 const endText = ref('比赛开始！')
-
+const handleCommand = (index1) => {
+  // 遍历获取displayTitle
+  checkedQuestionName.value = []
+  displayTitle.value[index1].checked = !displayTitle.value[index1].checked
+  displayTitle.value.forEach((item, index) => {
+    if (item.checked == true) {
+      checkedQuestionName.value.push(item.text)
+    }
+  })
+  // 重新获取数据
+  request
+    .post(`/contest/record/get/all`, {
+      contestId: id.value,
+      questionDisplayNames: checkedQuestionName.value
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        codeRecordList.value = res.data.list
+        // 遍历
+        // codeRecordList.value.forEach((item) => {
+        //   if (item.result == 100) {
+        //     item.result = '答案正确'
+        //   } else if (item.result > 0 && item.result < 100) {
+        //     item.result = '部分正确'
+        //   } else if (item.result == 0) {
+        //     item.result = '答案错误'
+        //   } else if (item.result == -2) {
+        //     item.result = '编译错误'
+        //   } else if (item.result == -1) {
+        //     item.result = '正在判题'
+        //   }
+        // })
+      } else {
+        ElMessage.error('获取提交记录失败：' + res.msg)
+      }
+    })
+    .catch(() => {
+      ElMessage.error('获取提交记录失败！')
+    })
+}
 const updateTab = (tab) => {
   if (tab.paneName == 'second') {
     selectQuestion()
@@ -377,6 +463,7 @@ const selectQuestion = () => {
         questionList.value.forEach((item, index) => {
           item.letter = letters[index]
           var r = { text: `${letters[index]}`, value: `${letters[index]}` }
+          r.checked = false
           displayTitle.value.push(r)
         })
       } else {

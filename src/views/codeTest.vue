@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import testCase from '@/components/testCase.vue'
 const currentTab = ref(0)
 import { useRouter } from 'vue-router'
+import { tr } from 'element-plus/es/locale/index.mjs'
 const router = useRouter()
 const currentClick = ref(0)
 const judgeQuestionLoading = ref(false)
@@ -197,7 +198,10 @@ const whileGetResult = async (recordId) => {
     }
   }, 1000)
 
-  //  recordId
+  if (judgeQuestionLoading.value == true) {
+    ElMessage.success('判题超时，请到提交记录查看结果')
+    judgeQuestionLoading.value == false
+  }
 }
 
 const testList = ref([])
