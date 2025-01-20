@@ -17,6 +17,8 @@
         <img class="user-img" :src="userImg" alt="" @click="showMenu = !showMenu" />
         <el-menu v-show="showMenu" class="user-menu" :class="{ show: showMenu }">
           <el-menu-item @click="handleCommand('space')">我的空间</el-menu-item>
+          <!-- 是否是管理员 -->
+          <el-menu-item v-if="isAdmin" @click="handleCommand('admin')">管理页面</el-menu-item>
           <el-menu-item @click="handleCommand('password')">修改密码</el-menu-item>
           <el-menu-item @click="handleCommand('logout')">退出登录</el-menu-item>
         </el-menu>
@@ -96,6 +98,7 @@ const userImg = ref(null)
 const loading = ref(false)
 const showMenu = ref(false)
 const dialogVisible = ref(false)
+const isAdmin = ref(false)
 const passwordForm = ref({
   oldPassword: '',
   newPassword: '',
@@ -130,6 +133,10 @@ const userLogin = () => {
         //把头像存下来
         localStorage.setItem('avatar', res.data.avatar)
         // localStorage.setItem('uid', res.data.uid)
+        // console.log(res.data.permissionList)
+        // 判断是否为管理员 - 检查权限列表是否包含管理员权限码
+        isAdmin.value = res.data.permissionList && 
+          (res.data.permissionList.includes(5006) || res.data.permissionList.includes(5007))
         userImg.value = res.data.avatar
         loading.value = true
         return true
@@ -260,6 +267,8 @@ const handleCommand = (command) => {
     })
   } else if (command === 'password') {
     dialogVisible.value = true
+  } else if (command === 'admin') {
+    router.push('admin/problem')
   }
 }
 </script>

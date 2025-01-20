@@ -110,6 +110,11 @@ const router = createRouter({
       path: '/submission/:id',
       name: 'submissionDetail',
       component: () => import('@/views/SubmissionDetail.vue')
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('@/views/404.vue')
     }
   ]
 })
