@@ -1,5 +1,6 @@
 <template>
   <div class="user-management-container">
+    <div class="user-wrapper">
     <!-- 筛选区域 -->
     <div class="filter-section">
       <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
@@ -153,6 +154,7 @@
         <el-button type="primary" @click="submitForm">确定</el-button>
       </template>
     </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -473,9 +475,17 @@ onMounted(() => {
 .user-management-container {
   padding: 20px; 
   min-height: 100vh;
+  background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
+   
+ 
+  
+}
+
+.user-wrapper {
+  background: white;
   border-radius: 20px; 
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  margin: 20px; 
+  padding: 20px;
 }
 
 .filter-section {

@@ -251,6 +251,7 @@ const showAddContest = ref(false)
   padding: 20px; 
   min-height: 100vh;
   margin: 0 auto;
+  background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
 }
 
 .content-wrapper {

@@ -1,43 +1,45 @@
 <template>
   <div class="excel-manage">
-    <div class="header-operations">
-      <el-button type="primary" @click="handleErrorLog">
-        异常导入日志
-      </el-button>
-      <el-button type="success" @click="handleExport">
-        导出数据
-      </el-button>
-    </div>
+    <div class="content-wrapper">
+      <div class="header-operations">
+        <el-button type="primary" @click="handleErrorLog">
+          异常导入日志
+        </el-button>
+        <el-button type="success" @click="handleExport">
+          导出数据
+        </el-button>
+      </div>
 
-    <el-table :data="tableData" v-loading="loading" border style="width: 100%; margin-top: 20px;">
-      <el-table-column prop="fileName" label="文件名" />
-      <!-- <el-table-column prop="createTime" label="创建时间" /> -->
-      <!-- <el-table-column prop="status" label="状态">
-        <template #default="scope">
-          <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
-            {{ scope.row.status === 1 ? '成功' : '失败' }}
-          </el-tag>
-        </template>
-      </el-table-column> -->
-      <el-table-column fixed="right" label="操作" width="120">
-        <template #default="scope">
-          <el-button :type="scope.row.type === 1 ? 'primary' : 'success'" link @click="handleDownload(scope.row)">
-            下载
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      <el-table :data="tableData" v-loading="loading" border style="width: 100%; margin-top: 20px;">
+        <el-table-column prop="fileName" label="文件名" />
+        <!-- <el-table-column prop="createTime" label="创建时间" /> -->
+        <!-- <el-table-column prop="status" label="状态">
+          <template #default="scope">
+            <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
+              {{ scope.row.status === 1 ? '成功' : '失败' }}
+            </el-tag>
+          </template>
+        </el-table-column> -->
+        <el-table-column fixed="right" label="操作" width="120">
+          <template #default="scope">
+            <el-button :type="scope.row.type === 1 ? 'primary' : 'success'" link @click="handleDownload(scope.row)">
+              下载
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <div class="pagination">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 30, 50]"
-        :total="total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        layout="total, sizes, prev, pager, next"
-      />
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="total"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          layout="total, sizes, prev, pager, next"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -122,6 +124,20 @@ onMounted(() => {
 <style scoped>
 .excel-manage {
   padding: 20px;
+  max-width: 100%;
+  min-height: 100vh;
+  height: 100%;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
+}
+
+.content-wrapper {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .header-operations {
