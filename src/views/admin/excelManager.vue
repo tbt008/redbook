@@ -10,8 +10,8 @@
           导出数据
         </el-button>
       </div>
-
-      <el-table :data="tableData" v-loading="loading" border style="width: 100%; margin-top: 20px;">
+      <!-- 如果需要边框就加 border -->
+      <el-table :data="tableData" v-loading="loading"   style="width: 100%; margin-top: 20px;">
         <el-table-column prop="fileName" label="文件名" />
         <!-- <el-table-column prop="createTime" label="创建时间" /> -->
         <!-- <el-table-column prop="status" label="状态">
