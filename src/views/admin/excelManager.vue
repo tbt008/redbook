@@ -2,6 +2,7 @@
   <div class="excel-manage">
     <div class="content-wrapper">
       <div class="header-operations">
+        <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
         <el-button type="primary" @click="handleErrorLog">
           异常导入日志
         </el-button>
