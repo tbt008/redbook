@@ -406,18 +406,18 @@ const handleQuestionClick = (questionId: number) => {
   })
   
   // 使用 setTimeout 模拟短暂延迟，确保加载动画能够显示
-  // setTimeout(() => {
-  //   window.location.href = `/question?id=${questionId}`
-  //   loading.close()
-  // }, 1000)
+  setTimeout(() => {
+    window.location.href = `/question?id=${questionId}`
+    loading.close()
+  }, 1000)
 
   // 在页面卸载时自动关闭加载动画
-  window.addEventListener('beforeunload', () => {
-    loading.close()
-  }, { once: true })
+  // window.addEventListener('beforeunload', () => {
+  //   loading.close()
+  // }, { once: true })
 
-  // 直接跳转，不需要 setTimeout
-  window.location.href = `/question?id=${questionId}`
+  // // 直接跳转，不需要 setTimeout
+  // window.location.href = `/question?id=${questionId}`
 }
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate: number) => {
