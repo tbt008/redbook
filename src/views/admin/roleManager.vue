@@ -83,13 +83,7 @@
           <el-form-item label="权限标识" prop="identifier">
             <el-input v-model="addPermissionForm.identifier" />
           </el-form-item>
-          <el-form-item label="父级权限" prop="parentId">
-            <el-tree-select v-model="addPermissionForm.parentId" :data="permissions" :props="{
-              children: 'children',
-              label: 'name',
-              value: 'id'
-            }" check-strictly default-expand-all placeholder="请选择父级权限" />
-          </el-form-item>
+
         </el-form>
         <template #footer>
           <el-button @click="addPermissionDialogVisible = false">取消</el-button>
