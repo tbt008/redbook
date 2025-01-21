@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { RouterView, useRouter } from 'vue-router'
 import request from '@/util/request'
 import personMiddle from './personMiddle.vue'
+import userProfileSubmitRecord from './userProfileSubmitRecord.vue'
 const bgStyle = ref('#F7F8FA')
 const userInfo = ref({})
 const router = useRouter()
@@ -48,6 +49,24 @@ const followPersonFun = async () => {
     // let item = await followFriend(obj)
   }
 }
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const getCodeRecord = () => {
+  request
+    .post('/record/get/all', {
+      pageStart: currentPage.value,
+      pageSize: pageSize.value
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        codeRecord.value = res.data.list
+        total.value = res.data.total
+      } else {
+        ElMessage.error('用户提交记录异常！')
+      }
+    })
+}
 onMounted(async () => {
   request.get('/user/get/user').then((res) => {
     if (res.code == 200) {
@@ -57,15 +76,25 @@ onMounted(async () => {
       ElMessage.error('用户登录异常！')
     }
   })
-  request.get('/record/get/all').then((res) => {
-    if (res.code == 200) {
-      codeRecord.value = res.data
-    } else {
-      ElMessage.error('用户提交记录异常！')
-    }
-  })
+
+  getCodeRecord()
 })
 const codeRecord = ref([])
+// 分页大小改变处理
+const handleSizeChange = async (val) => {
+  pageSize.value = val
+  currentPage.value = 1
+  getCodeRecord()
+}
+
+// 当前页改变处理
+const handleCurrentChange = async (val) => {
+  currentPage.value = val
+  getCodeRecord()
+}
+const goToSubmissionDetail = (row) => {
+  router.push(`/submission/${row.submitId}`)
+}
 </script>
 
 <template>
@@ -94,8 +123,12 @@ const codeRecord = ref([])
               <span style="font-size: xx-large">{{ userInfo.nickName }}</span>
               <span style="font-size: small; color: gray">{{ userInfo.userName }}</span>
               <span style="font-size: small; color: black"
-                >学号
+                >学号：
                 <span>{{ userInfo.uid }}</span>
+              </span>
+              <span style="font-size: small; color: black"
+                >班级：
+                <span>{{ userInfo.className }}</span>
               </span>
             </div>
           </template>
@@ -103,16 +136,7 @@ const codeRecord = ref([])
       </div>
       <div class="bottom" :style="nowTheme === true ? 'filter: invert(100%);' : 'filter: none;'">
         <div class="bottom-left">
-          <div class="bottom-left-top">
-            <div class="bot-top-item" style="border-right: 2px solid gainsboro; left: 30px">
-              <span style="display: flex; justify-content: center; position: relative">已关注</span>
-              <span>{{ userInfo.following }}</span>
-            </div>
-            <div class="bot-top-item">
-              <span>关注者</span>
-              <span>{{ userInfo.followed }}</span>
-            </div>
-          </div>
+          <div class="bottom-left-top"></div>
 
           <div class="bottom-left-middle">
             <el-skeleton :loading="loading" animated>
@@ -120,49 +144,7 @@ const codeRecord = ref([])
                 <el-skeleton :rows="7"></el-skeleton>
               </template>
               <template #default>
-                <div
-                  v-if="userInfo.self"
-                  @click="editorProfile()"
-                  class="button"
-                  style="background-color: #eff9f2; color: #2db55d"
-                >
-                  编辑个人信息
-                </div>
-                <div
-                  v-if="userInfo.self"
-                  class="button"
-                  style="background-color: #f2f2f2; color: #595959"
-                >
-                  更新简历信息
-                </div>
-
-                <!-- <span :style="props.userInfo.isFollow === true ? 'color: gray; font-size: larger': 'color: white; font-size: larger'">{{ props.userInfo.isFollow === false ? "+ 关注": "取消关注" }}</span>  -->
-                <div
-                  @click="followPersonFun"
-                  v-else
-                  class="button"
-                  :style="
-                    userInfo.followPerson === true
-                      ? 'background-color: #EFF9F2; color: #2DB55D;'
-                      : 'background-color: #2DB55D; color: #FDFEFE;'
-                  "
-                >
-                  <div v-show="userInfo.followPerson === false">
-                    <div style="display: flex; gap: 5px">
-                      + &nbsp;
-                      <div>关注</div>
-                    </div>
-                  </div>
-                  <div v-show="userInfo.followPerson === true">
-                    <div>已关注</div>
-                  </div>
-                </div>
-                <el-button type="success" round plain style="width: 280px; position: relative"
-                  >编辑个人信息</el-button
-                >
-                <!-- <el-button type="info" plain round   style=" width: 280px;  position: relative; left: -11px"></el-button> -->
-
-                <span>个人简介</span>
+                <span v-if="userInfo.desription">个人简介</span>
                 {{ userInfo.desription }}
                 <div style="display: flex; position: relative; gap: 20px; align-items: center">
                   <svg
@@ -376,10 +358,10 @@ const codeRecord = ref([])
           </div>
 
           <div class="t3">
-            <!-- <personPostSubmit></personPostSubmit> -->
+            <userProfileSubmitRecord></userProfileSubmitRecord>
           </div>
           <div class="t4">
-            <el-table :data="codeRecord" style="width: 100%">
+            <el-table :data="codeRecord" style="width: 100%" @row-click="goToSubmissionDetail">
               <el-table-column label="序号" prop="submitId"> </el-table-column>
               <el-table-column label="运行状态" prop="result">
                 <template #default="{ row }">
@@ -412,6 +394,18 @@ const codeRecord = ref([])
                 <el-empty description="没有数据" />
               </template>
             </el-table>
+            <!-- elementplus el-pagination: 分页器 -->
+            <div class="pagination-container">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :total="total"
+                :page-sizes="[10, 20, 50]"
+                layout="total, sizes, prev, pager, next"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -652,7 +646,10 @@ const codeRecord = ref([])
           justify-content: center;
           // min-height: 225px;
           position: relative;
+          padding-top: 20px;
+          padding-bottom: 20px;
           display: flex;
+          flex-wrap: wrap;
           // height: 225px;
           border-radius: 15px;
           background-color: white;
@@ -660,5 +657,11 @@ const codeRecord = ref([])
       }
     }
   }
+}
+/* 分页容器样式 */
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
 }
 </style>

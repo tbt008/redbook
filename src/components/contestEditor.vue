@@ -214,9 +214,10 @@ function primary() {
   }
   cover.value =
     'https://uploadfiles.nowcoder.com/images/20231115/999991351_1700047623309/5F6F71EEA2A4D8090C0AC8B246CE423D'
-  if (props.id == contestId.value) {
+  if (props.id == contestId.value && props.id !== undefined) {
     request
       .post('/root/contest/edit', {
+        id: contestId.value,
         title: title.value,
         startTime: startTime.value,
         endTime: endTime.value,

@@ -39,7 +39,7 @@
         </el-table-column>
         <el-table-column label="比赛名" width="250">
           <template #default="{ row }">
-            <router-link :to="`/question?id=${row.id}`" class="problem-title">
+            <router-link :to="`/contest/detail/${id}`" class="problem-title">
               {{ row.title }}
             </router-link>
           </template>
@@ -81,7 +81,7 @@
         <el-table-column label="操作" width="150">
           <template #default="{ row }">
             <el-button :icon="Edit" circle plain type="primary" @click="onEdit(row)"> </el-button>
-
+            <el-button :icon="Download" circle plain type="primary" @click="onDownload(row)"> </el-button>
             <el-button :icon="Delete" circle plain type="danger" @click="onDelete(row)"></el-button>
           </template>
         </el-table-column>
@@ -118,7 +118,7 @@
 <script lang="js" setup>
 import ContestEditor from '@/components/contestEditor.vue'
 import ContestMember from '@/components/contestMember.vue'
-import { Delete, Edit, Plus } from '@element-plus/icons-vue'
+import { Delete, Edit, Plus,Download } from '@element-plus/icons-vue'
 // Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
 // 工具和类型
@@ -151,6 +151,22 @@ const searchContestName = (value) => {
 }
 const cancel = () => {
   showAddContest.value = false
+}
+const onDownload = (row) => {
+  request
+    .post(`/ranking/contest/excel`,{
+      contestId: row.id
+    })
+    .then((res) => {
+      if (res.code === 200) {
+        ElMessage.success('导出成功')
+      } else {
+        ElMessage.error('导出失败: ' + res.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('导出失败：' + err)
+    })
 }
 const onDelete = (row) => {
   request

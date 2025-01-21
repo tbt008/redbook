@@ -1,8 +1,8 @@
 <template>
   <div>
     <el-radio-group v-model="selectType" size="large">
-      <el-radio-button label="已邀请" value="1" />
-      <el-radio-button label="未邀请" value="2" />
+      <el-radio-button label="已参赛" value="1" />
+      <el-radio-button label="未参赛" value="2" />
     </el-radio-group>
     <el-button
       type="primary"
@@ -28,7 +28,9 @@
 
     <el-table-column label="姓名" width="120" prop="userName"> </el-table-column>
     <el-table-column label="学号" width="150" prop="uid" />
+
   </el-table>
+  
   <el-table v-else :data="unInviteUser" style="width: 100%">
     <el-table-column width="55">
       <template #default="row">
@@ -38,6 +40,18 @@
     <el-table-column label="姓名" width="120" prop="userName"> </el-table-column>
     <el-table-column label="学号" width="150" prop="uid" />
   </el-table>
+    <!-- elementplus el-pagination: 分页器 -->
+    <div class="pagination-container">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :total="total"
+                :page-sizes="[10, 20, 50]"
+                layout="total, sizes, prev, pager, next"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
+            </div>
 </template>
 
 <script lang="js" setup>
@@ -53,10 +67,14 @@ const props = defineProps({
   }
 })
 const selectType = ref(1)
-
+const currentPage=ref(1)
+const pageSize=ref(10)
+const total=ref(0)
 const getContestMember = () => {
   request
     .post('/contest/user/get', {
+      pageStart: currentPage.value,
+      pageSize: pageSize.value,
       contestId: props.id,
       type: selectType.value
     })
@@ -64,6 +82,7 @@ const getContestMember = () => {
       if (res.code == 200) {
         if (selectType.value == 1) {
           InviteUser.value = res.data.list
+        
           InviteUser.value.forEach((item) => {
             item.checked = false
           })
@@ -73,6 +92,7 @@ const getContestMember = () => {
             item.checked = false
           })
         }
+        total.value = res.data.total
       } else {
         ElMessage.error(res.msg)
       }
@@ -104,7 +124,7 @@ const updateMember = () => {
         } else {
           ElMessage.error('添加失败: ' + res.msg)
         }
-        getContestMember
+        getContestMember()
       })
       .catch((err) => {
         ElMessage.error('添加失败:' + err)
@@ -134,7 +154,7 @@ const removeMember = () => {
         } else {
           ElMessage.error('移除失败: ' + res.msg)
         }
-        getContestMember
+        getContestMember()
       })
       .catch((err) => {
         ElMessage.error('移除失败:' + err)
@@ -144,6 +164,18 @@ const removeMember = () => {
 onMounted(() => {
   getContestMember()
 })
+// 分页大小改变处理
+const handleSizeChange = async (val) => {
+  pageSize.value = val
+  currentPage.value = 1
+  getContestMember()
+}
+
+// 当前页改变处理
+const handleCurrentChange = async (val) => {
+  currentPage.value = val
+  getContestMember()
+}
 watch(
   () => props.id,
   (newValue, oldValue) => {
@@ -163,3 +195,11 @@ watch(
   { deep: true }
 )
 </script>
+<style>
+/* 分页容器样式 */
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+</style>

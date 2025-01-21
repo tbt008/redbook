@@ -75,6 +75,13 @@
                 语言 :
                 {{ constestInfo.language }}
               </div>
+              <el-button
+                v-if="constestInfo.isJoin == false && constestInfo.isInvite == false"
+                type="danger"
+                style="margin: 10px"
+                @click="joinContest"
+                ><el-icon><Sunny /></el-icon> 报名</el-button
+              >
             </div>
           </div>
           <progress-bar :startTime="startTime" :endTime="endTime" />
@@ -99,14 +106,14 @@
               </div>
               <div
                 class="warning"
-                v-if="constestInfo.isBeInvited == 0 && constestInfo.isInvite == true"
+                v-if="constestInfo.isJoin == false && constestInfo.isInvite == true"
               >
                 当前比赛需要邀请，且您未被邀请，无法参加！
               </div>
 
               <div
                 class="passwordInput"
-                v-if="constestInfo.isInputPassword != 1 && constestInfo.isInputPassword != null"
+                v-if="constestInfo.needPassword == true && constestInfo.isInputPassword == false"
               >
                 <el-input
                   v-model="inputPassword"
@@ -130,7 +137,7 @@
             </template>
           </el-skeleton>
         </el-tab-pane>
-        <div>
+        <div v-if="constestInfo.isJoin == true">
           <el-tab-pane label="题目" name="second"
             ><el-scrollbar height="600px">
               <el-table :data="questionList" style="width: 100%">
@@ -296,27 +303,72 @@
                 >
                   <template #default="{ row }">
                     <!-- acm -->
-                    <div
-                      v-if="row.questionInfo[index].score == 100"
-                      class="rank-css"
-                      style="color: #67c23a"
-                    >
-                      <el-tooltip
-                        class="box-item"
-                        effect="dark"
-                        :content="row.questionInfo[index].acceptedTime"
-                        placement="bottom"
-                        >{{ row.questionInfo[index].score }}</el-tooltip
+                    <div v-if="constestInfo.contestType == 2">
+                      <div
+                        v-if="row.questionInfo[index].score == 100"
+                        class="rank-css"
+                        style="color: #67c23a"
                       >
+                        <el-tooltip
+                          class="box-item"
+                          effect="dark"
+                          :content="row.questionInfo[index].acceptedTime"
+                          placement="bottom"
+                          >{{ row.questionInfo[index].score }}
+
+                          ({{ row.questionInfo[index].count }})</el-tooltip
+                        >
+                      </div>
+                      <div
+                        v-else-if="row.questionInfo[index].acceptedTime != null"
+                        class="rank-css"
+                        style="color: red"
+                      >
+                        <el-tooltip
+                          class="box-item"
+                          effect="dark"
+                          :content="row.questionInfo[index].acceptedTime"
+                          placement="bottom"
+                          >{{ row.questionInfo[index].score }} ({{
+                            row.questionInfo[index].count
+                          }})</el-tooltip
+                        >
+                      </div>
+
+                      <div v-else class="rank-css">
+                        <el-tooltip
+                          class="box-item"
+                          effect="dark"
+                          content="未提交"
+                          placement="bottom"
+                          >{{ row.questionInfo[index].score }}</el-tooltip
+                        >
+                      </div>
                     </div>
-                    <div v-else class="rank-css">
-                      <el-tooltip
-                        class="box-item"
-                        effect="dark"
-                        :content="row.questionInfo[index].acceptedTime"
-                        placement="bottom"
-                        >{{ row.questionInfo[index].score }}</el-tooltip
+                    <!-- ioi -->
+                    <div v-else>
+                      <div
+                        v-if="row.questionInfo[index].acceptedTime != null"
+                        class="rank-css"
+                        style="color: #67c23a"
                       >
+                        <el-tooltip
+                          class="box-item"
+                          effect="dark"
+                          :content="row.questionInfo[index].acceptedTime"
+                          placement="bottom"
+                          >{{ row.questionInfo[index].score }}
+                        </el-tooltip>
+                      </div>
+                      <div v-else class="rank-css">
+                        <el-tooltip
+                          class="box-item"
+                          effect="dark"
+                          content="未提交"
+                          placement="bottom"
+                          >{{ row.questionInfo[index].score }}</el-tooltip
+                        >
+                      </div>
                     </div>
                   </template>
                 </el-table-column>
@@ -403,6 +455,22 @@ const updateTab = (tab) => {
     refreshRank()
   }
 }
+const joinContest = () => {
+  request
+    .post(`/contest/join`, {
+      contestId: id.value
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        ElMessage.success('报名比赛成功！')
+      } else {
+        ElMessage.error('报名比赛失败：' + res.msg)
+      }
+    })
+    .catch(() => {
+      ElMessage.error('报名比赛失败！')
+    })
+}
 const searchUser = (value) => {
   request
     .post(`/contest/record/get/all`, {
@@ -484,19 +552,19 @@ const selectRecord = () => {
       if (res.code == 200) {
         codeRecordList.value = res.data.list
         // 遍历
-        codeRecordList.value.forEach((item) => {
-          if (item.result == 100) {
-            item.result = '答案正确'
-          } else if (item.result > 0 && item.result < 100) {
-            item.result = '部分正确'
-          } else if (item.result == 0) {
-            item.result = '答案错误'
-          } else if (item.result == -2) {
-            item.result = '编译错误'
-          } else if (item.result == -1) {
-            item.result = '正在判题'
-          }
-        })
+        // codeRecordList.value.forEach((item) => {
+        //   if (item.result == 100) {
+        //     item.result = '答案正确'
+        //   } else if (item.result > 0 && item.result < 100) {
+        //     item.result = '部分正确'
+        //   } else if (item.result == 0) {
+        //     item.result = '答案错误'
+        //   } else if (item.result == -2) {
+        //     item.result = '编译错误'
+        //   } else if (item.result == -1) {
+        //     item.result = '正在判题'
+        //   }
+        // })
       } else {
         ElMessage.error('获取提交记录失败：' + res.msg)
       }
