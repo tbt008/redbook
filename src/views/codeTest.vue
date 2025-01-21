@@ -195,16 +195,14 @@ const whileGetResult = async (recordId) => {
     } else {
       // 取消定时器
       clearInterval(intervalId)
+      if (judgeQuestionLoading.value == true) {
+        ElMessage.success('判题超时，请到提交记录查看结果')
+        judgeQuestionLoading.value == false
+      }
     }
   }, 1000)
-
-  if (judgeQuestionLoading.value == true) {
-    ElMessage.success('判题超时，请到提交记录查看结果')
-    judgeQuestionLoading.value == false
-  }
 }
 
-const testList = ref([])
 const questionInfo = ref({})
 onMounted(() => {
   questionInfo.value = props.rep
