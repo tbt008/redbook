@@ -106,6 +106,16 @@
         <el-form-item label="用户姓名" prop="name">
           <el-input v-model="userFormEdit.name" />
         </el-form-item>
+        <el-form-item label="班级" prop="className">
+          <el-select v-model="userFormEdit.classic" style="width: 150px;">
+            <el-option
+              v-for="item in classicList"
+              :key="item.id"
+              :label="item.className"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="用户角色" prop="roleId">
           <el-select v-model="userFormEdit.roleId" style="width: 150px;">
             <el-option label="超级管理员" :value="10001" /> 
@@ -146,8 +156,18 @@
           </el-select>
         </el-form-item> -->
         <el-form-item label="班级" prop="className">
-          <el-input v-model="userForm.className" />
+          <el-select v-model="userForm.classic" style="width: 150px;">
+            <el-option
+              v-for="item in classicList"
+              :key="item.id"
+              :label="item.className"
+              :value="item.id"
+            />
+          </el-select>
         </el-form-item>
+        <!-- <el-form-item label="班级" prop="className">
+          <el-input v-model="userForm.className" />
+        </el-form-item> -->
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -163,6 +183,13 @@ import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Upload } from '@element-plus/icons-vue'
 import request from '@/util/request'
+
+interface ClassItem {
+  id: number 
+  className: string
+}
+
+const classicList = ref<ClassItem[]>([])
 
 // 获取角色标签类型
 const getTagType = (role: number) => {
@@ -206,12 +233,15 @@ const userForm = ref({
   uid: '',
   name: '', 
   isDelete: 0,
+  classic: 4001,
   className: ''
 })
 const userFormEdit = ref({
   uid: '',
   name: '',
-  roleId: 10003
+  roleId: 10003,
+  classic: 0,
+  className: ''
 })
 // 表单验证规则
 const rules = {
@@ -298,11 +328,12 @@ const handleResetPassword = async (row: any) => {
 
 // 编辑用户
 const handleEdit = async (row: any) => { 
-  // 数据回显
   userFormEdit.value = {
     uid: row.uid,
     name: row.userName,
-    roleId: row.roleId
+    roleId: row.roleId,
+    className: row.className,
+    classic: row.classic,
   }
   dialogEditVisible.value = true
 }
@@ -331,7 +362,8 @@ const submitEditForm = async () => {
         const response = await request.post('/user/admin/update', {
           uid: userFormEdit.value.uid,
           userName: userFormEdit.value.name,
-          roleId: userFormEdit.value.roleId
+          roleId: userFormEdit.value.roleId,
+          classic: userFormEdit.value.classic
         }) as any
         
         if (response.code === 200) {
@@ -354,7 +386,8 @@ const handleAddUser = () => {
     uid: '', 
     name: '', 
     isDelete: 0,
-    className: ''
+    className: '',
+    classic: 4001,
   }
   dialogTitle.value = '添加用户'
   dialogVisible.value = true
@@ -392,12 +425,15 @@ const resetForm = () => {
     uid: '', 
     name: '', 
     isDelete: 0,
-    className: ''
+    className: '',
+    classic:4001,
   }
   userFormEdit.value = {
     uid: '', 
     name: '',
-    roleId: 10003
+    roleId: 10003,
+    className: '',
+    classic: 0,
   }
 }
 
@@ -464,9 +500,22 @@ const filterUsers = computed(() => {
   
   return filteredList
 })
-
+// 获取班级列表
+const getClassicList = async () => {
+  try {
+    const res = await request.get('/classic/list')as any
+    if (res.code === 200) {
+      classicList.value = res.data
+    } else {
+      ElMessage.error('获取班级列表失败')
+    }
+  } catch (error) {
+    ElMessage.error('获取班级列表失败')
+  }
+}
 // 组件挂载时获取数据
 onMounted(() => {
+  getClassicList()
   getUserList() 
 })
 </script>
