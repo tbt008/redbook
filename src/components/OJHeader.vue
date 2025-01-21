@@ -268,7 +268,7 @@ const handleCommand = (command) => {
   } else if (command === 'password') {
     dialogVisible.value = true
   } else if (command === 'admin') {
-    router.push('admin/problem')
+    router.push('/admin/problem')
   }
 }
 </script>

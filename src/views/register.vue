@@ -60,7 +60,16 @@
       </header>
       <section class="main-content">
         <form action="">
-          <input v-model="username" type="text" placeholder="用户名" />
+          <input v-model="username" type="text" placeholder="学号" />
+          <input v-model="studentId" type="text" placeholder="用户姓名" />
+          <el-select v-model="classic" class="classic-select" placeholder="请选择班级">
+            <el-option
+              v-for="item in classicList"
+              :key="item.id"
+              :label="item.className"
+              :value="item.id"
+            />
+          </el-select>
           <input v-model="password" type="password" placeholder="密码" />
           <input v-model="confirmPassword" type="password" placeholder="确认密码" /> 
           <input type="button" class="login-button" value="注册" @click="register" />
@@ -74,20 +83,42 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, onMounted } from 'vue'
+import { ElMessage, ElSelect, ElOption } from 'element-plus'
 import request from '@/util/request'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
 const username = ref('')
+const studentId = ref('')
+const classic = ref('')
 const password = ref('')
 const confirmPassword = ref('') 
 
+const classicList = ref([])
+
+// 获取班级列表
+const getClassicList = async () => {
+  try {
+    const res = await request.get('/classic/list')
+    if (res.code === 200) {
+      classicList.value = res.data
+    } else {
+      ElMessage.error('获取班级列表失败')
+    }
+  } catch (error) {
+    ElMessage.error('获取班级列表失败')
+  }
+}
+
+onMounted(() => {
+  getClassicList()
+})
+
 const register = async () => {
   // 表单验证
-  if (!username.value || !password.value || !confirmPassword.value ) {
+  if (!username.value || !password.value || !confirmPassword.value || !classic.value||!studentId.value) {
     ElMessage.warning('请填写所有必填项')
     return
   }
@@ -97,11 +128,11 @@ const register = async () => {
     return
   }
   
- 
-
   const registerData = {
     uid: username.value,
     password: password.value, 
+    classic: classic.value,
+    studentId: studentId.value
   }
 
   try { 
@@ -242,5 +273,10 @@ input {
       }
     }
   }
+}
+
+.classic-select {
+  width: 100%;
+  margin: 15px 0;
 }
 </style> 

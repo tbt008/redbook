@@ -103,7 +103,7 @@ const login = async () => {
 
       // 检查上一个路由是否为注册页
       if (router.options.history.state.back === '/register') {
-        router.push('/')
+        router.push('/home')
       } else {
         router.go(-1)
       }
