@@ -92,6 +92,12 @@ const router = createRouter({
           path: 'role',
           name: 'roleManager',
           component: () => import('@/views/admin/roleManager.vue')
+        },
+        {
+          path: 'system',
+          name: 'SystemManager',
+          component: () => import('@/views/admin/systemManager.vue'),
+          meta: { title: '系统管理' }
         }
       ]
     },

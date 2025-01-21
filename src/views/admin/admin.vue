@@ -1,7 +1,7 @@
 <template>
   <el-row class="tac">
     <el-col :span="4">
-      <h5 class="mb-2">后台管理</h5>
+      <h5 class="mb-2" style="text-align: center;">后台管理</h5>
       <el-menu :router="true" default-active="1" class="el-menu-vertical-demo" @open="handleOpen" @close="handleClose">
         <el-menu-item index="/admin/problem">
           <template #title>
@@ -46,6 +46,12 @@
             <UserFilled />
           </el-icon>
           <span>角色管理</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/system">
+          <el-icon>
+            <Setting />
+          </el-icon>
+          <span>系统管理</span>
         </el-menu-item>
       </el-menu>
     </el-col>
