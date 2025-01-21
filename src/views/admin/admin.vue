@@ -11,25 +11,29 @@
       >
         <el-menu-item index="/admin/problem">
           <template #title>
-            <el-icon><location /></el-icon>
+            <el-icon><Collection  /></el-icon>
             <span>题库管理</span>
           </template>
         </el-menu-item>
         <el-menu-item index="/admin/contest">
-          <el-icon><location /></el-icon>
+          <el-icon><Trophy  /></el-icon>
           <span>竞赛管理</span>
         </el-menu-item>
         <el-menu-item index="/admin/user">
-          <el-icon><document /></el-icon>
+          <el-icon><User  /></el-icon>
           <span>用户管理</span>
         </el-menu-item>
         <el-menu-item index="/admin/discussion">
-          <el-icon><setting /></el-icon>
+          <el-icon><ChatDotRound  /></el-icon>
           <span>讨论管理</span>
         </el-menu-item>
         <el-menu-item index="/admin/excel">
-          <el-icon><setting /></el-icon>
+          <el-icon><DocumentCopy  /></el-icon>
           <span>Excel管理</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/class">
+          <el-icon><School  /></el-icon>
+          <span>班级管理</span>
         </el-menu-item>
       </el-menu>
     </el-col>

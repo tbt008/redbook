@@ -82,6 +82,11 @@ const router = createRouter({
           path: 'excel',
           name: 'excelManager',
           component: () => import('@/views/admin/excelManager.vue')
+        },
+        {
+          path: 'class',
+          name: 'classManager',
+          component: () => import('@/views/admin/classManager.vue')
         }
       ]
     },
