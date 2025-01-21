@@ -163,14 +163,37 @@ const getCodeLength = (code: string) => {
 
 // 复制代码
 const copyCode = () => {
-  navigator.clipboard.writeText(submissionData.value.code)
-    .then(() => {
-      ElMessage.success('代码已复制到剪贴板')
-    })
-    .catch(() => {
-      ElMessage.error('复制失败')
-    })
-}
+  const code = submissionData?.value?.code;
+
+  if (!code) {
+    ElMessage.error('代码为空，无法复制');
+    return;
+  }
+  //解决 浏览器禁用了非安全域 (非 HTTPS) 的 navigator.clipboard API
+  // 创建临时的文本区域用于复制
+  const textArea = document.createElement('textarea');
+  textArea.value = code;
+  textArea.style.position = 'absolute';
+  textArea.style.left = '-9999px'; // 确保元素不可见
+  document.body.appendChild(textArea);
+
+  // 选中并复制
+  textArea.select();
+  try {
+    const success = document.execCommand('copy');
+    if (success) {
+      ElMessage.success('代码已成功复制到剪贴板');
+    } else {
+      ElMessage.error('复制失败，请手动复制');
+    }
+  } catch (err) {
+    ElMessage.error('复制失败，请检查浏览器设置');
+    console.error('复制失败:', err);
+  }
+
+  // 移除临时文本区域
+  document.body.removeChild(textArea);
+};
 
 onMounted(() => {
   getSubmissionDetail()
