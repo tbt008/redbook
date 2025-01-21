@@ -87,6 +87,11 @@ const router = createRouter({
           path: 'class',
           name: 'classManager',
           component: () => import('@/views/admin/classManager.vue')
+        },
+        {
+          path: 'role',
+          name: 'roleManager',
+          component: () => import('@/views/admin/roleManager.vue')
         }
       ]
     },
