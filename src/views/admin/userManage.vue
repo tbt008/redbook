@@ -1,17 +1,17 @@
 <template>
   <div class="user-management-container">
     <div class="user-wrapper">
-    <!-- 筛选区域 -->
-    <div class="filter-section">
-      <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
-      <el-select v-model="filterType" placeholder="所有" class="filter-item" @change="getUserList">
-        <el-option label="所有" value="all" />
-        <el-option label="超级管理员" value="superadmin" /> 
-        <el-option label="管理员" value="admin" /> 
-        <el-option label="用户" value="user" />
-      </el-select>
+      <!-- 筛选区域 -->
+      <div class="filter-section">
+        <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
+        <el-select v-model="filterType" placeholder="所有" class="filter-item" @change="getUserList">
+          <el-option label="所有" value="all" />
+          <el-option label="超级管理员" value="superadmin" />
+          <el-option label="管理员" value="admin" />
+          <el-option label="用户" value="user" />
+        </el-select>
 
-      <!-- <el-input
+        <!-- <el-input
         v-model="searchKeyword"
         placeholder="请输入用户姓名或用户账号"
         class="search-input"
@@ -20,160 +20,115 @@
         <template #prefix>
           <el-icon><Search /></el-icon>
         </template>
-      </el-input> -->
+</el-input> -->
 
-      <el-button type="primary" @click="handleAddUser">
-        <el-icon><Plus /></el-icon>添加用户
-      </el-button>
-      
-      <!-- 新增批量导入按钮 -->
-      <el-upload
-        class="upload-excel"
-        :action="null"
-        :auto-upload="false"
-        :show-file-list="false"
-        accept=".xlsx,.xls"
-        :on-change="handleExcelUpload"
-      >
-        <el-button type="success">
-          <el-icon><Upload /></el-icon>批量导入
+        <el-button type="primary" @click="handleAddUser">
+          <el-icon>
+            <Plus />
+          </el-icon>添加用户
         </el-button>
-      </el-upload>
-    </div>
 
-    <!-- 用户列表表格 -->
-    <el-table
-      :data="users"
-      class="user-table"
-      v-loading="loading"
-    >
-      <el-table-column label="头像" width="80" align="center">
-        <template #default="{ row }">
-          <el-avatar :src="row.avatar" :size="40" />
-        </template>
-      </el-table-column>
-      <el-table-column prop="userName" label="姓名" align="center" />
-      <el-table-column prop="uid" label="用户账号" align="center" />
-      <el-table-column prop="className" label="班级" align="center" />
-      <el-table-column label="用户角色" align="center">
-        <template #default="{ row }">
-          <el-tag :type="getTagType(row.roleId)">{{ getRoleName(row.roleId) }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="status" label="禁用" align="center">
-        <template #default="{ row }">
-          <el-switch
-            :model-value="row.isDelete === '1'"
-            @change="(val:any) => handleStatusToggle(row)"
-          />
-        </template>
-      </el-table-column> 
-      <el-table-column label="操作" width="220" align="center">
-        <template #default="{ row }">
-          <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-          <el-button type="warning" link @click="handleResetPassword(row)">重置密码</el-button>
-          <!-- <el-button type="danger" link @click="handleDelete(row)">删除</el-button> -->
-        </template>
-      </el-table-column>
-    </el-table>
+        <!-- 新增批量导入按钮 -->
+        <el-upload class="upload-excel" :action="null" :auto-upload="false" :show-file-list="false" accept=".xlsx,.xls"
+          :on-change="handleExcelUpload">
+          <el-button type="success">
+            <el-icon>
+              <Upload />
+            </el-icon>批量导入
+          </el-button>
+        </el-upload>
+      </div>
 
-    <!-- 添加分页组件 -->
-    <div class="pagination-container">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
-    </div>
+      <!-- 用户列表表格 -->
+      <el-table :data="users" class="user-table" v-loading="loading">
+        <el-table-column label="头像" width="80" align="center">
+          <template #default="{ row }">
+            <el-avatar :src="row.avatar" :size="40" />
+          </template>
+        </el-table-column>
+        <el-table-column prop="userName" label="姓名" align="center" />
+        <el-table-column prop="uid" label="用户账号" align="center" />
+        <el-table-column prop="className" label="班级" align="center" />
+        <el-table-column label="用户角色" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getTagType(row.roleId)">{{ getRoleName(row.roleId) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="禁用" align="center">
+          <template #default="{ row }">
+            <el-switch :model-value="row.isDelete === '1'" @change="(val: any) => handleStatusToggle(row)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
+            <el-button type="warning" link @click="handleResetPassword(row)">重置密码</el-button>
+            <!-- <el-button type="danger" link @click="handleDelete(row)">删除</el-button> -->
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <!-- 编辑对话框 -->
-    <el-dialog
-      v-model="dialogEditVisible"
-      title="编辑用户"
-      width="500px"
-      @close="resetForm"
-    >
-      <el-form
-        ref="formRef"
-        :model="userFormEdit"
-        :rules="rules"
-        label-width="80px"
-      >
-        <el-form-item label="用户姓名" prop="name">
-          <el-input v-model="userFormEdit.name" />
-        </el-form-item>
-        <el-form-item label="班级" prop="className">
-          <el-select v-model="userFormEdit.classic" style="width: 150px;">
-            <el-option
-              v-for="item in classicList"
-              :key="item.id"
-              :label="item.className"
-              :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="用户角色" prop="roleId">
-          <el-select v-model="userFormEdit.roleId" style="width: 150px;">
-            <el-option label="超级管理员" :value="10001" /> 
-            <el-option label="管理员" :value="10002" /> 
-            <el-option label="用户" :value="10003" />
-          </el-select>
-        </el-form-item> 
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogEditVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitEditForm">确定</el-button>
-      </template>
-    </el-dialog>
-    <!-- 添加对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      title="添加用户"
-      width="500px"
-      @close="resetForm"
-    >
-      <el-form
-        ref="formRef"
-        :model="userForm"
-        :rules="rules"
-        label-width="80px"
-      >
-        <el-form-item label="用户账号" prop="uid">
-          <el-input v-model="userForm.uid" />
-        </el-form-item>
-        <el-form-item label="用户姓名" prop="name">
-          <el-input v-model="userForm.name" />
-        </el-form-item>
-        <!-- <el-form-item label="用户角色" prop="roleId">
+      <!-- 添加分页组件 -->
+      <div class="pagination-container">
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]"
+          :total="total" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
+          @current-change="handleCurrentChange" />
+      </div>
+
+      <!-- 编辑对话框 -->
+      <el-dialog v-model="dialogEditVisible" title="编辑用户" width="500px" @close="resetForm">
+        <el-form ref="formRef" :model="userFormEdit" :rules="rules" label-width="80px">
+          <el-form-item label="用户姓名" prop="name">
+            <el-input v-model="userFormEdit.name" />
+          </el-form-item>
+          <el-form-item label="班级" prop="className">
+            <el-select v-model="userFormEdit.classic" style="width: 150px;">
+              <el-option v-for="item in classicList" :key="item.id" :label="item.className" :value="item.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="用户角色" prop="roleId">
+            <el-select v-model="userFormEdit.roleId" style="width: 150px;">
+              <el-option label="超级管理员" :value="10001" />
+              <el-option label="管理员" :value="10002" />
+              <el-option label="用户" :value="10003" />
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="dialogEditVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitEditForm">确定</el-button>
+        </template>
+      </el-dialog>
+      <!-- 添加对话框 -->
+      <el-dialog v-model="dialogVisible" title="添加用户" width="500px" @close="resetForm">
+        <el-form ref="formRef" :model="userForm" :rules="rules" label-width="80px">
+          <el-form-item label="用户账号" prop="uid">
+            <el-input v-model="userForm.uid" />
+          </el-form-item>
+          <el-form-item label="用户姓名" prop="name">
+            <el-input v-model="userForm.name" />
+          </el-form-item>
+          <!-- <el-form-item label="用户角色" prop="roleId">
           <el-select v-model="userForm.roleId" style="width: 150px;">
             <el-option label="超级管理员" :value="10001" /> 
             <el-option label="管理员" :value="10002" /> 
             <el-option label="用户" :value="10003" />
           </el-select>
         </el-form-item> -->
-        <el-form-item label="班级" prop="className">
-          <el-select v-model="userForm.classic" style="width: 150px;">
-            <el-option
-              v-for="item in classicList"
-              :key="item.id"
-              :label="item.className"
-              :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-        <!-- <el-form-item label="班级" prop="className">
+          <el-form-item label="班级" prop="className">
+            <el-select v-model="userForm.classic" style="width: 150px;">
+              <el-option v-for="item in classicList" :key="item.id" :label="item.className" :value="item.id" />
+            </el-select>
+          </el-form-item>
+          <!-- <el-form-item label="班级" prop="className">
           <el-input v-model="userForm.className" />
         </el-form-item> -->
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确定</el-button>
-      </template>
-    </el-dialog>
+        </el-form>
+        <template #footer>
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitForm">确定</el-button>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
@@ -185,7 +140,7 @@ import { Search, Plus, Upload } from '@element-plus/icons-vue'
 import request from '@/util/request'
 
 interface ClassItem {
-  id: number 
+  id: number
   className: string
 }
 
@@ -193,11 +148,11 @@ const classicList = ref<ClassItem[]>([])
 
 // 获取角色标签类型
 const getTagType = (role: number) => {
-  switch(role) {
+  switch (role) {
     // case 'superadmin': return 'danger' 
     // case 'admin': return 'success'
     // default: return 'info'
-    case 10001: return 'danger' 
+    case 10001: return 'danger'
     case 10002: return 'success'
     default: return 'info'
   }
@@ -205,11 +160,11 @@ const getTagType = (role: number) => {
 
 // 获取角色名称
 const getRoleName = (role: number) => {
-  switch(role) {
+  switch (role) {
     // case 'admin': return '管理员' 
     // case 'superadmin': return '超级管理员'
     // default: return '用户'
-    case 10001: return '超级管理员' 
+    case 10001: return '超级管理员'
     case 10002: return '管理员'
     default: return '用户'
   }
@@ -225,13 +180,13 @@ const searchKeyword = ref('')
 const filterType = ref('all')
 const dialogVisible = ref(false)
 const dialogEditVisible = ref(false)
-const dialogTitle = ref('') 
+const dialogTitle = ref('')
 
 // 表单相关
 const formRef = ref()
 const userForm = ref({
   uid: '',
-  name: '', 
+  name: '',
   isDelete: 0,
   classic: 4001,
   className: ''
@@ -267,17 +222,17 @@ const rules = {
 const getUserList = async () => {
   loading.value = true
   try {
-    let roleId = null  
-    if(filterType.value === 'all'){
+    let roleId = null
+    if (filterType.value === 'all') {
       roleId = null
-    }else if(filterType.value === 'superadmin'){
+    } else if (filterType.value === 'superadmin') {
       roleId = 10001
-    }else if(filterType.value === 'admin'){
+    } else if (filterType.value === 'admin') {
       roleId = 10002
-    }else if(filterType.value === 'user'){
+    } else if (filterType.value === 'user') {
       roleId = 10003
     }
-    
+
     const response = await request.post('/user/admin/list', {
       pageStart: currentPage.value,
       pageSize: pageSize.value,
@@ -285,10 +240,10 @@ const getUserList = async () => {
       // sortField: sortField.value,
       // sortOrder: sortOrder.value, 
       // key:"string" 
-    })as any
+    }) as any
     if (response.code === 200) {
       users.value = response.data.list
-      total.value = response.data.total 
+      total.value = response.data.total
     }
   } catch (error) {
     console.error('获取用户列表失败:', error)
@@ -310,11 +265,11 @@ const handleResetPassword = async (row: any) => {
         type: 'warning'
       }
     )
-    
-    const response = await request.post('/user/reset/password',{uid:row.uid}) as any
+
+    const response = await request.post('/user/reset/password', { uid: row.uid }) as any
     if (response.code === 200) {
       ElMessage.success('密码重置成功')
-    }else{
+    } else {
       ElMessage.error(response.msg)
     }
   } catch (error) {
@@ -324,10 +279,10 @@ const handleResetPassword = async (row: any) => {
     }
   }
 }
- 
+
 
 // 编辑用户
-const handleEdit = async (row: any) => { 
+const handleEdit = async (row: any) => {
   userFormEdit.value = {
     uid: row.uid,
     name: row.userName,
@@ -341,7 +296,7 @@ const handleEdit = async (row: any) => {
 // 切换用户状态
 const handleStatusToggle = async (row: any) => {
   try {
-    const response = await request.post('/user/admin/disable',{uid:row.uid})as any
+    const response = await request.post('/user/admin/disable', { uid: row.uid }) as any
     if (response.code === 200) {
       ElMessage.success(row.isDelete ? '用户已停用' : '用户已启用')
       getUserList()
@@ -351,26 +306,26 @@ const handleStatusToggle = async (row: any) => {
     ElMessage.error('操作失败')
   }
 }
- 
- 
+
+
 const submitEditForm = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid: boolean) => {
     if (valid) {
-      try { 
+      try {
         const response = await request.post('/user/admin/update', {
           uid: userFormEdit.value.uid,
           userName: userFormEdit.value.name,
           roleId: userFormEdit.value.roleId,
           classic: userFormEdit.value.classic
         }) as any
-        
+
         if (response.code === 200) {
           ElMessage.success('更新成功')
           dialogEditVisible.value = false
           getUserList()
-        }else{
+        } else {
           ElMessage.error(response.msg)
         }
       } catch (error) {
@@ -383,8 +338,8 @@ const submitEditForm = async () => {
 // 添加用户
 const handleAddUser = () => {
   userForm.value = {
-    uid: '', 
-    name: '', 
+    uid: '',
+    name: '',
     isDelete: 0,
     className: '',
     classic: 4001,
@@ -395,17 +350,17 @@ const handleAddUser = () => {
 // 提交表单
 const submitForm = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid: boolean) => {
     if (valid) {
       try {
-         
+
         const response = await request.post('/user/admin/add', userForm.value) as any
         if (response.code === 200) {
           ElMessage.success(dialogTitle.value === '添加用户' ? '添加成功' : '更新成功')
           dialogVisible.value = false
           getUserList()
-        }else{
+        } else {
           ElMessage.error(response.msg)
         }
       } catch (error) {
@@ -422,14 +377,14 @@ const resetForm = () => {
     formRef.value.resetFields()
   }
   userForm.value = {
-    uid: '', 
-    name: '', 
+    uid: '',
+    name: '',
     isDelete: 0,
     className: '',
-    classic:4001,
+    classic: 4001,
   }
   userFormEdit.value = {
-    uid: '', 
+    uid: '',
     name: '',
     roleId: 10003,
     className: '',
@@ -455,14 +410,14 @@ const handleCurrentChange = (val: number) => {
 const handleExcelUpload = async (file: any) => {
   const formData = new FormData()
   formData.append('file', file.raw)
-  
+
   try {
     const response = await request.post('/user/admin/addByExcel', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     }) as any
-    
+
     if (response.code === 200) {
       ElMessage.success('批量导入成功')
       getUserList()
@@ -475,15 +430,15 @@ const handleExcelUpload = async (file: any) => {
   }
 }
 
- 
- 
 
- 
+
+
+
 
 // 添加筛选和搜索逻辑
 const filterUsers = computed(() => {
   let filteredList = [...users.value]
-  
+
   // 按角色筛选
   // if (filterType.value !== 'all') {
   //   filteredList = filteredList.filter((user: any) => user.roleId === filterType.value)
@@ -497,13 +452,13 @@ const filterUsers = computed(() => {
   //     String(user.uid).includes(keyword)
   //   )
   // }
-  
+
   return filteredList
 })
 // 获取班级列表
 const getClassicList = async () => {
   try {
-    const res = await request.get('/classic/list')as any
+    const res = await request.get('/classic/list') as any
     if (res.code === 200) {
       classicList.value = res.data
     } else {
@@ -516,23 +471,23 @@ const getClassicList = async () => {
 // 组件挂载时获取数据
 onMounted(() => {
   getClassicList()
-  getUserList() 
+  getUserList()
 })
 </script>
 
 <style scoped>
 .user-management-container {
-  padding: 20px; 
+  padding: 20px;
   min-height: 100vh;
   background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
-   
- 
-  
+
+
+
 }
 
 .user-wrapper {
   background: white;
-  border-radius: 20px; 
+  border-radius: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   padding: 20px;
 }
@@ -540,7 +495,7 @@ onMounted(() => {
 .filter-section {
   display: flex;
   gap: 15px;
-  margin-bottom: 20px;  
+  margin-bottom: 20px;
 }
 
 .filter-item {
@@ -553,7 +508,7 @@ onMounted(() => {
 
 .user-table {
   background: white;
-  /* border-radius: 8px; */ 
+  /* border-radius: 8px; */
 }
 
 .pagination-container {
@@ -571,4 +526,4 @@ onMounted(() => {
 .upload-excel {
   display: inline-block;
 }
-</style> 
+</style>

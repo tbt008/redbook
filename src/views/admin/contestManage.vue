@@ -16,20 +16,10 @@
         <el-switch v-model="isSelf" inactive-text="只显示自己" />
 
         <el-select v-model="status" placeholder="Select" style="width: 140px">
-          <el-option
-            v-for="item in statusList"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
+          <el-option v-for="item in statusList" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
-        <el-input
-          v-model="inputContestName"
-          style="width: 240px; height: 33px"
-          placeholder="输入比赛名后回车查询"
-          @change="searchContestName"
-          :suffix-icon="Search"
-        />
+        <el-input v-model="inputContestName" style="width: 240px; height: 33px" placeholder="输入比赛名后回车查询"
+          @change="searchContestName" :suffix-icon="Search" />
         <el-button type="primary" @click="showAddContest = true">新增比赛</el-button>
       </div>
 
@@ -71,13 +61,7 @@
         </el-table-column>
         <el-table-column label="成员名单" width="100">
           <template #default="{ row }">
-            <el-button
-              :icon="Plus"
-              circle
-              plain
-              type="primary"
-              @click="updateMember(row)"
-            ></el-button>
+            <el-button :icon="Plus" circle plain type="primary" @click="updateMember(row)"></el-button>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150">
@@ -92,15 +76,9 @@
 
       <!-- elementplus el-pagination: 分页器 -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
+          :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
+          @current-change="handleCurrentChange" />
       </div>
     </div>
   </div>
