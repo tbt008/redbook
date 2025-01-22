@@ -305,7 +305,7 @@ const unConvert = (lang) => {
 const selectedQuestion = (value) => {
   questionIds.value = value
 }
-
+const emit = defineEmits(['cancel'])
 const saveQuestion = () => {
   request
     .post('/root/contest/edit/problem', {

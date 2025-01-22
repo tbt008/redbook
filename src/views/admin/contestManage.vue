@@ -3,7 +3,9 @@
     <div class="content-wrapper">
       <!-- 筛选区域 -->
       <div class="filter-section">
-        <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
+        <div style="font-size: 12px; line-height: 32px; width: 60px; margin-left: 10px">
+          筛选条件
+        </div>
         <el-form-item label="赛制">
           <el-radio-group v-model="searchType">
             <el-radio value="">全部</el-radio>
@@ -27,7 +29,7 @@
             {{ row.id }}
           </template>
         </el-table-column>
-        <el-table-column label="比赛名" width="250">
+        <el-table-column label="比赛名" min-width="100">
           <template #default="{ row }">
             <router-link :to="`/contest/detail/${id}`" class="problem-title">
               {{ row.title }}
@@ -65,7 +67,8 @@
         <el-table-column label="操作" width="150">
           <template #default="{ row }">
             <el-button :icon="Edit" circle plain type="primary" @click="onEdit(row)"> </el-button>
-            <el-button :icon="Download" circle plain type="primary" @click="onDownload(row)"> </el-button>
+            <el-button :icon="Download" circle plain type="primary" @click="onDownload(row)">
+            </el-button>
             <el-button :icon="Delete" circle plain type="danger" @click="onDelete(row)"></el-button>
           </template>
         </el-table-column>
@@ -129,6 +132,7 @@ const searchContestName = (value) => {
 }
 const cancel = () => {
   showAddContest.value = false
+  showUpdateContest.value = false
 }
 const onDownload = (row) => {
   request
@@ -177,6 +181,7 @@ const getContestList = async () => {
     .then((res) => {
       if (res.code == 200) {
         contestList.value = res.data.list
+        total.value = res.data.total
       } else {
         ElMessage.error(res.msg)
       }
@@ -185,33 +190,12 @@ const getContestList = async () => {
       ElMessage.error(err)
     })
 }
-const getContestListTotal = async () => {
-  request
-    .post(`/root/contest/get/all`, {
-      pageStart: 1,
-      pageSize: 1000000,
-      status: status.value,
-      isSelf: isSelf.value == true ? 1 : 0,
-      type: searchType.value,
-      title: inputContestName.value
-    })
-    .then((res) => {
-      if (res.code == 200) {
-        total.value = res.data.total
-        const allData = res.data.list
-        const start = (currentPage.value - 1) * pageSize.value
-        const end = Math.min(start + pageSize.value, allData.length)
-        contestList.value = allData.slice(start, end)
-      } else {
-        ElMessage.error(res.msg)
-      }
-    })
-}
+
 // 分页大小改变处理
 const handleSizeChange = async (val) => {
   pageSize.value = val
   currentPage.value = 1
-  getContestListTotal()
+  getContestList()
 }
 
 // 当前页改变处理
@@ -225,14 +209,14 @@ watch(
   [isSelf, status, searchType],
   async () => {
     currentPage.value = 1
-    getContestListTotal()
+    getContestList()
   },
   { deep: true }
 )
 
 // 组件挂载时初始化数据
 onMounted(async () => {
-  getContestListTotal()
+  getContestList()
   loading.value = false
 })
 

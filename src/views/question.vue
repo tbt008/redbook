@@ -169,6 +169,19 @@ const goToSubmissionDetail = (row) => {
               {{ item }}
             </el-tag>
           </div>
+          <code
+            style="
+              display: block;
+              border-radius: 5px;
+              padding: 3px;
+              font-size: 12px;
+              color: rgb(115, 115, 115);
+              background-color: rgb(247, 247, 248);
+              width: 200px;
+            "
+          >
+            时间限制：{{ rep.timeLimit }}s 空间限制：{{ rep.memoryLimit }}MB
+          </code>
         </div>
         <div style="min-height: 505px">
           <div v-html="article.description" style="padding: 20px"></div>
