@@ -6,9 +6,7 @@
         <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
         <el-select v-model="filterType" placeholder="所有" class="filter-item" @change="getUserList">
           <el-option label="所有" value="all" />
-          <el-option label="超级管理员" value="superadmin" />
-          <el-option label="管理员" value="admin" />
-          <el-option label="用户" value="user" />
+          <el-option v-for="role in roleList" :key="role.roleId" :label="role.roleName" :value="role.roleId" />
         </el-select>
 
         <!-- <el-input
@@ -88,9 +86,7 @@
           </el-form-item>
           <el-form-item label="用户角色" prop="roleId">
             <el-select v-model="userFormEdit.roleId" style="width: 150px;">
-              <el-option label="超级管理员" :value="10001" />
-              <el-option label="管理员" :value="10002" />
-              <el-option label="用户" :value="10003" />
+              <el-option v-for="role in roleList" :key="role.roleId" :label="role.roleName" :value="role.roleId" />
             </el-select>
           </el-form-item>
         </el-form>
@@ -146,28 +142,43 @@ interface ClassItem {
 
 const classicList = ref<ClassItem[]>([])
 
-// 获取角色标签类型
-const getTagType = (role: number) => {
-  switch (role) {
-    // case 'superadmin': return 'danger' 
-    // case 'admin': return 'success'
-    // default: return 'info'
-    case 10001: return 'danger'
-    case 10002: return 'success'
-    default: return 'info'
+// 添加角色相关接口
+interface RoleItem {
+  roleId: number
+  roleName: string
+}
+
+const roleList = ref<RoleItem[]>([])
+
+// 获取角色列表
+const getRoleList = async () => {
+  try {
+    const response = await request.get('/role/get') as any
+    if (response.code === 200) {
+      roleList.value = response.data
+    } else {
+      ElMessage.error('获取角色列表失败')
+    }
+  } catch (error) {
+    console.error('获取角色列表失败:', error)
+    ElMessage.error('获取角色列表失败')
   }
 }
 
-// 获取角色名称
-const getRoleName = (role: number) => {
-  switch (role) {
-    // case 'admin': return '管理员' 
-    // case 'superadmin': return '超级管理员'
-    // default: return '用户'
-    case 10001: return '超级管理员'
-    case 10002: return '管理员'
-    default: return '用户'
-  }
+// 获取角色标签类型的方法
+const getTagType = (roleId: number) => {
+  const role = roleList.value.find(r => r.roleId === roleId)
+  if (!role) return 'info'
+  // 这里可以根据实际需求设置不同角色的标签类型
+  if (role.roleName.includes('超级管理员')) return 'danger'
+  if (role.roleName.includes('管理员')) return 'success'
+  return 'info'
+}
+
+// 获取角色名称的方法
+const getRoleName = (roleId: number) => {
+  const role = roleList.value.find(r => r.roleId === roleId)
+  return role ? role.roleName : '未知角色'
 }
 
 // 状态变量
@@ -225,12 +236,8 @@ const getUserList = async () => {
     let roleId = null
     if (filterType.value === 'all') {
       roleId = null
-    } else if (filterType.value === 'superadmin') {
-      roleId = 10001
-    } else if (filterType.value === 'admin') {
-      roleId = 10002
-    } else if (filterType.value === 'user') {
-      roleId = 10003
+    } else {
+      roleId = filterType.value
     }
 
     const response = await request.post('/user/admin/list', {
@@ -298,7 +305,7 @@ const handleStatusToggle = async (row: any) => {
   try {
     const response = await request.post('/user/admin/disable', { uid: row.uid }) as any
     if (response.code === 200) {
-      ElMessage.success(row.isDelete ? '用户已停用' : '用户已启用')
+      ElMessage.success(Number(row.isDelete) ? '用户已启用' : '用户已停用')
       getUserList()
     }
   } catch (error) {
@@ -475,6 +482,7 @@ const getClassicList = async () => {
 }
 // 组件挂载时获取数据
 onMounted(() => {
+  getRoleList()
   getClassicList()
   getUserList()
 })
