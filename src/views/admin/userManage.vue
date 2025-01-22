@@ -455,12 +455,17 @@ const filterUsers = computed(() => {
 
   return filteredList
 })
+const pageInfo = ref({
+  pageStart: 1,
+  pageSize: 1000000, // 获取所有班级，设置一个较大的数值
+
+})
 // 获取班级列表
 const getClassicList = async () => {
   try {
-    const res = await request.get('/classic/list') as any
+    const res = await request.post('/classic/list', pageInfo.value) as any
     if (res.code === 200) {
-      classicList.value = res.data
+      classicList.value = res.data.list
     } else {
       ElMessage.error('获取班级列表失败')
     }
