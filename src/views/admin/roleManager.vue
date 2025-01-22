@@ -181,6 +181,11 @@ const getRoles = async () => {
 const getRolePermissions = async (roleId: string) => {
   loading.value = true
 
+  // 在开始新的请求前，先清空权限列表
+  permissions.value = []
+  checkedPermissions.value = []
+  originalCheckedPermissions.value = []
+
   // 修改判断条件，使用数字 10001 进行比较
   if (Number(roleId) === 10001) {
     isAdmin.value = true
@@ -219,17 +224,11 @@ const getRolePermissions = async (roleId: string) => {
       checkedPermissions.value = checkedPerms;
       originalCheckedPermissions.value = [...checkedPerms];
     } else {
-      permissions.value = [];
-      checkedPermissions.value = [];
-      originalCheckedPermissions.value = [];
       ElMessage.warning(response.msg)
     }
   } catch (error: any) {
     // 如果不是取消请求导致的错误，才显示错误信息
     if (error.name !== 'AbortError') {
-      permissions.value = [];
-      checkedPermissions.value = [];
-      originalCheckedPermissions.value = [];
       ElMessage.error('获取角色权限失败')
     }
   } finally {
