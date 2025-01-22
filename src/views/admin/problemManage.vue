@@ -3,7 +3,9 @@
     <div class="content-wrapper">
       <!-- 筛选区域 -->
       <div class="filter-section">
-        <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
+        <div style="font-size: 12px; line-height: 32px; width: 60px; margin-left: 10px">
+          筛选条件
+        </div>
         <!-- elementplus el-select: 难度选择下拉框 -->
         <el-select v-model="difficulty" placeholder="难度" class="filter-item">
           <el-option label="全部" :value="null" />
@@ -81,12 +83,17 @@
             {{ row.uid }}
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column label="赛时禁用" width="100">
           <template #default="{ row }">
-            <div v-if="row.status == 0">正常</div>
-            <div v-else>比赛</div>
+            <el-switch
+              @click="statusChange(row.id)"
+              v-model="row.status"
+              :active-value="1"
+              :inactive-value="0"
+            />
           </template>
         </el-table-column>
+
         <!-- 难度列 -->
         <el-table-column label="难度" width="100">
           <template #default="{ row }">
@@ -251,6 +258,23 @@ const allTags = ref([])
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const statusChange = (id) => {
+  request
+    .post('/question/modify/status', {
+      questionId: id
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        ElMessage.success('修改成功')
+        getProblems()
+      } else {
+        ElMessage.error('修改失败', res.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('修改失败', err)
+    })
+}
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate) => {
   if (rate >= 80) return '#67C23A'
@@ -335,6 +359,7 @@ const getProblems = async () => {
 
     if (response.code === 200) {
       problems.value = response.data.list
+      total.value = response.data.total
     }
   } catch (error) {
     console.error('获取题目列表失败:', error)
@@ -359,7 +384,7 @@ const getTags = async () => {
 const handleSizeChange = async (val) => {
   pageSize.value = val
   currentPage.value = 1
-  await getTotalCount()
+  await getProblems()
 }
 
 // 当前页改变处理
@@ -368,38 +393,12 @@ const handleCurrentChange = async (val) => {
   await getProblems()
 }
 
-// 获取题目总数
-const getTotalCount = async () => {
-  try {
-    const response = await request.post('/root/question/list', {
-      pageStart: 1,
-      pageSize: 1000000,
-      difficulty: difficulty.value || undefined,
-      tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
-      title: searchKeyword.value || undefined
-    })
-
-    if (response.code === 200) {
-      console.log(response)
-      total.value = response.data.total
-      const allData = response.data.list
-      const start = (currentPage.value - 1) * pageSize.value
-      const end = Math.min(start + pageSize.value, allData.length)
-      problems.value = allData.slice(start, end)
-    }
-  } catch (error) {
-    console.error('获取题目总数失败:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
 // 监听筛选条件变化
 watch(
   [difficulty, selectedTagIds, searchKeyword],
   async () => {
     currentPage.value = 1
-    await getTotalCount()
+    await getProblems()
   },
   { deep: true }
 )
@@ -407,7 +406,7 @@ watch(
 // 组件挂载时初始化数据
 onMounted(async () => {
   await getTags()
-  await getTotalCount()
+  await getProblems()
 })
 
 // 标签选择相关
@@ -431,7 +430,7 @@ const clearTags = () => {
 <style scoped>
 /* 容器样式 */
 .problem-list-container {
-  padding: 20px; 
+  padding: 20px;
   min-height: 100vh;
   margin: 0 auto;
   background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
