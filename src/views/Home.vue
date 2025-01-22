@@ -10,7 +10,9 @@
     </div>
   </div>
 </template>
-<script setup></script>
+<script setup>
+import question from './question.vue'
+</script>
 <style>
 .homepage {
   width: 100%;

@@ -49,10 +49,6 @@ const languageList = ref([
 ])
 const emit = defineEmits(['submitCode', 'changeLanuage'])
 const props = defineProps({
-  loading: {
-    type: Boolean,
-    default: true
-  },
   rep: {
     type: Object,
     default: null

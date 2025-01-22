@@ -6,20 +6,16 @@ const currentTab = ref(0)
 const clickToLike = ref(false)
 const router = useRouter()
 const clickToFavour = ref(false)
-const share = ref(false)
 import { marked } from 'marked'
 const article = ref({})
 const codeRecords = ref([])
 const props = defineProps({
-  loading: {
-    type: Boolean,
-    default: true
-  },
   rep: {
     type: Object,
     default: null
   }
 })
+const loading = ref(true)
 const clickTitleTab = (index) => {
   currentTab.value = index
 
@@ -28,37 +24,6 @@ const clickTitleTab = (index) => {
   }
 }
 
-const clickFooter = async (type) => {
-  if (type === 0) {
-    clickToLike.value = clickToLike.value === true ? false : true
-
-    let obj = {
-      isThumb: clickToLike.value,
-      sourceId: props.rep.id,
-      type: 1,
-      articleType: -1
-    }
-
-    if (clickToLike.value === true) article.value.likes += 1
-    else article.value.likes -= 1
-  } else if (type === 1) {
-    // boolean isFavour, String sourceId, Integer type, HttpServletRequest request, Integer articleType
-    clickToFavour.value = clickToFavour.value === true ? false : true
-    console.log(clickToFavour.value)
-    let obj = {
-      isFavour: clickToFavour.value,
-      sourceId: props.rep.id,
-      type: 1,
-      articleType: -1
-    }
-    let rep = await favourQuestionOrArticleOrComment(obj)
-
-    if (clickToFavour.value === true) {
-      article.value.favourNum += 1
-    } else article.value.favourNum -= 1
-  }
-  // clickToLike.value = false
-}
 const scoreJudge = (difficulty) => {
   if (difficulty == 1) return '入门'
   else if (difficulty == 2) return '简单'
@@ -73,7 +38,7 @@ const judgeColor = (difficulty) => {
   else if (difficulty == 4) return 'color: rgb(52, 152, 219)'
   else return 'color: #FF2800'
 }
-const getRecord = () => {
+const getRecord = async () => {
   request.get(`/record/get/list/${article.value.id}`).then((res) => {
     if (res.code == 200) {
       codeRecords.value = res.data
@@ -86,11 +51,11 @@ const initFun = () => {
   if (props.rep !== null) {
     article.value = props.rep
     article.value.description = marked(article.value.description || '')
-
     article.value.example = props.rep.examples
     article.value.tip = marked(article.value.tip || '')
     clickToLike.value = props.rep.isThumb
     clickToFavour.value = props.rep.isFavour
+    loading.value = false
     getRecord()
   }
 }
@@ -140,83 +105,114 @@ const goToSubmissionDetail = (row) => {
       </div>
     </div>
     <div class="content" v-show="currentTab === 0">
-      <div>
-        <div class="topsss">
-          <div style="display: flex; justify-content: space-between">
-            <div style="position: relative; font-size: 25px; font-weight: bold">
-              {{ rep.id + '. ' + rep.title }}
-            </div>
-            <div
-              v-if="rep.status === true"
-              style="position: relative; top: 8px; display: flex; align-items: center; gap: 5px"
-            >
-              <div style="color: #737373">已解答</div>
-            </div>
-          </div>
-          <div style="display: flex; gap: 5px">
-            <div
-              style="
-                cursor: pointer;
-                padding: 5px 8px;
-                border-radius: 10px;
-                background-color: #f0f0f0;
-                font-size: 12px;
-              "
-            >
-              <div :style="judgeColor(rep.difficulty)">{{ scoreJudge(rep.difficulty) }}</div>
-            </div>
-            <el-tag v-for="item in article.tags" :key="item" :type="item.type" effect="dark">
-              {{ item }}
-            </el-tag>
-          </div>
-          <code
+      <el-skeleton :loading="loading" animated>
+        <template #template>
+          <el-skeleton-item
+            variant="text"
             style="
-              display: block;
-              border-radius: 5px;
-              padding: 3px;
-              font-size: 12px;
-              color: rgb(115, 115, 115);
-              background-color: rgb(247, 247, 248);
-              width: 200px;
+              width: 40%;
+              height: 30px;
+              margin-left: 10px;
+              margin-top: 50px;
+              margin-bottom: 20px;
+            "
+          />
+          <el-skeleton :rows="5" style="width: 90%; margin-left: 10px" animated />
+          <el-skeleton :rows="5" style="width: 90%; margin-left: 10px" animated />
+          <div
+            style="
+              width: 90%;
+              display: flex;
+              align-items: center;
+              justify-items: space-between;
+              margin-top: 16px;
+              height: 16px;
             "
           >
-            时间限制：{{ rep.timeLimit }}s 空间限制：{{ rep.memoryLimit }}MB
-          </code>
-        </div>
-        <div style="min-height: 505px">
-          <div v-html="article.description" style="padding: 20px"></div>
-          <div style="padding: 10px" v-for="(item, index) in article.example" :key="index">
-            <div style="font: 14px sans-serif; font-weight: bold">示例 {{ index + 1 }}</div>
-
-            <div
-              style="
-                margin: 15px;
-                background-color: rgb(247, 248, 249);
-                border-radius: 10px;
-                padding: 15px;
-              "
-            >
-              <div style="display: flex">
-                <div style="font: 16px sans-serif; font-weight: bold">输入:</div>
-
-                <div style="white-space: pre-line; margin-left: 10px">{{ item.input }}</div>
+            <el-skeleton-item variant="text" style="margin-right: 16px" />
+            <el-skeleton-item variant="text" style="width: 30%" />
+          </div>
+        </template>
+        <template #default>
+          <div>
+            <div class="topsss">
+              <div style="display: flex; justify-content: space-between">
+                <div style="position: relative; font-size: 25px; font-weight: bold">
+                  {{ rep.id + '. ' + rep.title }}
+                </div>
+                <div
+                  v-if="rep.status === true"
+                  style="position: relative; top: 8px; display: flex; align-items: center; gap: 5px"
+                >
+                  <div style="color: #737373">已解答</div>
+                </div>
               </div>
-              <div style="display: flex">
-                <div style="font: 16px sans-serif; font-weight: bold">输出:</div>
-
-                <div style="white-space: pre-line; margin-left: 10px">{{ item.output }}</div>
+              <div style="display: flex; gap: 5px">
+                <div
+                  style="
+                    cursor: pointer;
+                    padding: 5px 8px;
+                    border-radius: 10px;
+                    background-color: #f0f0f0;
+                    font-size: 12px;
+                  "
+                >
+                  <div :style="judgeColor(rep.difficulty)">{{ scoreJudge(rep.difficulty) }}</div>
+                </div>
+                <el-tag v-for="item in article.tags" :key="item" :type="item.type" effect="dark">
+                  {{ item }}
+                </el-tag>
               </div>
-              <div style="display: flex">
-                <div style="font: 16px sans-serif; font-weight: bold">解释:</div>
+              <code
+                style="
+                  display: block;
+                  border-radius: 5px;
+                  padding: 3px;
+                  font-size: 12px;
+                  color: rgb(115, 115, 115);
+                  background-color: rgb(247, 247, 248);
+                  width: 200px;
+                "
+              >
+                时间限制：{{ rep.timeLimit }}s 空间限制：{{ rep.memoryLimit }}MB
+              </code>
+            </div>
+            <div style="min-height: 505px">
+              <div v-html="article.description" style="padding: 20px"></div>
+              <div style="padding: 10px" v-for="(item, index) in article.example" :key="index">
+                <div style="font: 14px sans-serif; font-weight: bold">示例 {{ index + 1 }}</div>
 
-                <div style="white-space: pre-line; margin-left: 10px">{{ item.explain }}</div>
+                <div
+                  style="
+                    margin: 15px;
+                    background-color: rgb(247, 248, 249);
+                    border-radius: 10px;
+                    padding: 15px;
+                  "
+                >
+                  <div style="display: flex">
+                    <div style="font: 16px sans-serif; font-weight: bold">输入:</div>
+
+                    <div style="white-space: pre-line; margin-left: 10px">{{ item.input }}</div>
+                  </div>
+                  <div style="display: flex">
+                    <div style="font: 16px sans-serif; font-weight: bold">输出:</div>
+
+                    <div style="white-space: pre-line; margin-left: 10px">{{ item.output }}</div>
+                  </div>
+                  <div style="display: flex">
+                    <div style="font: 16px sans-serif; font-weight: bold">解释:</div>
+
+                    <div style="white-space: pre-line; margin-left: 10px">{{ item.explain }}</div>
+                  </div>
+                </div>
               </div>
+              <div style="font: 14px sans-serif; font-weight: bold; padding-left: 20px">提示：</div>
+              <div style="padding: 20px" v-html="article.tip"></div>
             </div>
           </div>
-          <div style="font: 14px sans-serif; font-weight: bold; padding-left: 20px">提示：</div>
-          <div style="padding: 20px" v-html="article.tip"></div>
-        </div>
-      </div>
+        </template>
+      </el-skeleton>
     </div>
     <div class="content" v-show="currentTab === 1">
       <!-- <questionSolve></questionSolve> -->

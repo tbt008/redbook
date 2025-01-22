@@ -10,26 +10,19 @@ import codeTest from './codeTest.vue'
 import codeRegion from './CodeRegion.vue'
 
 const router = useRouter()
-const loading = ref(true)
 const awaitContent = ref({})
 const language = ref(0)
-
 const code = ref('')
 const showACImg = ref(false)
 const questionId = ref()
 const contestId = ref()
-const judgeResult = ref({})
-var timer = null
 const showACImgfun = () => {
   showACImg.value = true
   setTimeout(() => {
     showACImg.value = false
   }, 3000) // 延迟3 秒
 }
-provide('submitStatus', judgeResult)
-const providerMethod = (result) => {
-  judgeResult.value = result.data
-}
+
 const codeNow = (value) => {
   code.value = value
 }
@@ -54,7 +47,7 @@ onMounted(async () => {
         <!-- 左边题目描述 -->
         <template #one>
           <div class="question-info">
-            <question :loading="loading" :rep="rep"></question>
+            <question :rep="rep"></question>
           </div>
         </template>
         <!-- 右边代码区域 -->
@@ -62,7 +55,6 @@ onMounted(async () => {
           <tbSplit class="right">
             <template #one>
               <codeRegion
-                :loading="loading"
                 :rep="awaitContent"
                 @submitCode="codeNow"
                 @changeLanuage="changeLanuage"
@@ -80,26 +72,6 @@ onMounted(async () => {
                 ></codeTest>
               </div>
             </template>
-            <!-- <template #one>
-              <codeRegion
-                :loading="loading"
-                :rep="awaitContent"
-                @submitCode="codeNow"
-                @changeLanuage="changeLanuage"
-              ></codeRegion>
-            </template>
-            <template #two>
-              <div class="footer">
-                <codeTest
-                  @showACImgfun="showACImgfun"
-                  :language="language"
-                  :code="code"
-                  :rep="rep"
-                  :question-id="questionId"
-                  :contest-id="contestId"
-                ></codeTest>
-              </div>
-            </template> -->
           </tbSplit>
         </template>
       </lrSplit>
