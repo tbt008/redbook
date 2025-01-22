@@ -8,7 +8,7 @@
             <div class="section-header">
               <h3>角色列表</h3>
             </div>
-            <el-menu :default-active="activeRoleId" class="role-menu" @select="handleRoleSelect">
+            <el-menu :default-active="activeRoleId.toString()" class="role-menu" @select="handleRoleSelect">
               <el-menu-item v-for="role in roles" :key="role.roleId" :index="role.roleId.toString()">
                 <span>{{ role.roleName }}</span>
               </el-menu-item>
@@ -30,28 +30,37 @@
           <div class="permission-section" v-loading="loading">
             <div class="section-header">
               <h3>权限设置</h3>
-              <div class="header-actions">
+              <!-- <div class="header-actions">
                 <el-button type="primary" @click="showAddPermissionDialog">
                   <el-icon>
                     <Plus />
                   </el-icon>新增权限
                 </el-button>
-              </div>
+              </div> -->
             </div>
 
             <template v-if="activeRoleId">
-              <div class="permission-list">
-                <el-tree ref="permissionTree" :data="permissions" show-checkbox node-key="id" default-expand-all :props="{
-                  children: 'children',
-                  label: 'name'
-                }" :default-checked-keys="checkedPermissions" @check="handlePermissionCheck">
-                </el-tree>
-              </div>
+              <!-- 添加超级管理员判断 -->
+              <template v-if="isAdmin">
+                <div class="admin-notice">
+                  <el-alert title="超级管理员拥有所有权限" type="info" :closable="false" show-icon />
+                </div>
+              </template>
+              <template v-else>
+                <div class="permission-list">
+                  <el-tree ref="permissionTree" :data="permissions" show-checkbox node-key="id" default-expand-all
+                    :props="{
+                      children: 'children',
+                      label: 'name'
+                    }" :default-checked-keys="checkedPermissions" @check="handlePermissionCheck">
+                  </el-tree>
+                </div>
 
-              <div class="action-buttons">
-                <el-button @click="resetPermissions">重置</el-button>
-                <el-button type="primary" @click="savePermissions">更新</el-button>
-              </div>
+                <div class="action-buttons">
+                  <el-button @click="resetPermissions">重置</el-button>
+                  <el-button type="primary" @click="savePermissions">更新</el-button>
+                </div>
+              </template>
             </template>
 
             <template v-else>
@@ -142,9 +151,15 @@ const addPermissionRules = {
 
 // 类型定义
 interface RolePermission {
+  permissionId: number;
   roleName: string;
   isOwner: number;
 }
+
+// 添加是否为超级管理员的状态
+const isAdmin = ref(false)
+// 添加请求取消标记
+const controller = ref<AbortController | null>(null)
 
 // 获取所有角色
 const getRoles = async () => {
@@ -165,36 +180,58 @@ const getRoles = async () => {
 // 获取角色权限
 const getRolePermissions = async (roleId: string) => {
   loading.value = true
+
+  // 修改判断条件，使用数字 10001 进行比较
+  if (Number(roleId) === 10001) {
+    isAdmin.value = true
+    loading.value = false
+    return
+  }
+
+  isAdmin.value = false
+
+  // 如果存在之前的请求，则取消它
+  if (controller.value) {
+    controller.value.abort()
+  }
+
+  // 创建新的 AbortController
+  controller.value = new AbortController()
+
   try {
     const response = await request.post('/role/permissions', {
       roleId: roleId
+    }, {
+      signal: controller.value.signal
     }) as any
+
     if (response.code === 200) {
       const rolePermissions: RolePermission[] = response.data;
       const checkedPerms = rolePermissions
         .filter(perm => perm.isOwner === 1)
-        .map(perm => perm.roleName);
+        .map(perm => perm.permissionId.toString());
 
       permissions.value = rolePermissions.map(perm => ({
-        id: perm.roleName,
+        id: perm.permissionId.toString(),
         name: perm.roleName
       }));
 
       checkedPermissions.value = checkedPerms;
       originalCheckedPermissions.value = [...checkedPerms];
     } else {
-      // 清空权限数据
       permissions.value = [];
       checkedPermissions.value = [];
       originalCheckedPermissions.value = [];
       ElMessage.warning(response.msg)
     }
-  } catch (error) {
-    // 清空权限数据
-    permissions.value = [];
-    checkedPermissions.value = [];
-    originalCheckedPermissions.value = [];
-    ElMessage.error('获取角色权限失败')
+  } catch (error: any) {
+    // 如果不是取消请求导致的错误，才显示错误信息
+    if (error.name !== 'AbortError') {
+      permissions.value = [];
+      checkedPermissions.value = [];
+      originalCheckedPermissions.value = [];
+      ElMessage.error('获取角色权限失败')
+    }
   } finally {
     loading.value = false
   }
@@ -259,7 +296,7 @@ const submitAddRole = async () => {
     if (valid) {
       try {
         const response = await request.post('/role/add', {
-          RoleName: addRoleForm.value.name
+          roleName: addRoleForm.value.name
         }) as any
         if (response.code === 200) {
           ElMessage.success('添加角色成功')
@@ -376,5 +413,11 @@ onMounted(() => {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #eee;
+}
+
+.admin-notice {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
