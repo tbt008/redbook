@@ -153,9 +153,9 @@ interface Stats {
 }
 // 统计数据
 const stats = ref<Stats>({
-  questionCount: 'null',
-  userCount: 'null',
-  codeRecordCount: 'null'
+  questionCount: '',
+  userCount: '',
+  codeRecordCount: ''
 })
 //打开链接
 const openUrl = (url: string) => {
