@@ -11,6 +11,8 @@
             <el-menu :default-active="activeRoleId.toString()" class="role-menu" @select="handleRoleSelect">
               <el-menu-item v-for="role in roles" :key="role.roleId" :index="role.roleId.toString()">
                 <span>{{ role.roleName }}</span>
+
+                <el-button class="delete-button" type="danger" @click="deleteRole(role.roleId)">删除</el-button>
               </el-menu-item>
             </el-menu>
 
@@ -105,7 +107,7 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import type { ElTree } from 'element-plus'
@@ -286,7 +288,44 @@ const showAddRoleDialog = () => {
   }
   addRoleDialogVisible.value = true
 }
+// 删除角色方法
+const deleteRole = async (roleId: string) => {
+  try {
+    // 使用 ElMessageBox 弹出确认对话框
+    await ElMessageBox.confirm(
+      '此操作将永久删除该角色，是否继续？',
+      '删除角色',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
 
+    // 如果用户点击确认，执行删除操作
+    const response = await request.post('/role/delete', { roleId }) as any
+
+    if (response.code === 200) {
+      ElMessage.success('删除角色成功')
+      // 重新获取角色列表
+      getRoles()
+
+      // 如果删除的是当前选中的角色，重置选中状态
+      if (activeRoleId.value === roleId.toString()) {
+        activeRoleId.value = ''
+        permissions.value = []
+        checkedPermissions.value = []
+      }
+    } else {
+      ElMessage.error(response.msg)
+    }
+  } catch (error) {
+    // 用户取消删除时会进入这里
+    if (error !== 'cancel') {
+      ElMessage.error('删除角色失败')
+    }
+  }
+}
 // 提交添加角色
 const submitAddRole = async () => {
   if (!addRoleFormRef.value) return
@@ -392,6 +431,14 @@ onMounted(() => {
 .role-menu {
   flex: 1;
   border-right: none;
+}
+
+.delete-button {
+  /* 靠右 */
+  margin-left: auto;
+  height: 25px;
+  width: 40px;
+  font-size: 12px;
 }
 
 .permission-list {

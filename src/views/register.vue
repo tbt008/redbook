@@ -114,7 +114,8 @@ const register = async () => {
     uid: username.value,
     password: password.value,
     classic: classic.value,
-    studentId: studentId.value
+    studentId: username.value,
+    username: studentId.value
   }
 
   try {
