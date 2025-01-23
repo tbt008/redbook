@@ -210,7 +210,7 @@ onMounted(async () => {
   await getTags()
 
   await getSelectedQuestion()
-  await getTotalCount()
+  await getProblems()
 })
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate) => {
@@ -246,11 +246,9 @@ const groupedTags = computed(() => {
 const getProblems = async () => {
   loading.value = true
   try {
-    const response = await request.post('/question/list', {
+    const response = await request.post('/question/contest/get/list', {
       pageStart: currentPage.value,
       pageSize: pageSize.value,
-      sortField: sortField.value,
-      sortOrder: sortOrder.value,
       difficulty: difficulty.value || undefined,
       tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
       title: searchKeyword.value || undefined
@@ -258,11 +256,13 @@ const getProblems = async () => {
 
     if (response.code === 200) {
       problems.value = response.data.list
+      total.value = response.data.total
       problems.value.forEach((problem) => {
         problem.isSelected = selectedQuestion.value.some(
-          (contestQuestion) => contestQuestion.questionId === problem.id
+          (questionId) => questionId === problem.questionId
         )
       })
+      console.log(problems.value)
     }
   } catch (error) {
     console.error('获取题目列表失败:', error)
@@ -287,13 +287,14 @@ const getTags = async () => {
 const handleSizeChange = async (val) => {
   pageSize.value = val
   currentPage.value = 1
-  await getTotalCount()
+  await getProblems()
 }
 const getSelectedQuestion = async () => {
   try {
     const response = await request.get(`/root/contest/problem/${props.contestId}`)
     if (response.code === 200) {
       selectedQuestion.value = response.data
+      console.log(response.data)
     }
   } catch (error) {
     console.error('获取已选题目失败:', error)
@@ -307,42 +308,12 @@ const handleCurrentChange = async (val) => {
   await getProblems()
 }
 
-// 获取题目总数
-const getTotalCount = async () => {
-  try {
-    const response = await request.post('/question/list', {
-      pageStart: 1,
-      difficulty: difficulty.value || undefined,
-      tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
-      title: searchKeyword.value || undefined
-    })
-
-    if (response.code === 200) {
-      total.value = response.data.total
-      const allData = response.data.list
-      const start = (currentPage.value - 1) * pageSize.value
-      const end = Math.min(start + pageSize.value, allData.length)
-      problems.value = allData.slice(start, end)
-
-      problems.value.forEach((problem) => {
-        problem.isSelected = selectedQuestion.value.some(
-          (contestQuestion) => contestQuestion === problem.questionId
-        )
-      })
-    }
-  } catch (error) {
-    console.error('获取题目总数失败:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
 // 监听筛选条件变化
 watch(
   [difficulty, selectedTagIds, searchKeyword],
   async () => {
     currentPage.value = 1
-    await getTotalCount()
+    await getProblems()
   },
   { deep: true }
 )
