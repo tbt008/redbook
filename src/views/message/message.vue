@@ -80,14 +80,15 @@ const getSystemMessages = async () => {
         const res = await request.get('/user/Notice/message/system')
         if (res.code === 200) {
             // 处理返回的数据，添加 isRead 字段
-            messages.value = res.data.map(msg => ({
-                ...msg,
-                isRead: true, // 默认未读，如果后端返回已读状态，这里需要相应调整
-                createTime: new Date().getTime() // 如果后端没有返回时间，暂时使用当前时间
-            }))
-            console.log(messages.value)
-            // 计算未读消息数量
-
+            if (res.data != null) {
+                messages.value = res.data.map(msg => ({
+                    ...msg,
+                    isRead: true, // 默认未读，如果后端返回已读状态，这里需要相应调整
+                    createTime: new Date().getTime() // 如果后端没有返回时间，暂时使用当前时间
+                }))
+                console.log(messages.value)
+                // 计算未读消息数量
+            }
         }
     } catch (error) {
         console.error('获取系统通知失败:', error)
