@@ -46,11 +46,11 @@
                     <div class="message-list" v-loading="loading">
                         <template v-if="messages.length">
                             <div v-for="message in messages" :key="message.id" class="message-item"
-                                :class="{ 'message-unread': !message.isRead }">
+                                :class="{ 'message-unread': !message.status }">
                                 <div class="message-title">{{ message.title }}</div>
                                 <div class="message-text">{{ message.content }}</div>
                                 <div class="message-footer">
-                                    <span class="message-time">{{ formatTime(message.createTime) }}</span>
+                                    <span class="message-time">{{ formatTime(message.messageSentTime) }}</span>
                                 </div>
                             </div>
                         </template>
@@ -71,6 +71,7 @@ const messages = ref([])
 const loading = ref(false)
 const unreadCount = ref(0)
 const formatTime = (time) => {
+    console.log(time)
     return new Date(time).toLocaleString()
 }
 // 获取系统通知
@@ -81,13 +82,8 @@ const getSystemMessages = async () => {
         if (res.code === 200) {
             // 处理返回的数据，添加 isRead 字段
             if (res.data != null) {
-                messages.value = res.data.map(msg => ({
-                    ...msg,
-                    isRead: true, // 默认未读，如果后端返回已读状态，这里需要相应调整
-                    createTime: new Date().getTime() // 如果后端没有返回时间，暂时使用当前时间
-                }))
-                console.log(messages.value)
-                // 计算未读消息数量
+                messages.value = res.data;
+                // console.log(messages.value) 
             }
         }
     } catch (error) {
@@ -118,6 +114,8 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .mes-all {
+    overflow: hidden;
+    /* 隐藏滚动，防止超出内容溢出 */
     background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
     display: flex;
     justify-content: center;
@@ -130,7 +128,7 @@ onMounted(() => {
     display: flex;
     min-height: calc(100vh - 60px);
     background: #fff;
-    height: 50px;
+    height: 100px;
     width: 80vw;
 
     margin: 0 auto;
@@ -153,6 +151,42 @@ onMounted(() => {
             color: #18191c;
         }
     }
+}
+
+.message-list {
+    height: 70%; // 高度设置为占父容器的 70%
+    overflow-y: auto; // 启用垂直滚动
+    scrollbar-width: thin; // Firefox 滚动条宽度
+    scrollbar-color: #d4d4d4 transparent; // Firefox 滚动条颜色
+
+    &::-webkit-scrollbar {
+        width: 6px; // 滚动条宽度
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #d4d4d4; // 滚动条颜色
+        border-radius: 4px; // 滚动条圆角
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: #b3b3b3; // 滚动条悬停颜色
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent; // 滚动条轨道背景
+    }
+}
+
+.message-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.message-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .message-menu {
