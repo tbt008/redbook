@@ -440,7 +440,6 @@ import countDown from '@/components/countDown.vue'
 import progressBar from '@/components/progressBar.vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ro } from 'element-plus/es/locale/index.mjs'
 const activeName = ref('first')
 const router = useRouter()
 const id = ref()
@@ -500,7 +499,7 @@ const penalty = (row) => {
     var sum_ac_time = 0
     var sum_count = 0
     row.questionInfo.forEach((item, index) => {
-      if (item.acceptedTime != null) {
+      if (item.acceptedTime != null && item.score == 100) {
         sum_ac_time += timeToSeconds(item.acceptedTime)
         sum_count += item.count
       }
@@ -509,7 +508,7 @@ const penalty = (row) => {
   } else {
     var maxTime = 0
     row.questionInfo.forEach((item, index) => {
-      if (item.acceptedTime != null) {
+      if (item.acceptedTime != null && item.score == 100) {
         maxTime = Math.max(maxTime, timeToSeconds(item.acceptedTime))
       }
     })

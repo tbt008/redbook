@@ -121,6 +121,7 @@
         @click="
           () => {
             active++
+            getSelectedQuestion()
           }
         "
         type="cancel"
@@ -128,6 +129,34 @@
       >
     </div>
     <div v-if="active == 2">
+      <el-table :data="questionListInfo" style="width: 100%">
+        <el-table-column label="顺序" type="index" width="100" />
+        <el-table-column prop="id" label="id" width="150" />
+        <el-table-column prop="title" label="标题" min-width="150" />
+        <el-table-column prop="uid" label="作者" width="150" />
+
+        <el-table-column fixed="right" label="操作" min-width="120">
+          <template #default="{ row }">
+            <el-button :icon="ArrowUp" circle plain type="primary" @click="Up(row)"> </el-button>
+
+            <el-button :icon="ArrowDown" circle plain type="primary" @click="Down(row)">
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-button
+        @click="
+          () => {
+            active--
+          }
+        "
+        type="primary"
+        >上一步</el-button
+      >
+      <el-button @click="saveOrder" type="cancel">保存</el-button>
+      <el-button @click="next" type="cancel">完成</el-button>
+    </div>
+    <div v-if="active == 3">
       <el-button
         @click="
           () => {
@@ -143,6 +172,7 @@
 </template>
 <script lang="js" setup>
 import { ref, watch } from 'vue'
+import { ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
 import { onMounted } from 'vue'
@@ -159,6 +189,7 @@ const language = ref([])
 const contestType = ref('1')
 const mavonEditorRef = ref()
 const active = ref(0)
+const questionListInfo = ref([])
 const getContest = () => {
   request.get(`/root/contest/get/${contestId.value}`).then((res) => {
     if (res.code == 200) {
@@ -184,6 +215,83 @@ onMounted(() => {
     getContest()
   }
 })
+const Down = (row) => {
+  // 首先找到匹配元素的索引
+  const index = questionListInfo.value.findIndex((item) => item.id === row.id)
+
+  if (index !== -1) {
+    // 如果找到了匹配的元素
+    if (index === questionListInfo.value.length - 1) {
+      ElMessage.warning('已经是最后一个了')
+    } else {
+      // 交换元素
+      const temp = questionListInfo.value[index]
+      questionListInfo.value[index] = questionListInfo.value[index + 1]
+      questionListInfo.value[index + 1] = temp
+    }
+  }
+}
+const Up = (row) => {
+  // 首先找到匹配元素的索引
+  const index = questionListInfo.value.findIndex((item) => item.id === row.id)
+
+  if (index !== -1) {
+    // 如果找到了匹配的元素
+    if (index === 0) {
+      ElMessage.warning('已经是第一个了')
+    } else {
+      // 交换元素
+      const temp = questionListInfo.value[index]
+      questionListInfo.value[index] = questionListInfo.value[index - 1]
+      questionListInfo.value[index - 1] = temp
+    }
+  }
+}
+const saveOrder = async () => {
+  // 把questionListInfo里的id数组
+  var questionIds = questionListInfo.value.map((item) => item.id)
+  request
+    .post('/root/contest/edit/problem', {
+      contestId: contestId.value,
+      questionIds: questionIds
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        ElMessage.success('保存成功')
+        active.value++
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+    .catch(() => {
+      ElMessage.error('保存失败')
+    })
+}
+const getQuestionByIds = async () => {
+  try {
+    const response = await request.post(`/root/problem/get/ids`, {
+      pageStart: 1,
+      pageSize: 10000,
+      questionIds: questionIds.value
+    })
+    if (response.code === 200) {
+      questionListInfo.value = response.data.list
+    }
+  } catch (error) {
+    console.error('获取已选题目失败:', error)
+  }
+}
+const getSelectedQuestion = async () => {
+  try {
+    const response = await request.get(`/root/contest/problem/${props.id}`)
+    if (response.code === 200) {
+      selectedQuestion.value = response.data
+      getQuestionByIds()
+    }
+  } catch (error) {
+    console.error('获取已选题目失败:', error)
+  }
+}
 const contestId = ref()
 const questionIds = ref([])
 const props = defineProps({
@@ -316,6 +424,7 @@ const saveQuestion = () => {
       if (res.code == 200) {
         ElMessage.success('保存成功')
         active.value++
+        getSelectedQuestion()
       } else {
         ElMessage.error(res.msg)
       }
