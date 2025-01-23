@@ -47,7 +47,7 @@
                         <template v-if="messages.length">
                             <div v-for="message in messages" :key="message.id" class="message-item"
                                 :class="{ 'message-unread': !message.isRead }">
-
+                                <div class="message-title">{{ message.title }}</div>
                                 <div class="message-text">{{ message.content }}</div>
                                 <div class="message-footer">
                                     <span class="message-time">{{ formatTime(message.createTime) }}</span>
@@ -246,6 +246,9 @@ onMounted(() => {
         font-size: 14px;
         color: #18191c;
         font-weight: 500;
+        margin-bottom: 10px;
+        // 字体加粗
+        font-weight: bold;
     }
 
     .message-text {
