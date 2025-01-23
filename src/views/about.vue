@@ -8,15 +8,15 @@
       </div>
       <div class="hero-stats">
         <div class="stat-item">
-          <div class="stat-number">{{ stats.problems }}+</div>
+          <div class="stat-number">{{ stats.questionCount }}</div>
           <div class="stat-label">题目数量</div>
         </div>
         <div class="stat-item">
-          <div class="stat-number">{{ stats.users }}+</div>
+          <div class="stat-number">{{ stats.userCount }}</div>
           <div class="stat-label">活跃用户</div>
         </div>
         <div class="stat-item">
-          <div class="stat-number">{{ stats.submissions }}+</div>
+          <div class="stat-number">{{ stats.codeRecordCount }}</div>
           <div class="stat-label">提交次数</div>
         </div>
       </div>
@@ -104,10 +104,12 @@
       <div class="tech-stack">
         <h2 class="section-title">技术栈</h2>
         <div class="tech-grid">
-          <div class="tech-item" v-for="tech in techStack" :key="tech.name">
+          <div class="tech-item" v-for="tech in techStack" :key="tech.name" @click="openUrl(tech.url)"
+            style="cursor: pointer;">
             <img :src="tech.icon" :alt="tech.name">
             <span>{{ tech.name }}</span>
           </div>
+
         </div>
       </div>
     </div>
@@ -116,11 +118,17 @@
     <div class="contact-section">
       <h2 class="section-title">联系我们</h2>
       <div class="contact-info">
-        <div class="contact-item">
+        <!-- <div class="contact-item">
           <el-icon>
             <Message />
           </el-icon>
           <span>{{ contact.email }}</span>
+        </div> -->
+        <div class="contact-item">
+          <el-icon>
+            <ChatDotRound /> <!-- 更换图标为用户群组相关图标 -->
+          </el-icon>
+          <span>{{ contact.qqGroup }}</span> <!-- 显示 QQ 群号 -->
         </div>
         <div class="contact-item">
           <el-icon>
@@ -134,16 +142,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Message, Location } from '@element-plus/icons-vue'
-
+import { ref, onMounted } from 'vue'
+import { ChatDotRound, Location } from '@element-plus/icons-vue'
+import request from '@/util/request';
+import { ElMessage } from 'element-plus'
+interface Stats {
+  questionCount: string
+  userCount: string
+  codeRecordCount: string
+}
 // 统计数据
-const stats = ref({
-  problems: 'xxx',
-  users: 'xxx',
-  submissions: 'xxx'
+const stats = ref<Stats>({
+  questionCount: 'null',
+  userCount: 'null',
+  codeRecordCount: 'null'
 })
-
+//打开链接
+const openUrl = (url: string) => {
+  // 在新页面打开
+  window.open(url, '_blank');
+};
 // 平台特色
 const features = ref([
   {
@@ -168,41 +186,49 @@ const features = ref([
   }
 ])
 
-// 开发团队
-const team = ref([
-  {
-    name: '张三',
-    role: '项目负责人',
-    description: '全栈开发工程师，5年OJ系统开发经验',
-    avatar: 'https://placeholder.co/100'
-  },
-  {
-    name: '李四',
-    role: '后端开发',
-    description: '专注于系统架构和性能优化',
-    avatar: 'https://placeholder.co/100'
-  },
-  {
-    name: '王五',
-    role: '前端开发',
-    description: '负责用户界面和交互体验设计',
-    avatar: 'https://placeholder.co/100'
-  }
-])
+// 图片从下面获取
+// https://simpleicons.org/
 
 // 技术栈
 const techStack = ref([
-  { name: 'Vue 3', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/vuedotjs.svg' },
-  { name: 'TypeScript', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/typescript.svg' },
-  { name: 'Element Plus', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/element.svg' },
-  { name: 'Spring Boot', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/springboot.svg' }
+  { name: 'Vue 3', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/vuedotjs.svg', url: 'https://vuejs.org/' },
+  { name: 'TypeScript', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/typescript.svg', url: 'https://www.typescriptlang.org/' },
+  { name: 'Element Plus', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/element.svg', url: 'https://element-plus.org/' },
+  { name: 'Spring Boot', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/springboot.svg', url: 'https://spring.io/projects/spring-boot' }
 ]);
 
 // 联系方式
 const contact = ref({
+  qqGroup: 'xxxxxxxxx',
   email: 'xxxxx@ptuoj.com',
   address: '莆田学院'
 })
+onMounted(() => {
+  getStats()
+})
+const getStats = async () => {
+  try {
+    const res = await request.get('/system/firthPage/get') as any
+    if (res.code === 200) {
+      // 处理返回的数据，添加 isRead 字段
+      stats.value = res.data;
+    }
+    else {
+
+      stats.value = {
+        questionCount: 'null',
+        userCount: 'null',
+        codeRecordCount: 'null'
+      }
+    }
+  } catch (error) {
+    console.error('获取系统数据失败:', error)
+    ElMessage.error('获取系统数据失败')
+  } finally {
+
+  }
+}
+
 </script>
 
 <style scoped lang="scss">
