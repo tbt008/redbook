@@ -102,6 +102,18 @@
             >
           </div>
         </div>
+        <!-- elementplus el-pagination: 分页器 -->
+        <div class="pagination-container">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total="total"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -117,15 +129,16 @@ const oldConstestList = ref([])
 const searchType = ref('')
 // -1 全部 0ioi 1acm
 const searchKeyword = ref('')
-const pageStart = 1
-const pageSize = 10
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
 const getConstestList = async () => {
   let obj = {
     status: 0,
     title: searchKeyword.value || undefined,
     type: searchType.value || undefined,
-    pageStart: pageStart,
-    pageSize: pageSize
+    pageStart: 1,
+    pageSize: 10000
   }
   request
     .post(`/contest/list`, obj)
@@ -143,14 +156,15 @@ const getConstestList = async () => {
     status: 1,
     title: searchKeyword.value || undefined,
     type: searchType.value || undefined,
-    pageStart: pageStart,
-    pageSize: pageSize
+    pageStart: currentPage.value,
+    pageSize: pageSize.value
   }
   request
     .post(`/contest/list`, obj1)
     .then((res) => {
       if (res.code == 200) {
         oldConstestList.value = res.data.list
+        total.value = res.data.total
       } else {
         ElMessage.error(res.msg)
       }
@@ -162,6 +176,18 @@ const getConstestList = async () => {
 onMounted(async () => {
   getConstestList()
 })
+// 分页大小改变处理
+const handleSizeChange = async (val) => {
+  pageSize.value = val
+  currentPage.value = 1
+  await getConstestList()
+}
+
+// 当前页改变处理
+const handleCurrentChange = async (val) => {
+  currentPage.value = val
+  await getConstestList()
+}
 
 watch(
   [searchType, searchKeyword],
@@ -223,8 +249,8 @@ const inputInfo = (id) => {
 .contest-item {
   display: flex;
   margin: 30px;
-  width: 100%;
-  padding: 30px;
+  width: 90%;
+  padding: 20px;
   border-radius: 20px;
   border: 1px solid rgb(104, 240, 63);
 }
