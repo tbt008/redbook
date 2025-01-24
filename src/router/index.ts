@@ -128,9 +128,18 @@ const router = createRouter({
       component: () => import('@/views/SubmissionDetail.vue')
     },
     {
+      path: '/message',
+      name: 'Message',
+      component: () => import('@/views/message/message.vue')
+    },
+    {
+      path: '/404',
+      name: '404',
+      component: () => import('@/views/error/404.vue')
+    },
+    {
       path: '/:pathMatch(.*)*',
-      name: 'NotFound',
-      component: () => import('@/views/404.vue')
+      redirect: '/404'
     }
   ]
 })

@@ -1,12 +1,7 @@
 <template>
   <div class="head-nav">
     <ul id="nav">
-      <li
-        v-for="(link, index) in links"
-        :class="{ active: link.active }"
-        :key="index"
-        class="navbar"
-      >
+      <li v-for="(link, index) in links" :class="{ active: link.active }" :key="index" class="navbar">
         <div>
           <a @click="handleClick(index)">{{ link.text }} </a>
         </div>
@@ -14,7 +9,16 @@
     </ul>
     <div class="header-user">
       <div v-if="loading && userImg" class="user-menu-wrapper">
-        <img class="user-img" :src="userImg" alt="" @click="showMenu = !showMenu" />
+        <div class="user-actions">
+          <div class="message-entry" @click="handleMessage">
+            <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0">
+              <el-icon :size="20">
+                <Bell />
+              </el-icon>
+            </el-badge>
+          </div>
+          <img class="user-img" :src="userImg" alt="" @click="showMenu = !showMenu" />
+        </div>
         <el-menu v-show="showMenu" class="user-menu" :class="{ show: showMenu }">
           <el-menu-item @click="handleCommand('space')">我的空间</el-menu-item>
           <!-- 是否是管理员 -->
@@ -28,38 +32,16 @@
       </div>
     </div>
   </div>
-  <el-dialog
-    v-model="dialogVisible"
-    title="修改密码"
-    width="400px"
-    :close-on-click-modal="false"
-  >
-    <el-form
-      ref="passwordFormRef"
-      :model="passwordForm"
-      :rules="passwordRules"
-      label-width="80px"
-    >
+  <el-dialog v-model="dialogVisible" title="修改密码" width="400px" :close-on-click-modal="false">
+    <el-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-width="80px">
       <el-form-item label="原密码" prop="oldPassword">
-        <el-input
-          v-model="passwordForm.oldPassword"
-          type="password"
-          placeholder="请输入原密码"
-        />
+        <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入原密码" />
       </el-form-item>
       <el-form-item label="新密码" prop="newPassword">
-        <el-input
-          v-model="passwordForm.newPassword"
-          type="password"
-          placeholder="请输入新密码"
-        />
+        <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码" />
       </el-form-item>
       <el-form-item label="确认密码" prop="confirmPassword">
-        <el-input
-          v-model="passwordForm.confirmPassword"
-          type="password"
-          placeholder="请确认新密码"
-        />
+        <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请确认新密码" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -75,10 +57,11 @@
 
 <script lang="js" setup>
 import request from '@/util/request'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, onUnmounted } from 'vue'
 // import store from '@/views/var.js'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Bell } from '@element-plus/icons-vue'
 const router = useRouter()
 const links = ref([
   { path: '/home', text: '主页', active: false },
@@ -135,7 +118,7 @@ const userLogin = () => {
         // localStorage.setItem('uid', res.data.uid)
         // console.log(res.data.permissionList)
         // 判断是否为管理员 - 检查权限列表是否包含管理员权限码
-        isAdmin.value = res.data.permissionList && 
+        isAdmin.value = res.data.permissionList &&
           (res.data.permissionList.includes(5006) || res.data.permissionList.includes(5007))
         userImg.value = res.data.avatar
         loading.value = true
@@ -178,6 +161,9 @@ const skip = (index) => {
 onMounted(() => {
   userLogin()
   loading.value = true
+  if (localStorage.getItem('authToken')) {
+    startPolling()
+  }
 })
 // 监听路由变化
 router.afterEach(() => {
@@ -217,7 +203,7 @@ const handleUser = () => {
 // )
 const handleModifyPassword = async (formEl) => {
   if (!formEl) return
-  
+
   try {
     const valid = await formEl.validate()
     if (valid) {
@@ -226,7 +212,7 @@ const handleModifyPassword = async (formEl) => {
         oldPassword: passwordForm.value.oldPassword,
         newPassword: passwordForm.value.newPassword
       })
-      
+
       if (res.code === 200) {
         ElMessage.success('密码修改成功，请重新登录')
         dialogVisible.value = false
@@ -271,6 +257,45 @@ const handleCommand = (command) => {
     router.push('/admin/problem')
   }
 }
+
+// 添加未读消息计数
+const unreadCount = ref(0)
+let pollTimer = null
+
+// 获取未读消息数
+const getUnreadCount = async () => {
+  try {
+    const res = await request.get('/user/Notice/unRead')
+    if (res.code === 200) {
+      unreadCount.value = res.data
+    }
+  } catch (error) {
+    console.error('获取未读消息数失败:', error)
+  }
+}
+
+// 处理消息点击
+const handleMessage = () => {
+  router.push('/message')
+}
+
+// 开始轮询
+const startPolling = () => {
+  getUnreadCount() // 立即执行一次
+  pollTimer = setInterval(getUnreadCount, 120000) // 每2分钟执行一次
+}
+
+onMounted(() => {
+  if (localStorage.getItem('authToken')) {
+    startPolling()
+  }
+})
+
+onUnmounted(() => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+  }
+})
 </script>
 
 <style scoped>
@@ -278,17 +303,22 @@ const handleCommand = (command) => {
   color: #0b66ef;
   /* border-bottom: rgb(42, 120, 234) 4px solid; */
 }
+
 .user-img {
   width: 30px;
   height: 30px;
   margin-right: 40px;
-  margin-top: 10px;
+  margin-top: 5px;
   border-radius: 50%;
   display: flex;
+  cursor: pointer;
 }
+
 .header-user {
   user-select: none;
-  /* transition: all 0.6s; */
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .head-ion {
@@ -332,6 +362,7 @@ const handleCommand = (command) => {
   text-decoration: none;
   z-index: 3;
 }
+
 .slide1,
 .slide2 {
   position: absolute;
@@ -359,7 +390,33 @@ const handleCommand = (command) => {
 
 .user-menu-wrapper {
   position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.message-entry {
+  margin: 11px 0px 0 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px;
+  transition: all 0.3s;
+}
+
+.message-entry:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+}
+
+
+
 /* 下拉框样式 */
 .user-menu {
   position: absolute;

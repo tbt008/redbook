@@ -16,7 +16,24 @@
             <el-table :data="classList" class="class-table" v-loading="loading">
                 <el-table-column prop="id" label="班级ID" align="center" />
                 <el-table-column prop="className" label="班级名称" align="center" />
+                <el-table-column label="操作" align="center" width="200">
+                    <template #default="{ row }">
+                        <el-button type="primary" link @click="handleViewMembers(row)">
+                            <el-icon>
+                                <User />
+                            </el-icon>
+                            查看成员
+                        </el-button>
+                    </template>
+                </el-table-column>
             </el-table>
+
+            <!-- 添加分页组件 -->
+            <div class="pagination-container">
+                <el-pagination v-model:current-page="pageInfo.pageStart" v-model:page-size="pageInfo.pageSize"
+                    :page-sizes="[10, 20, 30, 50]" layout="total, sizes, prev, pager, next" :total="total"
+                    @size-change="handleSizeChange" @current-change="handleCurrentChange" />
+            </div>
 
             <!-- 添加班级对话框 -->
             <el-dialog v-model="dialogVisible" title="添加班级" width="500px" @close="resetForm">
@@ -50,6 +67,26 @@
                     <el-button type="primary" @click="submitForm">确定</el-button>
                 </template>
             </el-dialog>
+
+            <!-- 添加成员查看对话框 -->
+            <el-dialog v-model="memberDialogVisible" :title="`${currentClassName}成员列表`" width="800px">
+                <el-table :data="memberList" v-loading="memberLoading" class="member-table">
+                    <el-table-column label="头像" align="center" width="80">
+                        <template #default="{ row }">
+                            <el-avatar :size="40" :src="row.avatar" />
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="uid" label="学号" align="center" />
+                    <el-table-column prop="userName" label="姓名" align="center" />
+                </el-table>
+
+                <div class="pagination-container">
+                    <el-pagination v-model:current-page="memberPageInfo.pageStart"
+                        v-model:page-size="memberPageInfo.pageSize" :page-sizes="[10, 20, 30, 50]"
+                        layout="total, sizes, prev, pager, next" :total="memberTotal"
+                        @size-change="handleMemberSizeChange" @current-change="handleMemberCurrentChange" />
+                </div>
+            </el-dialog>
         </div>
     </div>
 </template>
@@ -57,12 +94,18 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
+import { Plus, Delete, User } from '@element-plus/icons-vue'
 import request from '@/util/request'
 
 interface ClassItem {
     id: number
     className: string
+}
+
+interface MemberItem {
+    avatar: string
+    userName: string
+    uid: string
 }
 
 // 状态变量
@@ -83,13 +126,35 @@ const rules = {
     ]
 }
 
+// 分页相关状态
+const pageInfo = ref({
+    pageStart: 1,
+    pageSize: 10,
+    classic: 0
+})
+const total = ref(0)
+
+// 成员管理相关状态
+const memberDialogVisible = ref(false)
+const memberLoading = ref(false)
+const memberList = ref<MemberItem[]>([])
+const currentClassName = ref('')
+const currentClassId = ref(0)
+const memberTotal = ref(0)
+const memberPageInfo = ref({
+    pageStart: 1,
+    pageSize: 10,
+    classic: 0
+})
+
 // 获取班级列表
 const getClassList = async () => {
     loading.value = true
     try {
-        const response = await request.get('/classic/list') as any
+        const response = await request.post('/classic/list', pageInfo.value) as any
         if (response.code === 200) {
-            classList.value = response.data
+            classList.value = response.data.list || []
+            total.value = response.data.total || 0
         } else {
             ElMessage.error('获取班级列表失败')
         }
@@ -155,6 +220,59 @@ const resetForm = () => {
     }
 }
 
+// 处理页码改变
+const handleCurrentChange = (page: number) => {
+    pageInfo.value.pageStart = page
+    getClassList()
+}
+
+// 处理每页条数改变
+const handleSizeChange = (size: number) => {
+    pageInfo.value.pageSize = size
+    pageInfo.value.pageStart = 1
+    getClassList()
+}
+
+// 查看成员
+const handleViewMembers = (row: ClassItem) => {
+    currentClassName.value = row.className
+    currentClassId.value = row.id
+    memberPageInfo.value.classic = row.id
+    memberDialogVisible.value = true
+    getMemberList()
+}
+
+// 获取成员列表
+const getMemberList = async () => {
+    memberLoading.value = true
+    try {
+        const response = await request.post('/classic/user', memberPageInfo.value) as any
+        if (response.code === 200) {
+            memberList.value = response.data.list || []
+            memberTotal.value = response.data.total || 0
+        } else {
+            ElMessage.error('获取成员列表失败')
+        }
+    } catch (error) {
+        console.error('获取成员列表失败:', error)
+        ElMessage.error('获取成员列表失败')
+    } finally {
+        memberLoading.value = false
+    }
+}
+
+// 处理成员列表分页
+const handleMemberSizeChange = (size: number) => {
+    memberPageInfo.value.pageSize = size
+    memberPageInfo.value.pageStart = 1
+    getMemberList()
+}
+
+const handleMemberCurrentChange = (page: number) => {
+    memberPageInfo.value.pageStart = page
+    getMemberList()
+}
+
 // 组件挂载时获取数据
 onMounted(() => {
     getClassList()
@@ -187,5 +305,24 @@ onMounted(() => {
 
 :deep(.el-table td) {
     border-bottom: 1px solid #e4e7ed;
+}
+
+.pagination-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.member-table {
+    margin-bottom: 20px;
+}
+
+:deep(.el-dialog__body) {
+    padding-top: 20px;
+}
+
+:deep(.el-avatar) {
+    border-radius: 50%;
+    object-fit: cover;
 }
 </style>

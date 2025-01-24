@@ -74,13 +74,18 @@ const password = ref('')
 const confirmPassword = ref('')
 
 const classicList = ref([])
+const pageInfo = ref({
+  pageStart: 1,
+  pageSize: 1000000, // 获取所有班级，设置一个较大的数值
+  classic: 0
+})
 
 // 获取班级列表
 const getClassicList = async () => {
   try {
-    const res = await request.get('/classic/list')
+    const res = await request.post('/classic/list', pageInfo.value)
     if (res.code === 200) {
-      classicList.value = res.data
+      classicList.value = res.data.list || [] // 修改为从 data.list 获取数据
     } else {
       ElMessage.error('获取班级列表失败')
     }
@@ -109,7 +114,8 @@ const register = async () => {
     uid: username.value,
     password: password.value,
     classic: classic.value,
-    studentId: studentId.value
+    studentId: username.value,
+    username: studentId.value
   }
 
   try {
