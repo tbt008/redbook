@@ -107,7 +107,7 @@
               </div>
             </div>
 
-            <!-- 将分页器移动到这里 -->
+            <!-- 分页器 -->
             <div class="pagination-container">
               <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
                 :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
@@ -320,6 +320,8 @@
   padding: 20px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   margin-top: 24px;
+  display: flex;
+  justify-content: center;
 }
 
 /* 左侧容器样式 */
