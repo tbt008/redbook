@@ -30,7 +30,7 @@
                         <BellFilled />
                       </el-icon>比赛时间:{{ item.startTime }}至{{ item.endTime }}
                     </div>
-                    <div class="contest-item-info">
+                    <div class="contest-item-info" style="display: flex; justify-content: flex-start; gap: 40px;">
                       <div>
                         <el-icon>
                           <Promotion />
@@ -42,8 +42,9 @@
                           <UserFilled />
                         </el-icon>参与人数：{{ item.participationNumber }}
                       </div>
-                      <div>语言:{{ item.language }}</div>
-                      <!-- <div>赛制:{{ item.contestType }}</div> -->
+                    </div>
+                    <div class="contest-item-info">
+                      语言:{{ item.language }}
                     </div>
                   </div>
                   <div class="apply-button">
@@ -81,7 +82,7 @@
                         <BellFilled />
                       </el-icon>比赛时间:{{ item.startTime }}至{{ item.endTime }}
                     </div>
-                    <div class="contest-item-info">
+                    <div class="contest-item-info" style="display: flex; justify-content: flex-start; gap: 40px;">
                       <div>
                         <el-icon>
                           <Promotion />
@@ -93,7 +94,9 @@
                           <UserFilled />
                         </el-icon>参与人数：{{ item.participationNumber }}
                       </div>
-                      <div>语言:{{ item.language }}</div>
+                    </div>
+                    <div class="contest-item-info">
+                      语言:{{ item.language }}
                     </div>
                   </div>
                   <div class="apply-button">
@@ -198,7 +201,7 @@
 .filter-card {
   background-color: #fff;
   border-radius: 12px;
-  padding: 20px;
+  padding: 14px 20px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -257,7 +260,7 @@
 .contest-item {
   background-color: #fff;
   border-radius: 16px;
-  padding: 24px;
+  padding: 20px 24px;
   margin-bottom: 20px;
   display: flex;
   gap: 24px;
@@ -288,15 +291,14 @@
 
 .contest-item-info {
   display: flex;
-  gap: 24px;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 12px;
   color: #64748b;
 }
 
-.contest-item-info div {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.contest-item-info .el-icon {
+  margin-right: 4px;
 }
 
 .apply-button {
@@ -337,8 +339,8 @@
 .ongoing-contests {
   background-color: #fff;
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 24px;
+  padding: 10px 20px 10px 20px;
+  margin-bottom: 0px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
