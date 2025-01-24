@@ -31,6 +31,7 @@ const router = createRouter({
     {
       path: '/question',
       name: 'question',
+
       component: () => import('@/views/problems.vue')
     },
     {
@@ -98,6 +99,11 @@ const router = createRouter({
           name: 'SystemManager',
           component: () => import('@/views/admin/systemManager.vue'),
           meta: { title: '系统管理' }
+        },
+        {
+          path: 'notice',
+          name: 'noticeManage',
+          component: () => import('@/views/admin/noticeManage.vue')
         }
       ]
     },
