@@ -3,10 +3,22 @@
     <div class="user-wrapper">
       <!-- 筛选区域 -->
       <div class="filter-section">
-        <div style="font-size: 12px;line-height: 32px; width: 60px;margin-left: 10px;">筛选条件</div>
-        <el-select v-model="filterType" placeholder="所有" class="filter-item" @change="getUserList">
+        <div style="font-size: 12px; line-height: 32px; width: 60px; margin-left: 10px">
+          筛选条件
+        </div>
+        <el-select
+          v-model="filterType"
+          placeholder="所有"
+          class="filter-item"
+          @change="getUserList"
+        >
           <el-option label="所有" value="all" />
-          <el-option v-for="role in roleList" :key="role.roleId" :label="role.roleName" :value="role.roleId" />
+          <el-option
+            v-for="role in roleList"
+            :key="role.roleId"
+            :label="role.roleName"
+            :value="role.roleId"
+          />
         </el-select>
 
         <!-- <el-input
@@ -22,17 +34,23 @@
 
         <el-button type="primary" @click="handleAddUser">
           <el-icon>
-            <Plus />
-          </el-icon>添加用户
+            <Plus /> </el-icon
+          >添加用户
         </el-button>
 
         <!-- 新增批量导入按钮 -->
-        <el-upload class="upload-excel" :action="null" :auto-upload="false" :show-file-list="false" accept=".xlsx,.xls"
-          :on-change="handleExcelUpload">
+        <el-upload
+          class="upload-excel"
+          :action="null"
+          :auto-upload="false"
+          :show-file-list="false"
+          accept=".xlsx,.xls"
+          :on-change="handleExcelUpload"
+        >
           <el-button type="success">
             <el-icon>
-              <Upload />
-            </el-icon>批量导入
+              <Upload /> </el-icon
+            >批量导入
           </el-button>
         </el-upload>
       </div>
@@ -54,7 +72,10 @@
         </el-table-column>
         <el-table-column prop="status" label="禁用" align="center">
           <template #default="{ row }">
-            <el-switch :model-value="row.isDelete === '1'" @change="(val: any) => handleStatusToggle(row)" />
+            <el-switch
+              :model-value="row.isDelete === '1'"
+              @change="(val: any) => handleStatusToggle(row)"
+            />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220" align="center">
@@ -68,9 +89,15 @@
 
       <!-- 添加分页组件 -->
       <div class="pagination-container">
-        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]"
-          :total="total" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
-          @current-change="handleCurrentChange" />
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
       </div>
 
       <!-- 编辑对话框 -->
@@ -80,13 +107,23 @@
             <el-input v-model="userFormEdit.name" />
           </el-form-item>
           <el-form-item label="班级" prop="className">
-            <el-select v-model="userFormEdit.classic" style="width: 150px;">
-              <el-option v-for="item in classicList" :key="item.id" :label="item.className" :value="item.id" />
+            <el-select v-model="userFormEdit.classic" style="width: 150px">
+              <el-option
+                v-for="item in classicList"
+                :key="item.id"
+                :label="item.className"
+                :value="item.id"
+              />
             </el-select>
           </el-form-item>
           <el-form-item label="用户角色" prop="roleId">
-            <el-select v-model="userFormEdit.roleId" style="width: 150px;">
-              <el-option v-for="role in roleList" :key="role.roleId" :label="role.roleName" :value="role.roleId" />
+            <el-select v-model="userFormEdit.roleId" style="width: 150px">
+              <el-option
+                v-for="role in roleList"
+                :key="role.roleId"
+                :label="role.roleName"
+                :value="role.roleId"
+              />
             </el-select>
           </el-form-item>
         </el-form>
@@ -112,8 +149,13 @@
           </el-select>
         </el-form-item> -->
           <el-form-item label="班级" prop="className">
-            <el-select v-model="userForm.classic" style="width: 150px;">
-              <el-option v-for="item in classicList" :key="item.id" :label="item.className" :value="item.id" />
+            <el-select v-model="userForm.classic" style="width: 150px">
+              <el-option
+                v-for="item in classicList"
+                :key="item.id"
+                :label="item.className"
+                :value="item.id"
+              />
             </el-select>
           </el-form-item>
           <!-- <el-form-item label="班级" prop="className">
@@ -153,7 +195,7 @@ const roleList = ref<RoleItem[]>([])
 // 获取角色列表
 const getRoleList = async () => {
   try {
-    const response = await request.get('/role/get') as any
+    const response = (await request.get('/role/get')) as any
     if (response.code === 200) {
       roleList.value = response.data
     } else {
@@ -167,7 +209,7 @@ const getRoleList = async () => {
 
 // 获取角色标签类型的方法
 const getTagType = (roleId: number) => {
-  const role = roleList.value.find(r => r.roleId === roleId)
+  const role = roleList.value.find((r) => r.roleId === roleId)
   if (!role) return 'info'
   // 这里可以根据实际需求设置不同角色的标签类型
   if (role.roleName.includes('超级管理员')) return 'danger'
@@ -177,7 +219,7 @@ const getTagType = (roleId: number) => {
 
 // 获取角色名称的方法
 const getRoleName = (roleId: number) => {
-  const role = roleList.value.find(r => r.roleId === roleId)
+  const role = roleList.value.find((r) => r.roleId === roleId)
   return role ? role.roleName : '未知角色'
 }
 
@@ -215,18 +257,10 @@ const rules = {
     { required: true, message: '请输入用户账号', trigger: 'blur' },
     { min: 12, message: '账号长度至少为12位', trigger: 'blur' }
   ],
-  name: [
-    { required: true, message: '请输入用户姓名', trigger: 'blur' }
-  ],
-  password: [
-    { required: false, min: 6, message: '密码长度至少为6位', trigger: 'blur' }
-  ],
-  roleId: [
-    { required: true, message: '请选择用户角色', trigger: 'change' }
-  ],
-  className: [
-    { required: true, message: '请输入班级', trigger: 'blur' }
-  ]
+  name: [{ required: true, message: '请输入用户姓名', trigger: 'blur' }],
+  password: [{ required: false, min: 6, message: '密码长度至少为6位', trigger: 'blur' }],
+  roleId: [{ required: true, message: '请选择用户角色', trigger: 'change' }],
+  className: [{ required: true, message: '请输入班级', trigger: 'blur' }]
 }
 
 // 获取用户列表
@@ -240,14 +274,14 @@ const getUserList = async () => {
       roleId = filterType.value
     }
 
-    const response = await request.post('/user/admin/list', {
+    const response = (await request.post('/user/admin/list', {
       pageStart: currentPage.value,
       pageSize: pageSize.value,
-      roleId: roleId,
+      roleId: roleId
       // sortField: sortField.value,
-      // sortOrder: sortOrder.value, 
-      // key:"string" 
-    }) as any
+      // sortOrder: sortOrder.value,
+      // key:"string"
+    })) as any
     if (response.code === 200) {
       users.value = response.data.list
       total.value = response.data.total
@@ -263,17 +297,13 @@ const getUserList = async () => {
 // 重置用户密码
 const handleResetPassword = async (row: any) => {
   try {
-    await ElMessageBox.confirm(
-      '确定要重置该用户的密码吗？',
-      '警告',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
+    await ElMessageBox.confirm('确定要重置该用户的密码吗？', '警告', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
 
-    const response = await request.post('/user/reset/password', { uid: row.uid }) as any
+    const response = (await request.post('/user/reset/password', { uid: row.uid })) as any
     if (response.code === 200) {
       ElMessage.success('密码重置成功')
     } else {
@@ -287,7 +317,6 @@ const handleResetPassword = async (row: any) => {
   }
 }
 
-
 // 编辑用户
 const handleEdit = async (row: any) => {
   userFormEdit.value = {
@@ -295,7 +324,7 @@ const handleEdit = async (row: any) => {
     name: row.userName,
     roleId: row.roleId,
     className: row.className,
-    classic: row.classic,
+    classic: row.classic
   }
   dialogEditVisible.value = true
 }
@@ -303,7 +332,7 @@ const handleEdit = async (row: any) => {
 // 切换用户状态
 const handleStatusToggle = async (row: any) => {
   try {
-    const response = await request.post('/user/admin/disable', { uid: row.uid }) as any
+    const response = (await request.post('/user/admin/disable', { uid: row.uid })) as any
     if (response.code === 200) {
       ElMessage.success(Number(row.isDelete) ? '用户已启用' : '用户已停用')
       getUserList()
@@ -314,19 +343,18 @@ const handleStatusToggle = async (row: any) => {
   }
 }
 
-
 const submitEditForm = async () => {
   if (!formRef.value) return
 
   await formRef.value.validate(async (valid: boolean) => {
     if (valid) {
       try {
-        const response = await request.post('/user/admin/update', {
+        const response = (await request.post('/user/admin/update', {
           uid: userFormEdit.value.uid,
           userName: userFormEdit.value.name,
           roleId: userFormEdit.value.roleId,
           classic: userFormEdit.value.classic
-        }) as any
+        })) as any
 
         if (response.code === 200) {
           ElMessage.success('更新成功')
@@ -349,7 +377,7 @@ const handleAddUser = () => {
     name: '',
     isDelete: 0,
     className: '',
-    classic: 4001,
+    classic: 4001
   }
   dialogTitle.value = '添加用户'
   dialogVisible.value = true
@@ -361,8 +389,7 @@ const submitForm = async () => {
   await formRef.value.validate(async (valid: boolean) => {
     if (valid) {
       try {
-
-        const response = await request.post('/user/admin/add', userForm.value) as any
+        const response = (await request.post('/user/admin/add', userForm.value)) as any
         if (response.code === 200) {
           ElMessage.success(dialogTitle.value === '添加用户' ? '添加成功' : '更新成功')
           dialogVisible.value = false
@@ -388,14 +415,14 @@ const resetForm = () => {
     name: '',
     isDelete: 0,
     className: '',
-    classic: 4001,
+    classic: 4001
   }
   userFormEdit.value = {
     uid: '',
     name: '',
     roleId: 10003,
     className: '',
-    classic: 0,
+    classic: 0
   }
 }
 
@@ -411,19 +438,17 @@ const handleCurrentChange = (val: number) => {
   getUserList()
 }
 
-
-
 // Excel导入处理
 const handleExcelUpload = async (file: any) => {
   const formData = new FormData()
   formData.append('file', file.raw)
 
   try {
-    const response = await request.post('/user/admin/addByExcel', formData, {
+    const response = (await request.post('/user/admin/addByExcel', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
-    }) as any
+    })) as any
 
     if (response.code === 200) {
       ElMessage.success('批量导入成功')
@@ -437,11 +462,6 @@ const handleExcelUpload = async (file: any) => {
   }
 }
 
-
-
-
-
-
 // 添加筛选和搜索逻辑
 const filterUsers = computed(() => {
   let filteredList = [...users.value]
@@ -454,8 +474,8 @@ const filterUsers = computed(() => {
   // // 按关键词搜索
   // if (searchKeyword.value) {
   //   const keyword = searchKeyword.value.toLowerCase()
-  //   filteredList = filteredList.filter((user: any) => 
-  //     String(user.userName).includes(keyword) || 
+  //   filteredList = filteredList.filter((user: any) =>
+  //     String(user.userName).includes(keyword) ||
   //     String(user.uid).includes(keyword)
   //   )
   // }
@@ -464,13 +484,12 @@ const filterUsers = computed(() => {
 })
 const pageInfo = ref({
   pageStart: 1,
-  pageSize: 1000000, // 获取所有班级，设置一个较大的数值
-
+  pageSize: 1000000 // 获取所有班级，设置一个较大的数值
 })
 // 获取班级列表
 const getClassicList = async () => {
   try {
-    const res = await request.post('/classic/list', pageInfo.value) as any
+    const res = (await request.post('/classic/list', pageInfo.value)) as any
     if (res.code === 200) {
       classicList.value = res.data.list
     } else {
@@ -493,9 +512,6 @@ onMounted(() => {
   padding: 20px;
   min-height: 100vh;
   background: linear-gradient(135deg, #f6f8fc 0%, #f0f4f8 100%);
-
-
-
 }
 
 .user-wrapper {

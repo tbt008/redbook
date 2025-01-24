@@ -9,46 +9,86 @@ const userInfo = ref({})
 const router = useRouter()
 const loading = ref(true)
 const nowTheme = ref(false)
-const pageLoading = ref(true)
-import { ElMessage } from 'element-plus'
-const changeTheme = () => {
-  nowTheme.value = !nowTheme.value
-  if (nowTheme.value) {
-    bgStyle.value = '#121212'
-  } else bgStyle.value = '#F7F8FA'
-}
-const editorProfile = () => {
-  router.push('/profile/info')
-}
-const routerToHome = () => {
-  router.push('/problemset')
-}
+const editInfo = ref(false)
 
-const getStyleFollow = () => {
-  if (userInfo.value.followPerson === true) {
-    return 'backgroundColor: #EFF9F2, color: #2DB55D;'
-  } else {
-    return 'backgroundColor: #F2F2F2, color: #595959;'
-  }
+import { Plus } from '@element-plus/icons-vue'
+const onSubmit = () => {
+  request
+    .post('/user/update', {
+      nickName: form.nickName,
+      description: form.description,
+      email: form.email,
+      phoneNumber: form.phoneNumber
+    })
+    .then((res) => {
+      if (res.code === 200) {
+        ElMessage.success('更新成功')
+      } else {
+        ElMessage.warning(res.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.warning(err)
+    })
+  getUserInfo()
 }
-const followPersonFun = async () => {
-  let uid = window.location.pathname.split('/')[2]
-  if (userInfo.value.followPerson === true) {
-    userInfo.value.followPerson = false
-    let obj = {
-      friendId: uid,
-      isNotFollow: true
-    }
-    // let item = await followFriend(obj)
-  } else {
-    userInfo.value.followPerson = true
-    let obj = {
-      friendId: uid,
-      isNotFollow: false
-    }
-    // let item = await followFriend(obj)
-  }
+const handleAvatarSuccess = (response, uploadFile) => {
+  form.cover = uploadFile.url
 }
+const handleAvatarUpload = (file) => {
+  const data = new FormData()
+  var url = ''
+  data.append('file', file.raw)
+  request
+    .post('/oss/upload/user/avatar', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        form.cover = res.data.url
+        url = res.data.url
+
+        request
+          .post('/user/update/avatar', {
+            cover: url
+          })
+          .then((res1) => {
+            console.log(res1)
+            if (res1.code == 200) {
+              ElMessage.success('更新成功')
+            } else {
+              ElMessage.error(res1.msg)
+            }
+          })
+          .catch(() => {
+            ElMessage.error('更新失败')
+          })
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+}
+const beforeAvatarUpload = (rawFile) => {
+  console.log(rawFile)
+  if (rawFile.size / 1024 / 1024 > 2) {
+    ElMessage.error('Avatar picture size can not exceed 2MB!')
+    return false
+  }
+
+  return true
+}
+import { ElMessage } from 'element-plus'
+import { reactive } from 'vue'
+
+const form = reactive({
+  nickName: '',
+  description: '',
+  email: '',
+  phoneNumber: '',
+  cover: ''
+})
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
@@ -67,15 +107,23 @@ const getCodeRecord = () => {
       }
     })
 }
-onMounted(async () => {
+const getUserInfo = () => {
   request.get('/user/get/user').then((res) => {
     if (res.code == 200) {
       userInfo.value = res.data
+      form.nickName = res.data.nickName
+      form.email = res.data.email
+      form.description = res.data.description
+      form.phoneNumber = res.data.phoneNumber
+      form.cover = res.data.avatar
       loading.value = false
     } else {
       ElMessage.error('用户登录异常！')
     }
   })
+}
+onMounted(async () => {
+  getUserInfo()
 
   getCodeRecord()
 })
@@ -86,7 +134,7 @@ const handleSizeChange = async (val) => {
   currentPage.value = 1
   getCodeRecord()
 }
-
+const token = localStorage.getItem('authToken')
 // 当前页改变处理
 const handleCurrentChange = async (val) => {
   currentPage.value = val
@@ -136,40 +184,33 @@ const goToSubmissionDetail = (row) => {
       </div>
       <div class="bottom" :style="nowTheme === true ? 'filter: invert(100%);' : 'filter: none;'">
         <div class="bottom-left">
-          <div class="bottom-left-top"></div>
-
           <div class="bottom-left-middle">
             <el-skeleton :loading="loading" animated>
               <template #template>
                 <el-skeleton :rows="7"></el-skeleton>
               </template>
               <template #default>
-                <span v-if="userInfo.desription">个人简介</span>
-                {{ userInfo.desription }}
+                <div v-if="userInfo.description" style="font-size: 13px">个人简介:</div>
+
+                <span>{{ userInfo.description }}</span>
                 <div style="display: flex; position: relative; gap: 20px; align-items: center">
                   <svg
+                    t="1737706676789"
+                    class="icon"
+                    viewBox="0 0 1024 1024"
+                    version="1.1"
                     xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
+                    p-id="4413"
                     width="1em"
                     height="1em"
-                    fill="currentColor"
-                    class="w-[15px] h-[15px] text-label-2 dark:text-dark-label-2"
                   >
                     <path
-                      d="M6.486 5.5a.986.986 0 00-.986.986v7.596a.986.986 0 101.972 0V6.486a.986.986 0 00-.986-.986z"
-                    ></path>
-                    <path
-                      fill-rule="evenodd"
-                      d="M9.472 5.5a1 1 0 00-1 1v7.576a.992.992 0 101.984 0v-2.512h2.008c1.045 0 1.924-.225 2.545-.758.637-.546.919-1.34.919-2.286 0-.94-.279-1.729-.913-2.27-.62-.529-1.496-.75-2.539-.75H9.472zm.984 4.212v-2.36h1.96c.635 0 .995.125 1.199.3l.012.01.013.01c.166.124.304.364.304.848 0 .474-.134.734-.313.888-.21.172-.58.304-1.215.304h-1.96z"
-                      clip-rule="evenodd"
-                    ></path>
-                    <path
-                      fill-rule="evenodd"
-                      d="M20 10c0 5.523-4.477 10-10 10S0 15.523 0 10 4.477 0 10 0s10 4.477 10 10zm-2 0a8 8 0 11-16 0 8 8 0 0116 0z"
-                      clip-rule="evenodd"
+                      d="M815.25 80.23h-606.9c-111.86 0-202.87 91-202.87 202.88v470C5.48 865 96.5 956 208.35 956h606.89c111.87 0 202.88-91 202.88-202.88v-470c0.01-111.89-91-202.89-202.87-202.89zM706.43 449.74l213.14-229.11c11.03 18.34 17.76 39.56 17.76 62.49v379.13l-230.9-212.51z m108.82-288.71c14.84 0 28.89 3.05 42.06 7.92L511.79 540.34 166.3 168.95c13.17-4.87 27.22-7.92 42.05-7.92h606.9z m-711.21 59.6l213.13 229.11L86.28 662.25V283.12c0-22.92 6.73-44.15 17.76-62.49zM815.25 875.2h-606.9c-61.39 0-111.83-45.69-120.33-104.78l284.16-261.54 139.6 150.07L651.4 508.88l284.18 261.54c-8.5 59.09-58.95 104.78-120.33 104.78z"
+                      fill="#333333"
+                      p-id="4414"
                     ></path>
                   </svg>
-                  <span>{{ '地球🌏' }}</span>
+                  <span>{{ userInfo.email }}</span>
                 </div>
                 <div style="display: flex; position: relative; gap: 20px">
                   <svg
@@ -186,7 +227,7 @@ const goToSubmissionDetail = (row) => {
                       clip-rule="evenodd"
                     ></path>
                   </svg>
-                  <span>{{ '二次元⛱️' }}</span>
+                  <span>{{ userInfo.phoneNumber }}</span>
                 </div>
                 <div style="display: flex; position: relative; gap: 20px">
                   <svg
@@ -203,7 +244,7 @@ const goToSubmissionDetail = (row) => {
                       clip-rule="evenodd"
                     ></path>
                   </svg>
-                  <span>{{ '直升飞机✈️' }}</span>
+                  <span>{{ userInfo.sex == 0 ? '男' : '女' }}</span>
                 </div>
                 <div style="display: flex; position: relative; gap: 20px">
                   <svg
@@ -218,8 +259,9 @@ const goToSubmissionDetail = (row) => {
                       d="M13.465 3.862a3 3 0 00-2.957-.048L2.61 8.122a1 1 0 000 1.756L5 11.18v6.27c0 .59.26 1.15.74 1.491 1.216.86 3.75 2.409 6.26 2.409s5.044-1.548 6.26-2.409c.48-.34.74-.901.74-1.491v-6.27l1.4-.98v4.7a.9.9 0 101.8 0V9.572a1 1 0 00-.493-.862l-8.242-4.848zM18.82 9l-5.862 3.198a2 2 0 01-1.916 0L5.18 9l5.862-3.198a2 2 0 011.916 0L18.82 9zM17 16.687a.937.937 0 01-.413.788c-.855.565-2.882 1.774-4.587 1.774-1.705 0-3.732-1.209-4.587-1.774A.936.936 0 017 16.687V12.27l3.562 1.945a3 3 0 002.876 0L17 12.27v4.417z"
                     ></path>
                   </svg>
-                  <span>{{ '学园都市🏟️' }}</span>
+                  <span>{{ '莆田学院🏟️' }}</span>
                 </div>
+                <el-button type="primary" @click="editInfo = !editInfo" plain>编辑信息</el-button>
               </template>
             </el-skeleton>
           </div>
@@ -351,7 +393,41 @@ const goToSubmissionDetail = (row) => {
             </el-skeleton>
           </div>
         </div>
-        <div class="bottom-right">
+        <div v-if="editInfo" style="padding: 30px" class="updateInfo bottom-right">
+          <el-form :model="form" label-width="auto" style="max-width: 600px">
+            <el-form-item label="头像">
+              <el-upload
+                class="avatar-uploader"
+                :action="null"
+                :show-file-list="false"
+                :on-success="handleAvatarSuccess"
+                :before-upload="beforeAvatarUpload"
+                :on-change="handleAvatarUpload"
+              >
+                <img v-if="form.cover" :src="form.cover" class="avatar" />
+                <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+              </el-upload>
+            </el-form-item>
+            <el-form-item label="昵称">
+              <el-input v-model="form.nickName" />
+            </el-form-item>
+            <el-form-item label="邮箱">
+              <el-input v-model="form.email" />
+            </el-form-item>
+            <el-form-item label="手机号">
+              <el-input v-model="form.phoneNumber" />
+            </el-form-item>
+
+            <el-form-item label="个人简介">
+              <el-input v-model="form.description" type="textarea" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="onSubmit">保存</el-button>
+              <el-button @click="editInfo = !editInfo">取消</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+        <div v-else class="bottom-right">
           <personTop></personTop>
           <div class="t2">
             <personMiddle></personMiddle>
@@ -412,8 +488,49 @@ const goToSubmissionDetail = (row) => {
     </div>
   </div>
 </template>
+<style scoped>
+.avatar-uploader .avatar {
+  width: 178px;
+  height: 178px;
+  display: block;
+}
+</style>
 
+<style>
+.avatar-uploader .el-upload {
+  border: 1px dashed var(--el-border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: var(--el-transition-duration-fast);
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: var(--el-color-primary);
+}
+
+.el-icon.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 178px;
+  height: 178px;
+  text-align: center;
+}
+</style>
 <style lang="scss" scoped>
+.updateInfo {
+  padding: 30px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: white;
+  box-shadow: 0px 0px 5px 0px #e6e6e6;
+  border-radius: 15px;
+  height: 500px;
+}
+
 /* 题目标题样式 */
 .problem-title {
   color: #409eff;
@@ -548,7 +665,7 @@ const goToSubmissionDetail = (row) => {
           }
         }
         .bottom-left-middle {
-          padding: 0px 10px;
+          padding: 30px 10px;
           position: relative;
           display: flex;
           gap: 20px;
