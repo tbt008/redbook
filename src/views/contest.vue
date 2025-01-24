@@ -464,25 +464,9 @@ const getConstestList = async () => {
     })
 }
 
-// 获取即将开始的比赛
-const getNextContest = async () => {
-  let obj = {
-    status: -1, // 假设 -1 表示即将开始的比赛
-    pageStart: 1,
-    pageSize: 1
-  }
-  try {
-    const res = await request.post(`/contest/list`, obj)
-    if (res.code == 200 && res.data.list.length > 0) {
-      nextContest.value = res.data.list[0]
-    }
-  } catch (error) {
-    ElMessage.error(error)
-  }
-}
 
 onMounted(async () => {
-  await Promise.all([getConstestList(), getNextContest()])
+  await Promise.all([getConstestList()])
 })
 
 // 分页大小改变处理
