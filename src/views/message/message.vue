@@ -80,10 +80,11 @@ const getSystemMessages = async () => {
     try {
         const res = await request.get('/user/Notice/message/system')
         if (res.code === 200) {
-            // 处理返回的数据，添加 isRead 字段
             if (res.data != null) {
                 messages.value = res.data;
-                // console.log(messages.value) 
+
+                // 触发自定义事件通知未读消息数更新
+                window.dispatchEvent(new CustomEvent('updateUnreadCount'))
             }
         }
     } catch (error) {

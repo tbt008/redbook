@@ -163,6 +163,8 @@ onMounted(() => {
   loading.value = true
   if (localStorage.getItem('authToken')) {
     startPolling()
+    // 添加事件监听
+    window.addEventListener('updateUnreadCount', getUnreadCount)
   }
 })
 // 监听路由变化
@@ -295,6 +297,8 @@ onUnmounted(() => {
   if (pollTimer) {
     clearInterval(pollTimer)
   }
+  // 移除事件监听
+  window.removeEventListener('updateUnreadCount', getUnreadCount)
 })
 </script>
 
