@@ -3,127 +3,99 @@
     <!-- 主要内容区 -->
     <div class="main-content" v-loading="loading">
       <el-button @click="router.back()" class="back-button">
-        <el-icon><ArrowLeft /></el-icon>返回
+        <el-icon>
+          <ArrowLeft />
+        </el-icon>返回
       </el-button>
-      
+
       <div class="discussion-main" v-if="discussion">
         <!-- 文章头部 -->
         <div class="article-header">
           <h1 class="article-title">{{ discussion.title }}</h1>
           <div class="article-meta">
-            <el-tag 
-              :type="getArticleTypeTag(discussion.articleTypeName)"
-              size="small"
-              
-              class="article-type-tag"
-            >
+            <el-tag :type="getArticleTypeTag(discussion.articleTypeName)" size="small" class="article-type-tag">
               {{ discussion.articleTypeName }}
             </el-tag>
             <div class="author-info">
-              <el-avatar :size="32" :src="discussion.avatar"/>
+              <el-avatar :size="32" :src="discussion.avatar" />
               <span class="author-name">{{ discussion.userId }}</span>
               <span class="publish-time">发布于 {{ formatDateArray(discussion.createTime) }}</span>
               <div class="article-operations" v-if="discussion?.userId?.toString() === isAuthor?.toString()">
                 <el-button type="primary" size="small" @click="handleEdit">
-                  <el-icon><Edit /></el-icon>
+                  <el-icon>
+                    <Edit />
+                  </el-icon>
                   编辑
                 </el-button>
                 <el-button type="danger" size="small" @click="handleDelete">
-                  <el-icon><Delete /></el-icon>
+                  <el-icon>
+                    <Delete />
+                  </el-icon>
                   删除
                 </el-button>
               </div>
             </div>
           </div>
         </div>
-      <!-- 编辑文章对话框 -->
-      <el-drawer
-        v-model="disabled"
-        title="编辑文章"
-        size="100%"
-        :with-header="false"
-        direction="ttb"
-        class="publish-drawer"
-      >
-        <div class="publish-container">
-          <el-form :model="newArticle" :rules="rules" ref="formRef" class="publish-form">
-            <el-form-item label="标题" prop="title">
-              <el-input v-model="newArticle.title" placeholder="请输入标题"></el-input>
-            </el-form-item>
-            
-            <el-form-item label="文章类型" prop="articleTypeName">
-              <el-select 
-                v-model="newArticle.articleTypeName" 
-                placeholder="请选择文章类型" 
-                style="width: 100%"
-                @change="handleArticleTypeChange"
-              >
-                <el-option
-                  v-for="type in articleTypes"
-                  :key="type.value"
-                  :label="type.label"
-                  :value="type.value"
-                />
-              </el-select>
-            </el-form-item>
+        <!-- 编辑文章对话框 -->
+        <el-drawer v-model="disabled" title="编辑文章" size="100%" :with-header="false" direction="ttb"
+          class="publish-drawer">
+          <div class="publish-container">
+            <el-form :model="newArticle" :rules="rules" ref="formRef" class="publish-form">
+              <el-form-item label="标题" prop="title">
+                <el-input v-model="newArticle.title" placeholder="请输入标题"></el-input>
+              </el-form-item>
 
-            <el-form-item label="内容" prop="content">
-              <div class="editor-container">
-                <mavon-editor
-                  v-model="newArticle.content"
-                  class="md-editor"
-                  ref="mavonEditorRef"
-                  :ishljs="true"
-                  :toolbars="toolbars"
-                  @change="handleEditorChange"
-                  :boxShadow="false"
-                />
-              </div>
-            </el-form-item>
+              <el-form-item label="文章类型" prop="articleTypeName">
+                <el-select v-model="newArticle.articleTypeName" placeholder="请选择文章类型" style="width: 100%"
+                  @change="handleArticleTypeChange">
+                  <el-option v-for="type in articleTypes" :key="type.value" :label="type.label" :value="type.value" />
+                </el-select>
+              </el-form-item>
 
-            <el-form-item class="publish-actions">
-              <el-button @click="disabled = false">取消</el-button>
-              <el-button type="primary" @click="editArticle">修改</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
-      </el-drawer>
+              <el-form-item label="内容" prop="content">
+                <div class="editor-container">
+                  <mavon-editor v-model="newArticle.content" class="md-editor" ref="mavonEditorRef" :ishljs="true"
+                    :toolbars="toolbars" @change="handleEditorChange" :boxShadow="false" />
+                </div>
+              </el-form-item>
+
+              <el-form-item class="publish-actions">
+                <el-button @click="disabled = false">取消</el-button>
+                <el-button type="primary" @click="editArticle">修改</el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+        </el-drawer>
         <!-- 文章内容 -->
         <div class="article-content markdown-body">
-          <mavon-editor
-            v-model="discussion.content"
-            :subfield="false"
-            :defaultOpen="'preview'"
-            :toolbarsFlag="false"
-            :editable="false"
-            :scrollStyle="true"
-            :ishljs="true"
-          />
+          <mavon-editor v-model="discussion.content" :subfield="false" :defaultOpen="'preview'" :toolbarsFlag="false"
+            :editable="false" :scrollStyle="true" :ishljs="true" />
         </div>
 
         <!-- 文章底部操作栏 -->
         <div class="article-actions">
           <div class="action-buttons">
             <div class="interaction-buttons">
-              <button 
-                class="interaction-btn like-btn" 
-                :class="{ 'active': discussion.isLiked }"
-                @click="handleLike($event, discussion)"
-              >
-                <el-icon><Pointer /></el-icon>
+              <button class="interaction-btn like-btn" :class="{ 'active': discussion.isLiked }"
+                @click="handleLike($event, discussion)">
+                <el-icon>
+                  <Pointer />
+                </el-icon>
                 <span>{{ discussion.likeNum }}</span>
               </button>
-              <button 
-                class="interaction-btn favorite-btn" 
-                :class="{ 'active': discussion.isFavorited }"
-                @click="handleFavorite($event, discussion)"
-              >
-                <el-icon><Star /></el-icon>
+              <button class="interaction-btn favorite-btn" :class="{ 'active': discussion.isFavorited }"
+                @click="handleFavorite($event, discussion)">
+                <el-icon>
+                  <Star />
+                </el-icon>
                 <span>{{ discussion.favourNum }}</span>
               </button>
             </div>
             <span class="view-count">
-              <el-icon><View /></el-icon>
+              <el-icon>
+                <View />
+              </el-icon>
               {{ discussion.articleReads }}次浏览
             </span>
           </div>
@@ -132,16 +104,11 @@
         <!-- 评论区 -->
         <div class="comments-section">
           <h3>评论 ({{ discussion.comments?.length || 0 }})</h3>
-          
+
           <!-- 评论输入框 -->
           <div class="comment-input">
-            <mavon-editor
-              v-model="newComment"
-              class="comment-editor"
-              :toolbars="commentToolbars"
-              :boxShadow="false"
-              placeholder="写下你的评论..."
-            />
+            <mavon-editor v-model="newComment" class="comment-editor" :toolbars="commentToolbars" :boxShadow="false"
+              placeholder="写下你的评论..." />
             <el-button type="primary" @click="submitComment" :disabled="!newComment.trim()">
               发表评论
             </el-button>
@@ -151,64 +118,49 @@
           <div class="comments-list">
             <el-card v-for="comment in discussion.comments" :key="comment.id" class="comment-item">
               <div class="comment-header">
-                <el-avatar :size="32" :src="comment.avatar"/>
+                <el-avatar :size="32" :src="comment.avatar" />
                 <div class="comment-info">
                   <span class="comment-author">{{ comment.userId }}</span>
                   <span class="comment-time">{{ formatDateArray(comment.createTime) }}</span>
                 </div>
 
                 <!-- 添加删除按钮 -->
-                 <!-- 如果是作者是用户或者评论作者是用户则可以删除 -->
-                <el-button 
+                <!-- 如果是作者是用户或者评论作者是用户则可以删除 -->
+                <el-button
                   v-if="isAuthor?.toString() === comment.userId?.toString() || isAuthor?.toString() === discussion?.userId?.toString()"
-                  type="danger" 
-                  size="small"
-                  class="delete-comment-btn"
-                  @click="handleDeleteComment(comment.id)"
-                >
-                  <el-icon><Delete /></el-icon>
+                  type="danger" size="small" class="delete-comment-btn" @click="handleDeleteComment(comment.id)">
+                  <el-icon>
+                    <Delete />
+                  </el-icon>
                 </el-button>
               </div>
-              
+
               <div class="comment-content markdown-body">
-                <mavon-editor
-                  v-model="comment.content"
-                  :subfield="false"
-                  :defaultOpen="'preview'"
-                  :toolbarsFlag="false"
-                  :editable="false"
-                  :scrollStyle="true"
-                  :ishljs="true"
-                />
+                <mavon-editor v-model="comment.content" :subfield="false" :defaultOpen="'preview'" :toolbarsFlag="false"
+                  :editable="false" :scrollStyle="true" :ishljs="true" />
               </div>
-              
+
               <div class="comment-divider"></div>
-              
+
               <div class="comment-footer">
                 <div class="comment-actions">
                   <!-- 左侧查看回复按钮 -->
                   <div class="left-actions">
-                    <el-button 
-                      type="text" 
-                      size="small" 
-                      @click="toggleReplies(comment)"
-                      class="view-replies-button"
-                      v-if="comment.children && comment.children.length > 0"
-                    >
-                      <el-icon><ArrowDown :class="{ 'rotate': showRepliesMap[comment.id] }" /></el-icon>
+                    <el-button type="text" size="small" @click="toggleReplies(comment)" class="view-replies-button"
+                      v-if="comment.children && comment.children.length > 0">
+                      <el-icon>
+                        <ArrowDown :class="{ 'rotate': showRepliesMap[comment.id] }" />
+                      </el-icon>
                       {{ showRepliesMap[comment.id] ? '收起' : `${comment.children.length}条回复` }}
                     </el-button>
                   </div>
-                  
+
                   <!-- 右侧固定的发表回复按钮 -->
                   <div class="right-actions">
-                    <el-button 
-                      type="text" 
-                      size="small" 
-                      @click="showReplyInput(comment)"
-                      class="create-reply-button"
-                    >
-                      <el-icon><ChatLineRound /></el-icon>
+                    <el-button type="text" size="small" @click="showReplyInput(comment)" class="create-reply-button">
+                      <el-icon>
+                        <ChatLineRound />
+                      </el-icon>
                       回复
                     </el-button>
                   </div>
@@ -219,51 +171,37 @@
                   <div class="reply-to">
                     回复 <span class="reply-target">@{{ replyToUser }}</span>
                   </div>
-                  <mavon-editor
-                    v-model="replyContent"
-                    class="reply-editor"
-                    :toolbars="commentToolbars"
-                    :boxShadow="false"
-                    placeholder="写下你的回复..."
-                  />
+                  <mavon-editor v-model="replyContent" class="reply-editor" :toolbars="commentToolbars"
+                    :boxShadow="false" placeholder="写下你的回复..." />
                   <div class="reply-actions">
                     <el-button size="small" @click="cancelReply">取消</el-button>
-                    <el-button 
-                      type="primary" 
-                      size="small" 
-                      @click="submitReply(comment)" 
-                      :disabled="!replyContent.trim()"
-                    >
+                    <el-button type="primary" size="small" @click="submitReply(comment)"
+                      :disabled="!replyContent.trim()">
                       回复
                     </el-button>
                   </div>
                 </div>
 
                 <!-- 回复列表 -->
-                <div v-if="showRepliesMap[comment.id] && comment.children && comment.children.length > 0" class="reply-list">
+                <div v-if="showRepliesMap[comment.id] && comment.children && comment.children.length > 0"
+                  class="reply-list">
                   <div v-for="reply in comment.children" :key="reply.id" class="reply-item">
                     <div class="reply-header">
-                      <el-avatar :size="24" :src="reply.avatar"/>
+                      <el-avatar :size="24" :src="reply.avatar" />
                       <span class="reply-author">{{ reply.userId }}</span>
                       <span class="reply-time">{{ formatDateArray(reply.createTime) }}</span>
-                      
+
                       <!-- 调整按钮顺序 -->
                       <div class="reply-header-actions">
-                        <el-button 
-                          type="text" 
-                          size="small" 
-                          @click="showReplyInput(reply)"
-                        >
+                        <el-button type="text" size="small" @click="showReplyInput(reply)">
                           回复
                         </el-button>
-                        <el-button 
+                        <el-button
                           v-if="isAuthor?.toString() === reply.userId?.toString() || isAuthor?.toString() === discussion?.userId?.toString()"
-                          type="danger" 
-                          size="small"
-                          class="delete-comment-btn"
-                          @click="handleDeleteComment(reply.id)"
-                        >
-                          <el-icon><Delete /></el-icon>
+                          type="danger" size="small" class="delete-comment-btn" @click="handleDeleteComment(reply.id)">
+                          <el-icon>
+                            <Delete />
+                          </el-icon>
                         </el-button>
                       </div>
                     </div>
@@ -271,36 +209,20 @@
                       <template v-if="reply.parentId !== reply.rootId">
                         回复 <span class="reply-target">@{{ comment.userId }}</span>：
                       </template>
-                      <mavon-editor
-                        v-model="reply.content"
-                        :subfield="false"
-                        :defaultOpen="'preview'"
-                        :toolbarsFlag="false"
-                        :editable="false"
-                        :scrollStyle="true"
-                        :ishljs="true"
-                      />
+                      <mavon-editor v-model="reply.content" :subfield="false" :defaultOpen="'preview'"
+                        :toolbarsFlag="false" :editable="false" :scrollStyle="true" :ishljs="true" />
                     </div>
                     <!-- 回复的回复输入框 -->
                     <div v-if="activeReplyId === reply.id" class="nested-reply-input">
                       <div class="reply-to">
                         回复 <span class="reply-target">@{{ replyToUser }}</span>
                       </div>
-                      <mavon-editor
-                        v-model="replyContent"
-                        class="reply-editor"
-                        :toolbars="commentToolbars"
-                        :boxShadow="false"
-                        placeholder="写下你的回复..."
-                      />
+                      <mavon-editor v-model="replyContent" class="reply-editor" :toolbars="commentToolbars"
+                        :boxShadow="false" placeholder="写下你的回复..." />
                       <div class="reply-actions">
                         <el-button size="small" @click="cancelReply">取消</el-button>
-                        <el-button 
-                          type="primary" 
-                          size="small" 
-                          @click="submitReply(reply)" 
-                          :disabled="!replyContent.trim()"
-                        >
+                        <el-button type="primary" size="small" @click="submitReply(reply)"
+                          :disabled="!replyContent.trim()">
                           回复
                         </el-button>
                       </div>
@@ -324,7 +246,7 @@
           </div>
         </template>
         <div class="author-profile" v-if="discussion">
-          <el-avatar :size="64" :src="discussion.avatar"/>
+          <el-avatar :size="64" :src="discussion.avatar" />
           <h3>{{ discussion.userId }}</h3>
           <div class="author-stats">
             <div class="stat-item">
@@ -347,7 +269,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { View, Star, Pointer, ArrowLeft, Edit, Delete, ChatLineRound, ArrowDown } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
-import request from '@/util/request' 
+import request from '@/util/request'
 const route = useRoute()
 const router = useRouter()
 const loading = ref<boolean>(true)
@@ -398,7 +320,7 @@ const toolbars = {
   table: true,
   fullscreen: true,
   readmodel: true,
-  htmlcode: true, 
+  htmlcode: true,
   undo: true,
   redo: true,
   trash: true,
@@ -413,7 +335,7 @@ const toolbars = {
 const newArticle = reactive({
   title: '',
   content: '',
-  articleTypeName: '', 
+  articleTypeName: '',
   articleType: 0,
   likeNum: 0,
   favourNum: 0,
@@ -439,14 +361,14 @@ const handleArticleTypeChange = (value: number) => {
 // 编辑文章
 const editArticle = async () => {
   try {
-    if (!formRef.value) { 
+    if (!formRef.value) {
       ElMessage.error('表单初始化失败,请刷新页面重试')
       return
     }
     // formRef.value.validate() 是 Element Plus 表单组件提供的验证方法，
     // 它会根据之前定义的 rules 规则来验证表单中的所有字段。
     await formRef.value.validate()
-    
+
     const response = await request.post('/article/update', {
       id: discussion.value?.id, // 使用当前文章的ID
       title: newArticle.title,
@@ -468,9 +390,9 @@ const editArticle = async () => {
     }
   } catch (error) {
     console.error('编辑文章失败:', error)
-    ElMessage.error(error|| '编辑文章失败')
+    ElMessage.error(error || '编辑文章失败')
   }
-} 
+}
 // 处理编辑按钮点击
 const handleEdit = () => {
   // 填充表单数据
@@ -481,7 +403,7 @@ const handleEdit = () => {
     newArticle.articleType = discussion.value.articleType
     newArticle.sourceId = Number(discussion.value.id)
   }
-  disabled.value = true 
+  disabled.value = true
 }
 // 格式化日期
 const formatDate = (dateString: string): string => {
@@ -539,14 +461,14 @@ const getDiscussionDetail = async () => {
         'auth-token': `Bearer ${token}`
       }
     }) as any
-    
+
     if (response.code === 200) {
       // 转换评论数据为树形结构
       const articleData = response.data
       if (articleData.comments) {
         articleData.comments = transformComments(articleData.comments)
       }
-      discussion.value = articleData 
+      discussion.value = articleData
     } else {
       ElMessage.error(response.msg || '获取文章详情失败')
     }
@@ -558,10 +480,10 @@ const getDiscussionDetail = async () => {
   }
 }
 
- 
+
 const submitComment = async () => {
   if (!newComment.value.trim() || !discussion.value) return
-  
+
   try {
     const commentData = {
       articleId: discussion.value.id,
@@ -614,7 +536,7 @@ const handleLike = async (event: Event, item: Article) => {
     if (response.code === 200) {
       // 更新文章的点赞状态和数量
       getAuthorStats()
-      item.isLiked = !item.isLiked 
+      item.isLiked = !item.isLiked
       item.likeNum = item.isLiked ? item.likeNum + 1 : item.likeNum - 1
       ElMessage.success(item.isLiked ? '点赞成功' : '取消点赞成功')
     } else {
@@ -639,7 +561,7 @@ const handleFavorite = async (event: Event, item: Article) => {
       getAuthorStats()
       // 更新文章的收藏状态和数量 
       item.isFavorited = !item.isFavorited
-      isFavorited.value=item.isFavorited
+      isFavorited.value = item.isFavorited
       item.favourNum = item.isFavorited ? item.favourNum + 1 : item.favourNum - 1
       ElMessage.success(item.isFavorited ? '收藏成功' : '取消收藏成功')
     } else {
@@ -653,9 +575,9 @@ const handleFavorite = async (event: Event, item: Article) => {
 
 // 获取作者统计数据的方法
 const getAuthorStats = async () => {
-  
-  const uid=localStorage.getItem('uid')
-  const id=localStorage.getItem('id')
+
+  const uid = localStorage.getItem('uid')
+  const id = localStorage.getItem('id')
 
   try {
     const response = await request.get(`/article/user/list/${discussion.value?.userId}`, {
@@ -664,14 +586,14 @@ const getAuthorStats = async () => {
     if (response.code === 200) {
       // 设置文章总数
       authorStats.articles = response.data.length
-      
+
       // 计算总获赞数
       authorStats.totalLikes = response.data.reduce((sum: number, article: any) => {
         return sum + (article.likeNum || 0)
       }, 0)
-      console.log(response.data.length)
+      // console.log(response.data.length)
     }
-    else{
+    else {
       // 获取作者统计数据失败时，将文章总数和总获赞数设置为null
       authorStats.articles = "null"
       authorStats.totalLikes = "null"
@@ -690,7 +612,7 @@ const getCurrentUser = async () => {
         'auth-token': `Bearer ${token}`
       }
     }) as any
-    
+
     if (response.code === 200) {
       currentUser.value = response.data
 
@@ -710,7 +632,7 @@ const handleDelete = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     const response = await request.delete(`/article/delete/${discussion.value?.id}`, {
       headers: {
         'auth-token': `Bearer ${token}`
@@ -723,7 +645,7 @@ const handleDelete = async () => {
     } else {
       ElMessage.error(response.msg || '删除文章失败')
     }
-    
+
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除文章失败:', error)
@@ -740,7 +662,7 @@ const handleDeleteComment = async (commentId: number) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     const response = await request.delete(`/article/comment/delete/${commentId}`, {
       headers: {
         'auth-token': `Bearer ${token}`
@@ -783,7 +705,7 @@ const cancelReply = () => {
 // 修改提交回复的方法
 const submitReply = async (comment: Comment) => {
   if (!replyContent.value.trim()) return
-  
+
   try {
     const replyData = {
       articleId: discussion.value?.id,
@@ -815,7 +737,7 @@ const submitReply = async (comment: Comment) => {
 // 响应式数据
 const showRepliesMap = reactive<Record<number, boolean>>({})
 
- 
+
 const toggleReplies = (comment: { id: number }) => {
   showRepliesMap[comment.id] = !showRepliesMap[comment.id]
 }
@@ -865,14 +787,17 @@ onMounted(async () => {
   width: 100%;
   border: 1px solid #ddd;
 }
+
 .md-editor {
   z-index: 3000;
   height: 100% !important;
 }
+
 .publish-actions {
   margin-top: 20px;
   text-align: right;
 }
+
 .page-container {
   display: flex;
   gap: 24px;
@@ -1169,7 +1094,8 @@ onMounted(async () => {
 
 :deep(.v-note-wrapper .v-note-panel .v-note-edit .v-note-edit-content),
 :deep(.v-note-wrapper .v-note-panel .v-note-show .v-show-content) {
-  height: calc(100% - 40px) !important;  /* 减去工具栏的高度 */
+  height: calc(100% - 40px) !important;
+  /* 减去工具栏的高度 */
   overflow-y: auto !important;
 }
 
@@ -1178,6 +1104,7 @@ onMounted(async () => {
   padding: 0;
   overflow: hidden;
 }
+
 .publish-drawer :deep(.el-drawer__body) {
   padding: 0;
 }
@@ -1189,13 +1116,14 @@ onMounted(async () => {
   background-color: #fff;
   overflow-y: auto;
 }
- 
+
 /* 确保表单容器不会限制编辑器的全屏显示 */
 .publish-form {
   max-width: 1200px;
   margin: 0 auto;
   position: relative;
 }
+
 .publish-form :deep(.el-form-item__label) {
   font-weight: bold;
 }
@@ -1245,7 +1173,7 @@ onMounted(async () => {
 
 .delete-comment-btn {
   margin-left: auto;
-  padding: 4px 8px; 
+  padding: 4px 8px;
 }
 
 .comment-actions {
@@ -1451,10 +1379,8 @@ onMounted(async () => {
 /* 修改评论内容的左边距 */
 .comment-content :deep(.v-show-content),
 .reply-content :deep(.v-show-content) {
-  padding: 0 0 0 16px !important; /* 添加左边距 16px */
+  padding: 0 0 0 16px !important;
+  /* 添加左边距 16px */
   background-color: transparent !important;
 }
-
 </style>
-
-

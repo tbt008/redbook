@@ -12,18 +12,17 @@
       </div>
 
       <!-- AI 模型选择菜单 -->
-      <el-menu
-        :default-active="selectedAI"
-        class="el-menu-vertical"
-        :collapse="isCollapse"
-        @select="selectAI"
-      >
+      <el-menu :default-active="selectedAI" class="el-menu-vertical" :collapse="isCollapse" @select="selectAI">
         <el-menu-item index="智谱清言">
-          <el-icon><ChatDotRound /></el-icon>
+          <el-icon>
+            <ChatDotRound />
+          </el-icon>
           <template #title>智谱清言</template>
         </el-menu-item>
         <el-menu-item index="讯飞星火">
-          <el-icon><ChatLineRound /></el-icon>
+          <el-icon>
+            <ChatLineRound />
+          </el-icon>
           <template #title>讯飞星火</template>
         </el-menu-item>
       </el-menu>
@@ -35,11 +34,15 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="light" :class="{ 'is-active': !isDarkMode }">
-                <el-icon><Sunny /></el-icon>
+                <el-icon>
+                  <Sunny />
+                </el-icon>
                 <span>日间模式</span>
               </el-dropdown-item>
               <el-dropdown-item command="dark" :class="{ 'is-active': isDarkMode }">
-                <el-icon><Moon /></el-icon>
+                <el-icon>
+                  <Moon />
+                </el-icon>
                 <span>夜间模式</span>
               </el-dropdown-item>
             </el-dropdown-menu>
@@ -55,21 +58,12 @@
       <el-header class="header">
         <div class="header-left">
           <span class="header-title">{{ selectedAI }}</span>
-          <el-button 
-            type="primary" 
-            size="small" 
-            @click="goHome" 
-            :icon="Back"
-            class="home-button"
-            plain
-            round
-          >
+          <el-button type="primary" size="small" @click="goHome" :icon="Back" class="home-button" plain round>
             返回首页
           </el-button>
         </div>
         <div class="header-buttons">
-          <el-button type="danger" size="small" @click="deleteChat" :icon="Delete" plain
-          round>
+          <el-button type="danger" size="small" @click="deleteChat" :icon="Delete" plain round>
             清空聊天记录
           </el-button>
         </div>
@@ -83,20 +77,12 @@
           <div v-if="showWelcome && messages['智谱清言'].length === 0" class="welcome-message">
             欢迎使用 PTUCODE AI 聊天应用
           </div>
-          
-          <div
-            v-for="(message, index) in messages['智谱清言']"
-            :key="index"
-            :class="['message-item', message.role === 'user' ? 'message-user' : '']"
-          >
+
+          <div v-for="(message, index) in messages['智谱清言']" :key="index"
+            :class="['message-item', message.role === 'user' ? 'message-user' : '']">
             <!-- AI消息布局 -->
             <template v-if="message.role === 'ai'">
-              <el-avatar 
-                :size="40" 
-                :src="getAiAvatar" 
-                class="avatar clickable" 
-                @click="showImageViewer(getAiAvatar)" 
-              />
+              <el-avatar :size="40" :src="getAiAvatar" class="avatar clickable" @click="showImageViewer(getAiAvatar)" />
               <div class="message-bubble ai-bubble" v-html="formatMessage(message.content)"></div>
             </template>
 
@@ -106,12 +92,7 @@
                 <div class="message-bubble user-bubble preserve-whitespace">
                   {{ message.content }}
                 </div>
-                <el-avatar 
-                  :size="40" 
-                  :src="userAvatar" 
-                  class="avatar clickable" 
-                  @click="showImageViewer(userAvatar)" 
-                />
+                <el-avatar :size="40" :src="userAvatar" class="avatar clickable" @click="showImageViewer(userAvatar)" />
               </div>
             </template>
           </div>
@@ -131,20 +112,12 @@
           <div v-if="showWelcome && messages['讯飞星火'].length === 0" class="welcome-message">
             欢迎使用 PTUCODE AI 聊天应用
           </div>
-          
-          <div
-            v-for="(message, index) in messages['讯飞星火']"
-            :key="index"
-            :class="['message-item', message.role === 'user' ? 'message-user' : '']"
-          >
+
+          <div v-for="(message, index) in messages['讯飞星火']" :key="index"
+            :class="['message-item', message.role === 'user' ? 'message-user' : '']">
             <!-- AI消息布局 -->
             <template v-if="message.role === 'ai'">
-              <el-avatar 
-                :size="40" 
-                :src="getAiAvatar" 
-                class="avatar clickable" 
-                @click="showImageViewer(getAiAvatar)" 
-              />
+              <el-avatar :size="40" :src="getAiAvatar" class="avatar clickable" @click="showImageViewer(getAiAvatar)" />
               <div class="message-bubble ai-bubble" v-html="formatMessage(message.content)"></div>
             </template>
 
@@ -154,12 +127,7 @@
                 <div class="message-bubble user-bubble preserve-whitespace">
                   {{ message.content }}
                 </div>
-                <el-avatar 
-                  :size="40" 
-                  :src="userAvatar" 
-                  class="avatar clickable" 
-                  @click="showImageViewer(userAvatar)" 
-                />
+                <el-avatar :size="40" :src="userAvatar" class="avatar clickable" @click="showImageViewer(userAvatar)" />
               </div>
             </template>
           </div>
@@ -176,23 +144,11 @@
         <!-- 输入区域 -->
         <div class="input-section">
           <div class="input-wrapper">
-            <el-input
-              v-model="userMessage"
-              type="textarea"
-              :autosize="{ minRows: 3, maxRows: 6 }"
-              placeholder="请输入消息..."
-              resize="none"
-              @keyup.enter.exact="sendMessage"
-              class="custom-input"
-              :disabled="isLoading[selectedAI]"
-            />
-            <el-button
-              type="primary"
-              :icon="Position"
-              class="send-button"
-              @click="sendMessage"
-              :disabled="!userMessage.trim() || isLoading[selectedAI]"
-            >
+            <el-input v-model="userMessage" type="textarea" :autosize="{ minRows: 3, maxRows: 6 }"
+              placeholder="请输入消息..." resize="none" @keyup.enter.exact="sendMessage" class="custom-input"
+              :disabled="isLoading[selectedAI]" />
+            <el-button type="primary" :icon="Position" class="send-button" @click="sendMessage"
+              :disabled="!userMessage.trim() || isLoading[selectedAI]">
               发送
             </el-button>
           </div>
@@ -202,11 +158,7 @@
   </el-container>
 
   <!-- 添加图片查看器组件 -->
-  <el-image-viewer
-    v-if="showViewer"
-    :url-list="[currentImage]"
-    @close="showViewer = false"
-  />
+  <el-image-viewer v-if="showViewer" :url-list="[currentImage]" @close="showViewer = false" />
 </template>
 
 <script setup lang="ts">
@@ -232,7 +184,7 @@ const router = useRouter()
 const defaultAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
 // 替换原来的 userAvatar 常量定义
 const userAvatar = computed(() => {
-  console.log(localStorage.getItem('avatar'))
+  // console.log(localStorage.getItem('avatar'))
   return localStorage.getItem('avatar') || defaultAvatar
 })
 // const aiAvatar = new URL('../views/imgs/usagi_avatar.png', import.meta.url).href
@@ -303,7 +255,7 @@ const updateBackground = (aiType: string) => {
       messagesEl.style.backgroundSize = 'cover'
       messagesEl.style.backgroundPosition = 'center'
     }
-    
+
     if (currentBgIndex.value[aiType] === 1) {
       img.src = usagiAvatar
       messagesEl.style.backgroundImage = `url(${usagiAvatar})`
@@ -356,9 +308,9 @@ const sendMessage = async (e?: KeyboardEvent) => {
       uid: uid,
       content: messageContent,
       ai: currentAI
-    },{
-      timeout:300000
-    })as any
+    }, {
+      timeout: 300000
+    }) as any
 
     if (response.code === 200) {
       messages.value[currentAI].push({
@@ -371,7 +323,7 @@ const sendMessage = async (e?: KeyboardEvent) => {
     } else {
       messages.value[currentAI].push({
         role: 'ai',
-        content: `错误: ${response.msg|| '未知错误'}`,
+        content: `错误: ${response.msg || '未知错误'}`,
         isNew: true
       })
       ElMessage.error(response.msg || '请求失败')
@@ -404,7 +356,7 @@ const deleteChat = async () => {
 
     const response = await request.delete('/AI/delete', {
       data: deleteDto
-    })as any
+    }) as any
 
     if (response.code === 200) {
       messages.value[selectedAI.value] = []
@@ -412,7 +364,7 @@ const deleteChat = async () => {
       localStorage.setItem('aiMessages', JSON.stringify(messages.value))
       ElMessage.success('聊天记录已清空')
     } else {
-      ElMessage.error(response.data|| '删除失败')
+      ElMessage.error(response.data || '删除失败')
     }
   } catch (error) {
     ElMessage.error('删除请求失败')
@@ -423,7 +375,7 @@ const deleteChat = async () => {
 const handleThemeChange = (command: string) => {
   isDarkMode.value = command === 'dark'
   const container = document.querySelector('.layout-container')
-  
+
   if (isDarkMode.value) {
     container?.classList.add('dark')
   } else {
@@ -436,24 +388,24 @@ const handleThemeChange = (command: string) => {
 // 在组件挂载时初始化主题
 onMounted(() => {
   initDarkMode()
-  
+
   // 从 localStorage 加载历史消息
   const savedMessages = localStorage.getItem('aiMessages')
   if (savedMessages) {
     messages.value = JSON.parse(savedMessages)
   }
-  
+
   // 从 localStorage 恢复主题状态
   const savedThemes = localStorage.getItem('aiThemes')
   if (savedThemes) {
     const { useCustomBg: savedCustomBg, currentBgIndex: savedBgIndex } = JSON.parse(savedThemes)
     useCustomBg.value = savedCustomBg
     currentBgIndex.value = savedBgIndex
-    
+
     // 应用保存的主题
     // const messagesEl = document.querySelector('.messages') as HTMLElement
     const currentAI = selectedAI.value
-    
+
     // if (useCustomBg.value[currentAI]) {
     //   if (currentBgIndex.value[currentAI] === 1) {
     //     messagesEl.style.backgroundImage = `url(${usagiAvatar})`
@@ -469,15 +421,15 @@ onMounted(() => {
 const showInfo = () => {
   ElMessageBox.alert(
     `欢迎使用 PTUCODE AI 聊天应用！<br><br>` +
-      `使用指南：<br>` +
-      `• 点击左上角的<strong>AI Chat</strong>可快速回到首页<br>`+
-      `• 智谱清言和讯飞星火两种对话模型<br>` +
-      `• 在左侧可以切换不同的 AI 模型<br>` +
-      `• 按 Enter 键快速发送消息<br>` +
-      `• Shift + Enter 换行<br>` +
-      `• 支持清空聊天记录<br>` +
-      `• 支持日间/夜间模式切换<br>` +
-      `• <strong>有其他问题请联系管理员</strong> •`,
+    `使用指南：<br>` +
+    `• 点击左上角的<strong>AI Chat</strong>可快速回到首页<br>` +
+    `• 智谱清言和讯飞星火两种对话模型<br>` +
+    `• 在左侧可以切换不同的 AI 模型<br>` +
+    `• 按 Enter 键快速发送消息<br>` +
+    `• Shift + Enter 换行<br>` +
+    `• 支持清空聊天记录<br>` +
+    `• 支持日间/夜间模式切换<br>` +
+    `• <strong>有其他问题请联系管理员</strong> •`,
     '使用说明',
     {
       confirmButtonText: 'OK',
@@ -489,7 +441,7 @@ const showInfo = () => {
   )
 }
 
- 
+
 const showViewer = ref(false)
 const currentImage = ref('')
 
@@ -511,14 +463,14 @@ const getAiAvatar = computed(() => {
 // const toggleTheme = () => {
 //   const messagesEl = document.querySelector('.messages') as HTMLElement
 //   const currentAI = selectedAI.value
-  
+
 //   if (!useCustomBg.value[currentAI]) {
 //     useCustomBg.value[currentAI] = true
 //     currentBgIndex.value[currentAI] = 0
 //   } 
-  
+
 //   currentBgIndex.value[currentAI] = (currentBgIndex.value[currentAI] + 1) % 3
-  
+
 //   if (currentBgIndex.value[currentAI] === 0) {
 //     useCustomBg.value[currentAI] = false
 //     messagesEl.style.backgroundImage = 'none'
@@ -527,7 +479,7 @@ const getAiAvatar = computed(() => {
 //   } else {
 //     messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
 //   }
-  
+
 //   if (useCustomBg.value[currentAI]) {
 //     messagesEl.style.backgroundSize = 'cover'
 //     messagesEl.style.backgroundPosition = 'center'
@@ -563,9 +515,12 @@ const showWelcome = ref(true)
 }
 
 .layout-container {
-  height: 100vh; /* 占满整个视口高度 */
-  width: 100vw; /* 占满整个视口宽度 */
-  position: fixed; /* 固定定位，防止页面滚动 */
+  height: 100vh;
+  /* 占满整个视口高度 */
+  width: 100vw;
+  /* 占满整个视口宽度 */
+  position: fixed;
+  /* 固定定位，防止页面滚动 */
   top: 0;
   left: 0;
   --messages-bg-color: #fafafa;
@@ -637,7 +592,8 @@ const showWelcome = ref(true)
 }
 
 .main-content {
-  height: calc(100vh - 60px); /* 减去header高度 */
+  height: calc(100vh - 60px);
+  /* 减去header高度 */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -749,10 +705,12 @@ const showWelcome = ref(true)
     transform: scale(0.3);
     opacity: 0.3;
   }
+
   50% {
     transform: scale(1);
     opacity: 1;
   }
+
   100% {
     transform: scale(0.3);
     opacity: 0.3;
@@ -823,6 +781,7 @@ const showWelcome = ref(true)
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -917,7 +876,8 @@ const showWelcome = ref(true)
   margin: 8px 0;
 }
 
-.ai-bubble :deep(ul), .ai-bubble :deep(ol) {
+.ai-bubble :deep(ul),
+.ai-bubble :deep(ol) {
   padding-left: 20px;
 }
 
