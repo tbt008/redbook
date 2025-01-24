@@ -6,7 +6,7 @@
       <div class="content-wrapper">
         <!-- 筛选区域 -->
         <div class="filter-section">
-          <div style="font-size: 12px;line-height: 32px;">筛选条件</div>
+          <div style="font-size: 12px; line-height: 32px">筛选条件</div>
           <!-- elementplus el-select: 难度选择下拉框 -->
           <el-select v-model="difficulty" placeholder="难度" class="filter-item">
             <el-option label="全部" :value="null" />
@@ -81,14 +81,14 @@
 
           <!-- 题目列 -->
           <el-table-column label="题目" min-width="300">
-            <template #default="{ row }"> 
-              <a 
-                :href="`/question?id=${row.questionId}`" 
-                class="problem-title" 
-                @click.prevent="handleQuestionClick(row.questionId)"
+            <template #default="{ row }">
+              <a
+                :href="`/question?id=${row.questionId}`"
+                class="problem-title"
+                @click.prevent="handleQuestionClick(row.questionId, 0)"
               >
                 {{ row.questionName }}
-              </a>  
+              </a>
               <!-- <router-link :to="`/question?id=${row.questionId}`" class="problem-title">
                 {{ row.questionName }}
               </router-link> -->
@@ -168,15 +168,26 @@
           <div class="daily-question-header">
             <div class="daily-title">每日一题</div>
             <div class="daily-content">
-              <template v-if="selectedDailyQuestion && selectedDailyQuestion.questionTitle !== '今日暂无题目' && selectedDailyQuestion.questionTitle !== '当日暂无题目'">
-                <div class="question-name"> 
-                  <a 
-                    :href="`/question?id=${selectedDailyQuestion.questionId}`" 
-                    class="daily-question-link" 
-                    @click.prevent="handleQuestionClick(selectedDailyQuestion.questionId)"
+              <template
+                v-if="
+                  selectedDailyQuestion &&
+                  selectedDailyQuestion.questionTitle !== '今日暂无题目' &&
+                  selectedDailyQuestion.questionTitle !== '当日暂无题目'
+                "
+              >
+                <div class="question-name">
+                  <a
+                    :href="`/question?id=${selectedDailyQuestion.questionId}&daily=${selectedDailyQuestion.dailyQuestionId}`"
+                    class="daily-question-link"
+                    @click.prevent="
+                      handleQuestionClick(
+                        selectedDailyQuestion.questionId,
+                        selectedDailyQuestion.dailyQuestionId
+                      )
+                    "
                   >
                     {{ selectedDailyQuestion.questionTitle }}
-                  </a> 
+                  </a>
                   <!-- <router-link 
                     :to="`/question?id=${selectedDailyQuestion.questionId}`"
                     class="daily-question-link"
@@ -198,9 +209,9 @@
               </template>
             </div>
           </div>
-          
+
           <el-divider />
-          
+
           <div class="custom-calendar">
             <div class="calendar-header">
               <div class="calendar-nav">
@@ -209,9 +220,9 @@
                 </el-button>
                 <div class="calendar-title">
                   <span>{{ currentMonth }}</span>
-                  <el-button 
+                  <el-button
                     class="today-btn"
-                    type="primary" 
+                    type="primary"
                     text
                     size="small"
                     @click="backToToday"
@@ -225,7 +236,7 @@
                 </el-button>
               </div>
             </div>
-            
+
             <!-- 添加星期标题行 -->
             <div class="weekday-header">
               <div class="weekday-cell">日</div>
@@ -240,9 +251,9 @@
             <!-- 修改日历网格，添加空白日期填充 -->
             <div class="calendar-grid">
               <!-- 添加空白填充单元格 -->
-              <div 
-                v-for="n in firstDayOfMonth" 
-                :key="'empty-' + n" 
+              <div
+                v-for="n in firstDayOfMonth"
+                :key="'empty-' + n"
                 class="calendar-cell empty"
               ></div>
               <!-- 现有的日期单元格 -->
@@ -251,10 +262,10 @@
                 :key="day.date"
                 class="calendar-cell"
                 :class="{
-                  'completed': isDailyQuestionCompleted(day.date),
-                  'future': isFutureDate(day.date),
+                  completed: isDailyQuestionCompleted(day.date),
+                  future: isFutureDate(day.date),
                   'has-question': hasDailyQuestion(day.date),
-                  'selected': isSelectedDate(day.date)
+                  selected: isSelectedDate(day.date)
                 }"
                 @click="handleDateClick(day.date)"
               >
@@ -266,12 +277,12 @@
             </div>
           </div>
         </el-card>
-        
+
         <!-- 统计图表卡片 -->
         <!-- <el-card class="side-card stats-card">
           <div class="stats-content"> -->
-            <!-- TODO 未来会传更多数据 -->
-            <!-- <ProblemStatsPie
+        <!-- TODO 未来会传更多数据 -->
+        <!-- <ProblemStatsPie
               :title="hoveredProblem?.questionName"
               :pass-person="hoveredProblem?.passPerson"
               :try-person="hoveredProblem?.tryPerson"
@@ -279,11 +290,8 @@
           </div>
         </el-card> -->
         <!-- 悬浮 如果要原来的就用上面的 -->
-         <!-- 如果希望鼠标移走还在就去掉 handleMouseLeave -->
-        <div 
-          v-if="hoveredProblem" 
-          class="floating-stats-card"
-        >
+        <!-- 如果希望鼠标移走还在就去掉 handleMouseLeave -->
+        <div v-if="hoveredProblem" class="floating-stats-card">
           <ProblemStatsPie
             :title="hoveredProblem?.questionName"
             :pass-person="hoveredProblem?.passPerson"
@@ -300,7 +308,7 @@
     title="选择标签"
     width="45%"
     :close-on-click-modal="false"
-    style="border-radius: 20px;font-weight: 600;"
+    style="border-radius: 20px; font-weight: 600"
   >
     <div class="tag-dialog-content">
       <!-- 添加搜索输入框 -->
@@ -328,12 +336,10 @@
               class="tag-item"
               @change="() => handleTagChange(false, tagId)"
             >
-              {{ allTags.find(tag => tag.id === tagId)?.name }}
+              {{ allTags.find((tag) => tag.id === tagId)?.name }}
             </el-check-tag>
           </template>
-          <div v-else class="no-tags-selected">
-            暂未选择标签
-          </div>
+          <div v-else class="no-tags-selected">暂未选择标签</div>
         </div>
       </div>
 
@@ -360,9 +366,7 @@
       <span class="dialog-footer">
         <!-- elementplus el-button: 操作按钮 -->
         <el-button @click="clearTags">清空</el-button>
-        <el-button type="primary" @click="showTagDialog = false">
-          确定
-        </el-button>
+        <el-button type="primary" @click="showTagDialog = false"> 确定 </el-button>
       </span>
     </template>
   </el-dialog>
@@ -398,13 +402,13 @@ const hoveredProblem = ref<Problem | null>(null)
 const token = localStorage.getItem('authToken')
 // 添加题目点击处理
 // https://element-plus.org/zh-CN/component/loading.html 详细一点
-const handleQuestionClick = (questionId: number) => {
+const handleQuestionClick = (questionId: number, dailyQuestionId: number) => {
   const loading = ElLoading.service({
     lock: true,
     text: '加载中...',
     background: 'rgba(255, 255, 255, 0.7)'
   })
-  
+
   // 使用 setTimeout 模拟短暂延迟，确保加载动画能够显示
   // setTimeout(() => {
   //   window.location.href = `/question?id=${questionId}`
@@ -412,12 +416,21 @@ const handleQuestionClick = (questionId: number) => {
   // }, 1000)
 
   // 在页面卸载时自动关闭加载动画
-  window.addEventListener('beforeunload', () => {
-    loading.close()
-  }, { once: true })
+  window.addEventListener(
+    'beforeunload',
+    () => {
+      loading.close()
+    },
+    { once: true }
+  )
 
-  // // 直接跳转，不需要 setTimeout
-  window.location.href = `/question?id=${questionId}`
+  if (dailyQuestionId == 0) {
+    // // 直接跳转，不需要 setTimeout
+    window.location.href = `/question?id=${questionId}`
+  } else {
+    // // 直接跳转，不需要 setTimeout
+    window.location.href = `/question?id=${questionId}&daily=${dailyQuestionId}`
+  }
 }
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate: number) => {
@@ -433,10 +446,12 @@ const tagSearchKeyword = ref('')
 const filteredGroupedTags = computed<TagGroup[]>(() => {
   const groups: { [key: string]: Tag[] } = {}
 
-  allTags.value.forEach(tag => {
+  allTags.value.forEach((tag) => {
     // 如果有搜索关键词，进行过滤
-    if (tagSearchKeyword.value &&
-        !tag.name.toLowerCase().includes(tagSearchKeyword.value.toLowerCase())) {
+    if (
+      tagSearchKeyword.value &&
+      !tag.name.toLowerCase().includes(tagSearchKeyword.value.toLowerCase())
+    ) {
       return
     }
 
@@ -551,9 +566,6 @@ onMounted(async () => {
 
   await getTags()
   await getTotalCount()
-
-  
-
 })
 
 // 标签选择相关
@@ -564,7 +576,7 @@ const handleTagChange = (checked: true | false | undefined, tagId: number) => {
   if (checked) {
     selectedTagIds.value.push(tagId)
   } else {
-    selectedTagIds.value = selectedTagIds.value.filter(id => id !== tagId)
+    selectedTagIds.value = selectedTagIds.value.filter((id) => id !== tagId)
   }
 }
 
@@ -614,20 +626,18 @@ const dailyQuestions = ref<any[]>([])
 
 // 修改获取每日一题的方法
 const getDailyQuestions = async (monthStr: string) => {
- 
   try {
-    const response = await request.post('/userDailyQuestion/getDailyQuestion', {
-      "date": monthStr
-    }) as any;
+    const response = (await request.post('/userDailyQuestion/getDailyQuestion', {
+      date: monthStr
+    })) as any
 
     if (response.code === 200) {
       dailyQuestions.value = response.data
-       console.log(response.data)
+      console.log(response.data)
     } else {
-       
     }
-  } catch (error) { 
-    console.error('Error:', error);
+  } catch (error) {
+    console.error('Error:', error)
   }
   // 模拟异步请求
   // return new Promise((resolve) => {
@@ -652,9 +662,7 @@ const isFutureDate = (dateStr: string) => {
 // 检查指定日期是否有每日一题
 const hasDailyQuestion = (dateStr: string) => {
   const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-  return dailyQuestions.value.some(q => 
-    dayjs(q.date).format('YYYY-MM-DD') === formattedDate
-  )
+  return dailyQuestions.value.some((q) => dayjs(q.date).format('YYYY-MM-DD') === formattedDate)
 }
 
 // 获取指定日期的每日一题标题
@@ -666,36 +674,36 @@ const hasDailyQuestion = (dateStr: string) => {
 // 检查指定日期的每日一题是否已完成
 const isDailyQuestionCompleted = (dateStr: string) => {
   const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-  const question = dailyQuestions.value.find(q => 
-    dayjs(q.date).format('YYYY-MM-DD') === formattedDate
+  const question = dailyQuestions.value.find(
+    (q) => dayjs(q.date).format('YYYY-MM-DD') === formattedDate
   )
   return question?.completed || false
 }
-const getBeijingDate  = () => {
-  const now = new Date();
+const getBeijingDate = () => {
+  const now = new Date()
 
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0'); // 月份从 0 开始，需要加 1
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0') // 月份从 0 开始，需要加 1
+  const day = String(now.getDate()).padStart(2, '0')
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  const seconds = String(now.getSeconds()).padStart(2, '0')
 
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-};
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
 
 // 获取当前日期的每日一题
 const selectedDailyQuestion = ref<any>(null)
 
 const handleDateClick = (dateStr: string) => {
   const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-  
+
   // 如果是未来日期，不做任何处理
   if (isFutureDate(formattedDate)) {
     return
   }
-  
-  const question = dailyQuestions.value.find(q => {
+
+  const question = dailyQuestions.value.find((q) => {
     const questionDate = dayjs(q.date).format('YYYY-MM-DD')
     return questionDate === formattedDate
   })
@@ -704,14 +712,16 @@ const handleDateClick = (dateStr: string) => {
   const isToday = dayjs(formattedDate).isSame(dayjs(), 'day')
 
   // 无论是否找到题目都更新 selectedDailyQuestion
-  selectedDailyQuestion.value = question ? {
-    ...question,
-    date: formattedDate // 确保日期被正确设置
-  } : {
-    date: formattedDate,
-    questionTitle: isToday ? '今日暂无题目' : '当日暂无题目',
-    completed: false
-  }
+  selectedDailyQuestion.value = question
+    ? {
+        ...question,
+        date: formattedDate // 确保日期被正确设置
+      }
+    : {
+        date: formattedDate,
+        questionTitle: isToday ? '今日暂无题目' : '当日暂无题目',
+        completed: false
+      }
 }
 
 // 添加新的状态和计算属性
@@ -722,7 +732,7 @@ const calendarDays = computed(() => {
   const days = []
   const startOfMonth = currentMonthDate.value.startOf('month')
   const daysInMonth = currentMonthDate.value.daysInMonth()
-  
+
   for (let i = 1; i <= daysInMonth; i++) {
     const date = startOfMonth.add(i - 1, 'day')
     days.push({
@@ -738,21 +748,21 @@ const isSelectedDate = (dateStr: string) => {
 }
 
 const changeMonth = (delta: number) => {
-  const targetMonth = currentMonthDate.value.add(delta, 'month'); // 计算目标月份
-  const currentMonth = dayjs(); // 当前月份（使用 dayjs 获取）
+  const targetMonth = currentMonthDate.value.add(delta, 'month') // 计算目标月份
+  const currentMonth = dayjs() // 当前月份（使用 dayjs 获取）
 
   // 判断目标月份是否超出当前月份
   if (targetMonth.isAfter(currentMonth, 'month')) {
     // 如果目标月份晚于当前月份，则直接返回，不做任何修改
-    return;
+    return
   }
 
   // 更新当前月份
-  currentMonthDate.value = targetMonth;
+  currentMonthDate.value = targetMonth
 
   // 调用 getDailyQuestions 方法获取数据
-  getDailyQuestions(currentMonthDate.value.format('YYYY-MM'));
-};
+  getDailyQuestions(currentMonthDate.value.format('YYYY-MM'))
+}
 
 // 修改回到今日的方法
 const backToToday = async () => {
@@ -777,22 +787,20 @@ const firstDayOfMonth = computed(() => {
 
 <style scoped>
 .status-icon.success .check-mark {
-  width: 18px;  /* 4.5 的相对大小 */
+  width: 18px; /* 4.5 的相对大小 */
   height: 18px;
-  fill: none;  /* 重要：不填充 */
-  stroke: #2cbb5d;  /* LeetCode 的绿色 */
+  fill: none; /* 重要：不填充 */
+  stroke: #2cbb5d; /* LeetCode 的绿色 */
   stroke-linecap: round;
   stroke-linejoin: round;
   display: inline-block;
   flex-shrink: 0;
 }
 
-
-
 /* 可视化的悬浮效果 */
 .floating-stats-card {
   /* position: sticky; */
-  /* right: 20px; */ 
+  /* right: 20px; */
   position: absolute;
   top: 60%;
   transform: translateY(-50%);
@@ -936,8 +944,8 @@ const firstDayOfMonth = computed(() => {
 }
 /* 修改组合样式，使用更深的绿色背景 */
 .calendar-cell.completed.selected {
-  background-color: rgba(103, 194, 58, 0.623);  /* 更深的绿色 */
-  color: white;  /* 文字改为白色以提高对比度 */
+  background-color: rgba(103, 194, 58, 0.623); /* 更深的绿色 */
+  color: white; /* 文字改为白色以提高对比度 */
 }
 /* 当单元格被选中时隐藏勾勾图标 */
 /* .calendar-cell.selected .check-icon {
@@ -955,8 +963,6 @@ const firstDayOfMonth = computed(() => {
 .stats-content {
   min-height: 350px;
   /* display: flex; */
- 
-
 }
 
 /* 筛选区域样式 */
@@ -1009,8 +1015,8 @@ const firstDayOfMonth = computed(() => {
 }
 
 .status-icon.success {
-  background-color: rgba(45, 181, 93, 0.1);  /* 更柔和的绿色背景 */
-  color: #2db55d;  /* LeetCode 风格的绿色 */
+  background-color: rgba(45, 181, 93, 0.1); /* 更柔和的绿色背景 */
+  color: #2db55d; /* LeetCode 风格的绿色 */
 }
 
 .status-icon.success :deep(svg) {
@@ -1020,14 +1026,14 @@ const firstDayOfMonth = computed(() => {
 }
 
 .status-icon.pending {
-  background-color: rgba(255, 192, 30, 0.1);  /* 淡黄色背景 */
+  background-color: rgba(255, 192, 30, 0.1); /* 淡黄色背景 */
   position: relative;
 }
 
 .status-icon.pending .dash {
   width: 10px;
   height: 2px;
-  background-color: #ffc01e;  /* 黄色横线 */
+  background-color: #ffc01e; /* 黄色横线 */
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1127,22 +1133,22 @@ const firstDayOfMonth = computed(() => {
 }
 
 .difficulty-easy {
-  background-color: #67C23A;
+  background-color: #67c23a;
   color: white;
 }
 
 .difficulty-medium {
-  background-color: #E6A23C;
+  background-color: #e6a23c;
   color: white;
 }
 
 .difficulty-hard {
-  background-color: #409EFF;
+  background-color: #409eff;
   color: white;
 }
 
 .difficulty-expert {
-  background-color: #F56C6C;
+  background-color: #f56c6c;
   color: white;
 }
 
@@ -1154,8 +1160,8 @@ const firstDayOfMonth = computed(() => {
 
 /* 修改提交次数列样式 */
 .submission-count-header {
-  float: center;  /* 靠左浮动，使文字靠近题目列 */
-  margin-left: 0;  /* 移除左边距 */
+  float: center; /* 靠左浮动，使文字靠近题目列 */
+  margin-left: 0; /* 移除左边距 */
 }
 
 /* 每日一题头部样式 */
@@ -1178,7 +1184,7 @@ const firstDayOfMonth = computed(() => {
 
 .question-name {
   font-size: 14px;
-  color: #409EFF;
+  color: #409eff;
   cursor: pointer;
 }
 
@@ -1203,7 +1209,7 @@ const firstDayOfMonth = computed(() => {
 
 .check-icon {
   /* 勾勾 */
-  color: #67C23A;
+  color: #67c23a;
   font-size: 12px;
 }
 
@@ -1212,20 +1218,20 @@ const firstDayOfMonth = computed(() => {
 }
 
 .future {
-  background-color: #F5F7FA;
-  color: #C0C4CC;
+  background-color: #f5f7fa;
+  color: #c0c4cc;
 }
 
 /* 添加链接样式 */
 .daily-question-link {
-  color: #409EFF;
+  color: #409eff;
   text-decoration: none;
 }
 
 .daily-question-link:hover {
   text-decoration: underline;
 }
- 
+
 .question-name {
   font-size: 14px;
 }

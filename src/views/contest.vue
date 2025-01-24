@@ -202,6 +202,13 @@ const inputInfo = (id) => {
 }
 </script>
 <style>
+/* 分页容器样式 */
+.pagination-container {
+  margin-top: 20px;
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
+}
 .contest-search {
   /* display: flex; */
   background-color: rgb(244, 244, 244);
