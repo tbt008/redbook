@@ -6,7 +6,7 @@
       <div class="content-wrapper">
         <!-- 筛选区域 -->
         <div class="filter-section">
-          <div style="font-size: 12px;line-height: 32px;">筛选条件</div>
+          <div style="font-size: 12px; line-height: 32px">筛选条件</div>
           <!-- elementplus el-select: 难度选择下拉框 -->
           <el-select v-model="difficulty" placeholder="难度" class="filter-item">
             <el-option label="全部" :value="null" />
@@ -29,9 +29,7 @@
           <el-input v-model="searchKeyword" placeholder="搜索题目" class="filter-item" clearable>
             <template #prefix>
               <!-- elementplus el-icon: 搜索图标 -->
-              <el-icon>
-                <Search />
-              </el-icon>
+              <el-icon><Search /></el-icon>
             </template>
           </el-input>
         </div>
@@ -40,24 +38,39 @@
         <div v-if="selectedTagIds.length" class="selected-tags-bar">
           <div style="font-size: 12px;line-height: 24px;">已选择：</div>
           <!-- elementplus el-tag: 已选标签展示 -->
-          <el-tag v-for="tagId in selectedTagIds" :key="tagId" closable type="primary" class="selected-tag"
-            @close="handleTagChange(false, tagId)">
+          <el-tag
+            v-for="tagId in selectedTagIds"
+            :key="tagId"
+            closable
+            type="primary"
+            class="selected-tag"
+            @close="handleTagChange(false, tagId)"
+          >
             {{ allTags.find(tag => tag.id === tagId)?.name }}
           </el-tag>
         </div>
 
         <!-- elementplus el-table: 题目列表表格 -->
-        <el-table :data="problems" style="width: 100%" v-loading="loading" @cell-mouse-enter="handleMouseEnter"
-          @cell-mouse-leave="handleMouseLeave">
+        <el-table 
+          :data="problems" 
+          style="width: 100%" 
+          v-loading="loading"
+          @cell-mouse-enter="handleMouseEnter"
+          @cell-mouse-leave="handleMouseLeave"
+        >
           <!-- 状态列 -->
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <div v-if="row.isPass === 1" class="status-icon success">
-                <!-- <Check style="width: 12px; height: 12px" /> -->
+                <!-- <Check style="width: 12px; height: 12px" /> -->        
                 <!-- 修改为svg 如果要普通打勾就用上面那个 -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="check-mark">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M21.6 12a9.6 9.6 0 01-9.6 9.6 9.6 9.6 0 110-19.2c1.507 0 2.932.347 4.2.965M19.8 6l-8.4 8.4L9 12" />
+                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="check-mark">
+                  <path 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round" 
+                    stroke-width="2"
+                    d="M21.6 12a9.6 9.6 0 01-9.6 9.6 9.6 9.6 0 110-19.2c1.507 0 2.932.347 4.2.965M19.8 6l-8.4 8.4L9 12"
+                  />
                 </svg>
               </div>
               <div v-else-if="row.isPass === 2" class="status-icon pending">
@@ -69,8 +82,11 @@
           <!-- 题目列 -->
           <el-table-column label="题目" min-width="300">
             <template #default="{ row }">
-              <a :href="`/question?id=${row.questionId}`" class="problem-title"
-                @click.prevent="handleQuestionClick(row.questionId)">
+              <a
+                :href="`/question?id=${row.questionId}`"
+                class="problem-title"
+                @click.prevent="handleQuestionClick(row.questionId, 0)"
+              >
                 {{ row.questionName }}
               </a>
               <!-- <router-link :to="`/question?id=${row.questionId}`" class="problem-title">
@@ -78,7 +94,13 @@
               </router-link> -->
               <div class="problem-tags">
                 <!-- elementplus el-tag: 题目标签 -->
-                <el-tag v-for="tag in row.tags" :key="tag" size="small" effect="plain" class="tag-item">
+                <el-tag
+                  v-for="tag in row.tags"
+                  :key="tag"
+                  size="small"
+                  effect="plain"
+                  class="tag-item"
+                >
                   {{ tag }}
                 </el-tag>
               </div>
@@ -114,17 +136,27 @@
           <!-- 通过率列 -->
           <el-table-column label="通过率" width="180">
             <template #default="{ row }">
-              <el-progress :percentage="Number(row.passRate)" text-inside :stroke-width="18"
-                :color="getProgressColor(row.passRate)" />
+              <el-progress
+                :percentage="Number(row.passRate)"
+                text-inside
+                :stroke-width="18"
+                :color="getProgressColor(row.passRate)"
+              />
             </template>
           </el-table-column>
         </el-table>
 
         <!-- elementplus el-pagination: 分页器 -->
         <div class="pagination-container">
-          <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
-            :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
-            @current-change="handleCurrentChange" />
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total="total"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
         </div>
       </div>
 
@@ -137,12 +169,25 @@
             <div class="daily-title">每日一题</div>
             <div class="daily-content">
               <template
-                v-if="selectedDailyQuestion && selectedDailyQuestion.questionTitle !== '今日暂无题目' && selectedDailyQuestion.questionTitle !== '当日暂无题目'">
+                v-if="
+                  selectedDailyQuestion &&
+                  selectedDailyQuestion.questionTitle !== '今日暂无题目' &&
+                  selectedDailyQuestion.questionTitle !== '当日暂无题目'
+                "
+              >
                 <div class="question-name">
-                  <a :href="`/question?id=${selectedDailyQuestion.questionId}`" class="daily-question-link"
-                    @click.prevent="handleQuestionClick(selectedDailyQuestion.questionId)">
+                  <a
+                    :href="`/question?id=${selectedDailyQuestion.questionId}&daily=${selectedDailyQuestion.dailyQuestionId}`"
+                    class="daily-question-link"
+                    @click.prevent="
+                      handleQuestionClick(
+                        selectedDailyQuestion.questionId,
+                        selectedDailyQuestion.dailyQuestionId
+                      )
+                    "
+                  >
                     {{ selectedDailyQuestion.questionTitle }}
-                  </a>
+                  </a> 
                   <!-- <router-link 
                     :to="`/question?id=${selectedDailyQuestion.questionId}`"
                     class="daily-question-link"
@@ -171,23 +216,23 @@
             <div class="calendar-header">
               <div class="calendar-nav">
                 <el-button text @click="changeMonth(-1)">
-                  <el-icon>
-                    <ArrowLeft />
-                  </el-icon>
+                  <el-icon><ArrowLeft /></el-icon>
                 </el-button>
                 <div class="calendar-title">
                   <span>{{ currentMonth }}</span>
-                  <el-button class="today-btn" type="primary" text size="small" @click="backToToday">
-                    <el-icon>
-                      <Calendar />
-                    </el-icon>
+                  <el-button
+                    class="today-btn"
+                    type="primary"
+                    text
+                    size="small"
+                    @click="backToToday"
+                  >
+                    <el-icon><Calendar /></el-icon>
                     今日
                   </el-button>
                 </div>
                 <el-button text @click="changeMonth(1)">
-                  <el-icon>
-                    <ArrowRight />
-                  </el-icon>
+                  <el-icon><ArrowRight /></el-icon>
                 </el-button>
               </div>
             </div>
@@ -206,30 +251,38 @@
             <!-- 修改日历网格，添加空白日期填充 -->
             <div class="calendar-grid">
               <!-- 添加空白填充单元格 -->
-              <div v-for="n in firstDayOfMonth" :key="'empty-' + n" class="calendar-cell empty"></div>
+              <div
+                v-for="n in firstDayOfMonth"
+                :key="'empty-' + n"
+                class="calendar-cell empty"
+              ></div>
               <!-- 现有的日期单元格 -->
-              <div v-for="day in calendarDays" :key="day.date" class="calendar-cell" :class="{
-                'completed': isDailyQuestionCompleted(day.date),
-                'future': isFutureDate(day.date),
-                'has-question': hasDailyQuestion(day.date),
-                'selected': isSelectedDate(day.date)
-              }" @click="handleDateClick(day.date)">
+              <div
+                v-for="day in calendarDays"
+                :key="day.date"
+                class="calendar-cell"
+                :class="{
+                  completed: isDailyQuestionCompleted(day.date),
+                  future: isFutureDate(day.date),
+                  'has-question': hasDailyQuestion(day.date),
+                  selected: isSelectedDate(day.date)
+                }"
+                @click="handleDateClick(day.date)"
+              >
                 <span>{{ day.dayOfMonth }}</span>
                 <div v-if="isDailyQuestionCompleted(day.date)" class="check-icon">
-                  <el-icon>
-                    <Check />
-                  </el-icon>
+                  <el-icon><Check /></el-icon>
                 </div>
               </div>
             </div>
           </div>
         </el-card>
-
+        
         <!-- 统计图表卡片 -->
         <!-- <el-card class="side-card stats-card">
           <div class="stats-content"> -->
-        <!-- TODO 未来会传更多数据 -->
-        <!-- <ProblemStatsPie
+            <!-- TODO 未来会传更多数据 -->
+            <!-- <ProblemStatsPie
               :title="hoveredProblem?.questionName"
               :pass-person="hoveredProblem?.passPerson"
               :try-person="hoveredProblem?.tryPerson"
@@ -239,23 +292,34 @@
         <!-- 悬浮 如果要原来的就用上面的 -->
         <!-- 如果希望鼠标移走还在就去掉 handleMouseLeave -->
         <div v-if="hoveredProblem" class="floating-stats-card">
-          <ProblemStatsPie :title="hoveredProblem?.questionName" :pass-person="hoveredProblem?.passPerson"
-            :try-person="hoveredProblem?.tryPerson" />
+          <ProblemStatsPie
+            :title="hoveredProblem?.questionName"
+            :pass-person="hoveredProblem?.passPerson"
+            :try-person="hoveredProblem?.tryPerson"
+          />
         </div>
       </div>
     </div>
   </div>
 
   <!-- elementplus el-dialog: 标签选择弹窗 -->
-  <el-dialog v-model="showTagDialog" title="选择标签" width="45%" :close-on-click-modal="false"
-    style="border-radius: 20px;font-weight: 600;">
+  <el-dialog
+    v-model="showTagDialog"
+    title="选择标签"
+    width="45%"
+    :close-on-click-modal="false"
+    style="border-radius: 20px; font-weight: 600"
+  >
     <div class="tag-dialog-content">
       <!-- 添加搜索输入框 -->
-      <el-input v-model="tagSearchKeyword" placeholder="搜索标签" class="tag-search-input" clearable>
+      <el-input
+        v-model="tagSearchKeyword"
+        placeholder="搜索标签"
+        class="tag-search-input"
+        clearable
+      >
         <template #prefix>
-          <el-icon>
-            <Search />
-          </el-icon>
+          <el-icon><Search /></el-icon>
         </template>
       </el-input>
 
@@ -265,14 +329,17 @@
         <div class="tag-group-content">
           <template v-if="selectedTagIds.length">
             <!-- elementplus el-check-tag: 可选择的标签 -->
-            <el-check-tag v-for="tagId in selectedTagIds" :key="tagId" :checked="true" class="tag-item"
-              @change="() => handleTagChange(false, tagId)">
-              {{ allTags.find(tag => tag.id === tagId)?.name }}
+            <el-check-tag
+              v-for="tagId in selectedTagIds"
+              :key="tagId"
+              :checked="true"
+              class="tag-item"
+              @change="() => handleTagChange(false, tagId)"
+            >
+              {{ allTags.find((tag) => tag.id === tagId)?.name }}
             </el-check-tag>
           </template>
-          <div v-else class="no-tags-selected">
-            暂未选择标签
-          </div>
+          <div v-else class="no-tags-selected">暂未选择标签</div>
         </div>
       </div>
 
@@ -283,8 +350,13 @@
       <div v-for="group in filteredGroupedTags" :key="group.superName" class="tag-group">
         <div class="tag-group-title">{{ group.superName }}</div>
         <div class="tag-group-content">
-          <el-check-tag v-for="tag in group.tags" :key="tag.id" :checked="selectedTagIds.includes(tag.id)"
-            @change="(checked: boolean) => handleTagChange(checked, tag.id)" class="tag-item">
+          <el-check-tag
+            v-for="tag in group.tags"
+            :key="tag.id"
+            :checked="selectedTagIds.includes(tag.id)"
+            @change="(checked: boolean) => handleTagChange(checked, tag.id)"
+            class="tag-item"
+          >
             {{ tag.name }}
           </el-check-tag>
         </div>
@@ -294,9 +366,7 @@
       <span class="dialog-footer">
         <!-- elementplus el-button: 操作按钮 -->
         <el-button @click="clearTags">清空</el-button>
-        <el-button type="primary" @click="showTagDialog = false">
-          确定
-        </el-button>
+        <el-button type="primary" @click="showTagDialog = false"> 确定 </el-button>
       </span>
     </template>
   </el-dialog>
@@ -332,7 +402,7 @@ const hoveredProblem = ref<Problem | null>(null)
 const token = localStorage.getItem('authToken')
 // 添加题目点击处理
 // https://element-plus.org/zh-CN/component/loading.html 详细一点
-const handleQuestionClick = (questionId: number) => {
+const handleQuestionClick = (questionId: number, dailyQuestionId: number) => {
   const loading = ElLoading.service({
     lock: true,
     text: '加载中...',
@@ -346,12 +416,21 @@ const handleQuestionClick = (questionId: number) => {
   // }, 1000)
 
   // 在页面卸载时自动关闭加载动画
-  window.addEventListener('beforeunload', () => {
-    loading.close()
-  }, { once: true })
+  window.addEventListener(
+    'beforeunload',
+    () => {
+      loading.close()
+    },
+    { once: true }
+  )
 
-  // // 直接跳转，不需要 setTimeout
-  window.location.href = `/question?id=${questionId}`
+  if (dailyQuestionId == 0) {
+    // // 直接跳转，不需要 setTimeout
+    window.location.href = `/question?id=${questionId}`
+  } else {
+    // // 直接跳转，不需要 setTimeout
+    window.location.href = `/question?id=${questionId}&daily=${dailyQuestionId}`
+  }
 }
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate: number) => {
@@ -367,10 +446,12 @@ const tagSearchKeyword = ref('')
 const filteredGroupedTags = computed<TagGroup[]>(() => {
   const groups: { [key: string]: Tag[] } = {}
 
-  allTags.value.forEach(tag => {
+  allTags.value.forEach((tag) => {
     // 如果有搜索关键词，进行过滤
-    if (tagSearchKeyword.value &&
-      !tag.name.toLowerCase().includes(tagSearchKeyword.value.toLowerCase())) {
+    if (
+      tagSearchKeyword.value &&
+      !tag.name.toLowerCase().includes(tagSearchKeyword.value.toLowerCase())
+    ) {
       return
     }
 
@@ -485,9 +566,6 @@ onMounted(async () => {
 
   await getTags()
   await getTotalCount()
-
-
-
 })
 
 // 标签选择相关
@@ -498,7 +576,7 @@ const handleTagChange = (checked: true | false | undefined, tagId: number) => {
   if (checked) {
     selectedTagIds.value.push(tagId)
   } else {
-    selectedTagIds.value = selectedTagIds.value.filter(id => id !== tagId)
+    selectedTagIds.value = selectedTagIds.value.filter((id) => id !== tagId)
   }
 }
 
@@ -548,20 +626,18 @@ const dailyQuestions = ref<any[]>([])
 
 // 修改获取每日一题的方法
 const getDailyQuestions = async (monthStr: string) => {
-
   try {
-    const response = await request.post('/userDailyQuestion/getDailyQuestion', {
-      "date": monthStr
-    }) as any;
+    const response = (await request.post('/userDailyQuestion/getDailyQuestion', {
+      date: monthStr
+    })) as any
 
     if (response.code === 200) {
       dailyQuestions.value = response.data
       console.log(response.data)
     } else {
-
     }
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error:', error)
   }
   // 模拟异步请求
   // return new Promise((resolve) => {
@@ -586,9 +662,7 @@ const isFutureDate = (dateStr: string) => {
 // 检查指定日期是否有每日一题
 const hasDailyQuestion = (dateStr: string) => {
   const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-  return dailyQuestions.value.some(q =>
-    dayjs(q.date).format('YYYY-MM-DD') === formattedDate
-  )
+  return dailyQuestions.value.some((q) => dayjs(q.date).format('YYYY-MM-DD') === formattedDate)
 }
 
 // 获取指定日期的每日一题标题
@@ -600,36 +674,36 @@ const hasDailyQuestion = (dateStr: string) => {
 // 检查指定日期的每日一题是否已完成
 const isDailyQuestionCompleted = (dateStr: string) => {
   const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-  const question = dailyQuestions.value.find(q =>
-    dayjs(q.date).format('YYYY-MM-DD') === formattedDate
+  const question = dailyQuestions.value.find(
+    (q) => dayjs(q.date).format('YYYY-MM-DD') === formattedDate
   )
   return question?.completed || false
 }
 const getBeijingDate = () => {
-  const now = new Date();
+  const now = new Date()
 
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0'); // 月份从 0 开始，需要加 1
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0') // 月份从 0 开始，需要加 1
+  const day = String(now.getDate()).padStart(2, '0')
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  const seconds = String(now.getSeconds()).padStart(2, '0')
 
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-};
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
 
 // 获取当前日期的每日一题
 const selectedDailyQuestion = ref<any>(null)
 
 const handleDateClick = (dateStr: string) => {
   const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-
+  
   // 如果是未来日期，不做任何处理
   if (isFutureDate(formattedDate)) {
     return
   }
 
-  const question = dailyQuestions.value.find(q => {
+  const question = dailyQuestions.value.find((q) => {
     const questionDate = dayjs(q.date).format('YYYY-MM-DD')
     return questionDate === formattedDate
   })
@@ -638,14 +712,16 @@ const handleDateClick = (dateStr: string) => {
   const isToday = dayjs(formattedDate).isSame(dayjs(), 'day')
 
   // 无论是否找到题目都更新 selectedDailyQuestion
-  selectedDailyQuestion.value = question ? {
-    ...question,
-    date: formattedDate // 确保日期被正确设置
-  } : {
-    date: formattedDate,
-    questionTitle: isToday ? '今日暂无题目' : '当日暂无题目',
-    completed: false
-  }
+  selectedDailyQuestion.value = question
+    ? {
+        ...question,
+        date: formattedDate // 确保日期被正确设置
+      }
+    : {
+        date: formattedDate,
+        questionTitle: isToday ? '今日暂无题目' : '当日暂无题目',
+        completed: false
+      }
 }
 
 // 添加新的状态和计算属性
@@ -656,7 +732,7 @@ const calendarDays = computed(() => {
   const days = []
   const startOfMonth = currentMonthDate.value.startOf('month')
   const daysInMonth = currentMonthDate.value.daysInMonth()
-
+  
   for (let i = 1; i <= daysInMonth; i++) {
     const date = startOfMonth.add(i - 1, 'day')
     days.push({
@@ -672,21 +748,21 @@ const isSelectedDate = (dateStr: string) => {
 }
 
 const changeMonth = (delta: number) => {
-  const targetMonth = currentMonthDate.value.add(delta, 'month'); // 计算目标月份
-  const currentMonth = dayjs(); // 当前月份（使用 dayjs 获取）
+  const targetMonth = currentMonthDate.value.add(delta, 'month') // 计算目标月份
+  const currentMonth = dayjs() // 当前月份（使用 dayjs 获取）
 
   // 判断目标月份是否超出当前月份
   if (targetMonth.isAfter(currentMonth, 'month')) {
     // 如果目标月份晚于当前月份，则直接返回，不做任何修改
-    return;
+    return
   }
 
   // 更新当前月份
-  currentMonthDate.value = targetMonth;
+  currentMonthDate.value = targetMonth
 
   // 调用 getDailyQuestions 方法获取数据
-  getDailyQuestions(currentMonthDate.value.format('YYYY-MM'));
-};
+  getDailyQuestions(currentMonthDate.value.format('YYYY-MM'))
+}
 
 // 修改回到今日的方法
 const backToToday = async () => {
@@ -711,20 +787,15 @@ const firstDayOfMonth = computed(() => {
 
 <style scoped>
 .status-icon.success .check-mark {
-  width: 18px;
-  /* 4.5 的相对大小 */
+  width: 18px; /* 4.5 的相对大小 */
   height: 18px;
-  fill: none;
-  /* 重要：不填充 */
-  stroke: #2cbb5d;
-  /* LeetCode 的绿色 */
+  fill: none; /* 重要：不填充 */
+  stroke: #2cbb5d; /* LeetCode 的绿色 */
   stroke-linecap: round;
   stroke-linejoin: round;
   display: inline-block;
   flex-shrink: 0;
 }
-
-
 
 /* 可视化的悬浮效果 */
 .floating-stats-card {
@@ -738,11 +809,9 @@ const firstDayOfMonth = computed(() => {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   padding: 20px;
   width: 300px;
-  z-index: 3000;
-  /* 确保在日历上层 */
+  z-index: 3000; /* 确保在日历上层 */
   transition: opacity 0.3s ease;
 }
-
 /* 容器样式 */
 .problem-list-container {
   padding: 20px;
@@ -861,31 +930,23 @@ const firstDayOfMonth = computed(() => {
 .calendar-cell:hover:not(.future) {
   background-color: #f5f7fa;
 }
-
 /* 已完成日历格子的悬浮效果 */
 .calendar-cell.completed:hover {
-  background-color: rgba(103, 194, 58, 0.623);
-  /* 使用更深的绿色 */
+  background-color: rgba(103, 194, 58, 0.623); /* 使用更深的绿色 */
 }
-
 .calendar-cell.selected {
   background-color: #ff4d4f;
   color: white;
 }
-
 .calendar-cell.completed {
   background-color: rgba(103, 194, 58, 0.3);
   color: #303133;
 }
-
 /* 修改组合样式，使用更深的绿色背景 */
 .calendar-cell.completed.selected {
-  background-color: rgba(103, 194, 58, 0.623);
-  /* 更深的绿色 */
-  color: white;
-  /* 文字改为白色以提高对比度 */
+  background-color: rgba(103, 194, 58, 0.623); /* 更深的绿色 */
+  color: white; /* 文字改为白色以提高对比度 */
 }
-
 /* 当单元格被选中时隐藏勾勾图标 */
 /* .calendar-cell.selected .check-icon {
   display: none;
@@ -902,8 +963,6 @@ const firstDayOfMonth = computed(() => {
 .stats-content {
   min-height: 350px;
   /* display: flex; */
-
-
 }
 
 /* 筛选区域样式 */
@@ -956,10 +1015,8 @@ const firstDayOfMonth = computed(() => {
 }
 
 .status-icon.success {
-  background-color: rgba(45, 181, 93, 0.1);
-  /* 更柔和的绿色背景 */
-  color: #2db55d;
-  /* LeetCode 风格的绿色 */
+  background-color: rgba(45, 181, 93, 0.1); /* 更柔和的绿色背景 */
+  color: #2db55d; /* LeetCode 风格的绿色 */
 }
 
 .status-icon.success :deep(svg) {
@@ -969,16 +1026,14 @@ const firstDayOfMonth = computed(() => {
 }
 
 .status-icon.pending {
-  background-color: rgba(255, 192, 30, 0.1);
-  /* 淡黄色背景 */
+  background-color: rgba(255, 192, 30, 0.1); /* 淡黄色背景 */
   position: relative;
 }
 
 .status-icon.pending .dash {
   width: 10px;
   height: 2px;
-  background-color: #ffc01e;
-  /* 黄色横线 */
+  background-color: #ffc01e; /* 黄色横线 */
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1078,22 +1133,22 @@ const firstDayOfMonth = computed(() => {
 }
 
 .difficulty-easy {
-  background-color: #67C23A;
+  background-color: #67c23a;
   color: white;
 }
 
 .difficulty-medium {
-  background-color: #E6A23C;
+  background-color: #e6a23c;
   color: white;
 }
 
 .difficulty-hard {
-  background-color: #409EFF;
+  background-color: #409eff;
   color: white;
 }
 
 .difficulty-expert {
-  background-color: #F56C6C;
+  background-color: #f56c6c;
   color: white;
 }
 
@@ -1105,10 +1160,8 @@ const firstDayOfMonth = computed(() => {
 
 /* 修改提交次数列样式 */
 .submission-count-header {
-  float: center;
-  /* 靠左浮动，使文字靠近题目列 */
-  margin-left: 0;
-  /* 移除左边距 */
+  float: center; /* 靠左浮动，使文字靠近题目列 */
+  margin-left: 0; /* 移除左边距 */
 }
 
 /* 每日一题头部样式 */
@@ -1131,7 +1184,7 @@ const firstDayOfMonth = computed(() => {
 
 .question-name {
   font-size: 14px;
-  color: #409EFF;
+  color: #409eff;
   cursor: pointer;
 }
 
@@ -1156,7 +1209,7 @@ const firstDayOfMonth = computed(() => {
 
 .check-icon {
   /* 勾勾 */
-  color: #67C23A;
+  color: #67c23a;
   font-size: 12px;
 }
 
@@ -1165,13 +1218,13 @@ const firstDayOfMonth = computed(() => {
 }
 
 .future {
-  background-color: #F5F7FA;
-  color: #C0C4CC;
+  background-color: #f5f7fa;
+  color: #c0c4cc;
 }
 
 /* 添加链接样式 */
 .daily-question-link {
-  color: #409EFF;
+  color: #409eff;
   text-decoration: none;
 }
 
