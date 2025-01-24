@@ -120,17 +120,17 @@ onMounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    // 稍微去掉一点，因为导航栏占用
+    height: 93.8vh;
     width: 100vw;
 }
 
 .message-container {
     display: flex;
-    min-height: calc(100vh - 60px);
+    //窗口高度
+    height: 92vh;
     background: #fff;
-    height: 100px;
     width: 80vw;
-
     margin: 0 auto;
     border-radius: 12px;
     box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.1);
@@ -154,8 +154,9 @@ onMounted(() => {
 }
 
 .message-list {
-    height: 70%; // 高度设置为占父容器的 70%
-    overflow-y: auto; // 启用垂直滚动
+    flex: 1;
+    overflow-y: auto;
+    height: 100%;
     scrollbar-width: thin; // Firefox 滚动条宽度
     scrollbar-color: #d4d4d4 transparent; // Firefox 滚动条颜色
 
@@ -181,12 +182,15 @@ onMounted(() => {
     flex: 1;
     display: flex;
     flex-direction: column;
+    padding: 20px;
+    overflow: hidden;
 }
 
 .message-wrapper {
     flex: 1;
     display: flex;
     flex-direction: column;
+    overflow: hidden; //防止内容溢出
 }
 
 .message-menu {
@@ -227,15 +231,6 @@ onMounted(() => {
             font-size: 12px;
         }
     }
-}
-
-.message-content {
-    flex: 1;
-    padding: 20px;
-}
-
-.message-wrapper {
-    max-width: 800px;
 }
 
 .message-header {
