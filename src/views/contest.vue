@@ -3,20 +3,24 @@
     <div class="constest-main">
       <div>
         <div class="contest-search">
-          <el-form-item label="赛制">
-            <el-radio-group v-model="searchType">
-              <el-radio value="">全部</el-radio>
-              <el-radio value="1">IOI</el-radio>
-              <el-radio value="2">ACM</el-radio>
-            </el-radio-group>
-          </el-form-item>
-          <el-input v-model="searchKeyword" placeholder="搜索" clearable>
-            <template #prefix>
-              <el-icon>
-                <Search />
-              </el-icon>
-            </template>
-          </el-input>
+          <el-form :inline="true">
+            <el-form-item label="赛制" class="contest-search-type">
+              <el-radio-group v-model="searchType">
+                <el-radio value="">全部</el-radio>
+                <el-radio value="1">IOI</el-radio>
+                <el-radio value="2">ACM</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item class="contest-search-input">
+              <el-input v-model="searchKeyword" placeholder="搜索比赛" clearable>
+                <template #prefix>
+                  <el-icon>
+                    <Search />
+                  </el-icon>
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-form>
         </div>
 
         <span v-if="constestList.length" class="contest-title">进行中</span>
@@ -220,6 +224,27 @@ const inputInfo = (id) => {
   width: 100%;
 }
 
+.contest-search .el-form {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.contest-search-type .el-form-item__label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.contest-search-input {
+  flex: 1;
+  margin-right: 0;
+}
+
+.contest-search-input .el-input {
+  width: 100%;
+}
+
 .contest-title {
   display: inline-block;
   margin: 30px 0;
@@ -327,6 +352,17 @@ const inputInfo = (id) => {
   .contest-item-info {
     flex-direction: column;
     gap: 12px;
+  }
+
+  .contest-search .el-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .contest-search-type,
+  .contest-search-input {
+    margin-right: 0;
+    margin-bottom: 16px;
   }
 }
 </style>
