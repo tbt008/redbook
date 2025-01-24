@@ -12,7 +12,9 @@
           </el-form-item>
           <el-input v-model="searchKeyword" placeholder="搜索" clearable>
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search />
+              </el-icon>
             </template>
           </el-input>
         </div>
@@ -23,41 +25,41 @@
           <div style="width: 100%; margin-left: 20px">
             <div class="contest-item-title">
               {{ item.title }}
-              <el-tag v-if="item.isPassword" :type="primary" effect="dark"
-                ><el-icon><Lock /></el-icon>密码</el-tag
-              >
-              <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="success" effect="dark"
-                ><el-icon><key /></el-icon>邀请</el-tag
-              >
-              <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark"
-                >IOI</el-tag
-              >
+              <el-tag v-if="item.isPassword" :type="primary" effect="dark"><el-icon>
+                  <Lock />
+                </el-icon>密码</el-tag>
+              <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="success" effect="dark"><el-icon>
+                  <key />
+                </el-icon>邀请</el-tag>
+              <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark">IOI</el-tag>
               <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
+              <el-tag style="margin-left: 10px" type="success" effect="dark">进行中</el-tag>
             </div>
 
             <div class="contest-item-info">
-              <el-icon><BellFilled /></el-icon>比赛时间:{{ item.startTime }}至{{ item.endTime }}
+              <el-icon>
+                <BellFilled />
+              </el-icon>比赛时间:{{ item.startTime }}至{{ item.endTime }}
             </div>
             <div class="contest-item-info">
               <div>
-                <el-icon><Promotion /></el-icon>
+                <el-icon>
+                  <Promotion />
+                </el-icon>
                 主办方:ptuCode.com
               </div>
               <div>
-                <el-icon><UserFilled /></el-icon>参与人数：{{ item.participationNumber }}
+                <el-icon>
+                  <UserFilled />
+                </el-icon>参与人数：{{ item.participationNumber }}
               </div>
               <div>语言:{{ item.language }}</div>
               <!-- <div>赛制:{{ item.contestType }}</div> -->
             </div>
           </div>
           <div class="apply-button">
-            <el-button
-              type="success"
-              round
-              style="width: 100px; height: 50px"
-              @click="inputInfo(item.contestId)"
-              >进入</el-button
-            >
+            <el-button type="success" round style="width: 100px; height: 50px"
+              @click="inputInfo(item.contestId)">进入</el-button>
           </div>
         </div>
         <span v-if="oldConstestList.length" class="contest-title">已结束</span>
@@ -66,53 +68,47 @@
           <div style="width: 100%; margin-left: 20px">
             <div class="contest-item-title">
               {{ item.title }}
-              <el-tag v-if="item.isPassword" :type="primary" effect="dark"
-                ><el-icon><Lock /></el-icon>密码</el-tag
-              >
-              <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="success" effect="dark"
-                ><el-icon><key /></el-icon>邀请</el-tag
-              >
-              <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark"
-                >IOI</el-tag
-              >
+              <el-tag v-if="item.isPassword" :type="primary" effect="dark"><el-icon>
+                  <Lock />
+                </el-icon>密码</el-tag>
+              <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="success" effect="dark"><el-icon>
+                  <key />
+                </el-icon>邀请</el-tag>
+              <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark">IOI</el-tag>
               <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
+              <el-tag style="margin-left: 10px" type="info" effect="dark">已结束</el-tag>
             </div>
 
             <div class="contest-item-info">
-              <el-icon><BellFilled /></el-icon>比赛时间:{{ item.startTime }}至{{ item.endTime }}
+              <el-icon>
+                <BellFilled />
+              </el-icon>比赛时间:{{ item.startTime }}至{{ item.endTime }}
             </div>
             <div class="contest-item-info">
               <div>
-                <el-icon><Promotion /></el-icon>
+                <el-icon>
+                  <Promotion />
+                </el-icon>
                 主办方:ptuCode.com
               </div>
               <div>
-                <el-icon><UserFilled /></el-icon>参与人数：{{ item.participationNumber }}
+                <el-icon>
+                  <UserFilled />
+                </el-icon>参与人数：{{ item.participationNumber }}
               </div>
               <div>语言:{{ item.language }}</div>
             </div>
           </div>
           <div class="apply-button">
-            <el-button
-              type="info"
-              round
-              style="width: 100px; height: 50px"
-              @click="inputInfo(item.contestId)"
-              >回顾比赛</el-button
-            >
+            <el-button type="info" round style="width: 100px; height: 50px"
+              @click="inputInfo(item.contestId)">回顾比赛</el-button>
           </div>
         </div>
         <!-- elementplus el-pagination: 分页器 -->
         <div class="pagination-container">
-          <el-pagination
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :total="total"
-            :page-sizes="[10, 20, 50]"
-            layout="total, sizes, prev, pager, next"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-          />
+          <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
+            :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
+            @current-change="handleCurrentChange" />
         </div>
       </div>
     </div>
@@ -202,70 +198,135 @@ const inputInfo = (id) => {
 }
 </script>
 <style>
-/* 分页容器样式 */
-.pagination-container {
-  margin-top: 20px;
+.constest {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  padding: 20px 0;
+}
+
+.constest-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.contest-search {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 30px;
+  width: 100%;
+}
+
+.contest-title {
+  display: inline-block;
+  margin: 30px 0;
+  font-size: 28px;
+  font-weight: 600;
+  position: relative;
+  background: linear-gradient(135deg, #1a73e8 0%, #8c54ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-bottom: 8px;
+}
+
+.contest-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(135deg, #1a73e8 0%, #8c54ff 100%);
+  border-radius: 2px;
+}
+
+.contest-item {
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 24px;
+  border: 1px solid #e6e8eb;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.contest-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.contest-item-img {
+  width: 200px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.contest-item-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.contest-item-info {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 12px;
+  color: #64748b;
+}
+
+.contest-item-info div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.apply-button {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.apply-button .el-button {
+  padding: 12px 30px;
+  font-size: 16px;
+  font-weight: 500;
+  height: auto;
+}
+
+.pagination-container {
+  margin-top: 40px;
+  margin-bottom: 40px;
   display: flex;
   justify-content: center;
 }
-.contest-search {
-  /* display: flex; */
-  background-color: rgb(244, 244, 244);
-  padding: 20px;
-  margin: 30px;
-  width: 300px;
-  border-radius: 10px;
 
-  /* border: #002ef9 2px dashed; */
-}
-.contest-title {
-  margin: 30px;
-  font-size: 25px;
-  border-bottom: #09f291 4px solid;
-  background: linear-gradient(135deg, #002ef9 0%, #f700ff 100%);
-  -webkit-background-clip: text; /*将设置的背景颜色限制在文字中*/
-  -webkit-text-fill-color: transparent; /*给文字设置成透明*/
-}
-.apply-button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: right;
-}
-.contest-item-title {
-  font-size: 24px;
-  margin: 10px;
-}
-.contest-item-info {
-  margin: 0 20px 10px 0;
-  min-width: 100px;
-  width: auto;
-  font-size: 14px;
-  color: #86909b;
-}
-.contest-item-img {
-  width: 150px;
-  border-radius: 10px;
-  display: flex;
-}
-.constest-main {
-  width: 70%;
-  margin: auto;
-}
-.contest-item {
-  display: flex;
-  margin: 30px;
-  width: 90%;
-  padding: 20px;
-  border-radius: 20px;
-  border: 1px solid rgb(104, 240, 63);
-}
-.constest-main {
-}
-.constest {
-  /* background-color: rgb(240, 245, 250); */
-  width: 100%;
-  height: 100%;
+/* 响应式设计 */
+@media screen and (max-width: 768px) {
+  .contest-item {
+    flex-direction: column;
+  }
+
+  .contest-item-img {
+    width: 100%;
+    height: 200px;
+  }
+
+  .apply-button {
+    margin-top: 20px;
+    justify-content: center;
+  }
+
+  .contest-item-info {
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 </style>

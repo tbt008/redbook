@@ -34,11 +34,11 @@ const router = createRouter({
 
       component: () => import('@/views/problems.vue')
     },
-    {
-      path: '/circle',
-      name: 'circle',
-      component: () => import('@/views/circle.vue')
-    },
+    // {
+    //   path: '/circle',
+    //   name: 'circle',
+    //   component: () => import('@/views/circle.vue')
+    // },
     {
       path: '/about',
       name: 'about',
@@ -98,7 +98,7 @@ const router = createRouter({
           path: 'system',
           name: 'SystemManager',
           component: () => import('@/views/admin/systemManager.vue'),
-          meta: { title: '系统管理' }
+          // meta: { title: '系统管理' }
         },
         {
           path: 'notice',
