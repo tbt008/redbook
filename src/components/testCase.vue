@@ -4,14 +4,14 @@
       <h2>测试点信息：</h2>
       <div class="right-info">
         <div
-            class="test-item"
-            :style="{ backgroundColor: bgColor(item.result) }"
-            v-for="(item, index) in testInfo.testCase"
-            :key="index"
+          class="test-item"
+          :style="{ backgroundColor: bgColor(item.result) }"
+          v-for="(item, index) in testInfo.testCase"
+          :key="index"
         >
           <div class="test-info">#{{ index + 1 }}</div>
           <div class="test-title">{{ judgeResult(item.result) }}</div>
-          <div class="test-info">{{ item.real_time }}ms/{{ judgeMemory(item.memory) }}MB</div>
+          <div class="test-info">{{ item.cpu_time }}ms/{{ judgeMemory(item.memory) }}MB</div>
         </div>
       </div>
     </div>
@@ -24,7 +24,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import request from '@/util/request'
+
 // 定义接收的 props
 const props = defineProps({
   test: {
@@ -32,10 +32,10 @@ const props = defineProps({
   }
 })
 watch(
-    () => props.test,
-    (value) => {
-      testInfo.value = value
-    }
+  () => props.test,
+  (value) => {
+    testInfo.value = value
+  }
 )
 const bgColor = (index) => {
   if (index == 0) {
@@ -74,10 +74,6 @@ const judgeResult = (result) => {
 const testInfo = ref({})
 onMounted(() => {
   testInfo.value = props.test
-  // request.get(`/record/get/one/1729`).then((res) => {
-  //   testInfo.value = res.data.test
-  //   console.log(res)
-  // })
 })
 </script>
 <style>
