@@ -29,7 +29,9 @@
           <el-input v-model="searchKeyword" placeholder="搜索题目" class="filter-item" clearable>
             <template #prefix>
               <!-- elementplus el-icon: 搜索图标 -->
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search />
+              </el-icon>
             </template>
           </el-input>
         </div>
@@ -38,39 +40,24 @@
         <div v-if="selectedTagIds.length" class="selected-tags-bar">
           <div style="font-size: 12px;line-height: 24px;">已选择：</div>
           <!-- elementplus el-tag: 已选标签展示 -->
-          <el-tag
-            v-for="tagId in selectedTagIds"
-            :key="tagId"
-            closable
-            type="primary"
-            class="selected-tag"
-            @close="handleTagChange(false, tagId)"
-          >
+          <el-tag v-for="tagId in selectedTagIds" :key="tagId" closable type="primary" class="selected-tag"
+            @close="handleTagChange(false, tagId)">
             {{ allTags.find(tag => tag.id === tagId)?.name }}
           </el-tag>
         </div>
 
         <!-- elementplus el-table: 题目列表表格 -->
-        <el-table 
-          :data="problems" 
-          style="width: 100%" 
-          v-loading="loading"
-          @cell-mouse-enter="handleMouseEnter"
-          @cell-mouse-leave="handleMouseLeave"
-        >
+        <el-table :data="problems" style="width: 100%" v-loading="loading" @cell-mouse-enter="handleMouseEnter"
+          @cell-mouse-leave="handleMouseLeave">
           <!-- 状态列 -->
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <div v-if="row.isPass === 1" class="status-icon success">
-                <!-- <Check style="width: 12px; height: 12px" /> -->        
+                <!-- <Check style="width: 12px; height: 12px" /> -->
                 <!-- 修改为svg 如果要普通打勾就用上面那个 -->
-                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="check-mark">
-                  <path 
-                    stroke-linecap="round" 
-                    stroke-linejoin="round" 
-                    stroke-width="2"
-                    d="M21.6 12a9.6 9.6 0 01-9.6 9.6 9.6 9.6 0 110-19.2c1.507 0 2.932.347 4.2.965M19.8 6l-8.4 8.4L9 12"
-                  />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="check-mark">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21.6 12a9.6 9.6 0 01-9.6 9.6 9.6 9.6 0 110-19.2c1.507 0 2.932.347 4.2.965M19.8 6l-8.4 8.4L9 12" />
                 </svg>
               </div>
               <div v-else-if="row.isPass === 2" class="status-icon pending">
@@ -81,26 +68,17 @@
 
           <!-- 题目列 -->
           <el-table-column label="题目" min-width="300">
-            <template #default="{ row }"> 
-              <a 
-                :href="`/question?id=${row.questionId}`" 
-                class="problem-title" 
-                @click.prevent="handleQuestionClick(row.questionId)"
-              >
+            <template #default="{ row }">
+              <a :href="`/question?id=${row.questionId}`" class="problem-title"
+                @click.prevent="handleQuestionClick(row.questionId)">
                 {{ row.questionName }}
-              </a>  
+              </a>
               <!-- <router-link :to="`/question?id=${row.questionId}`" class="problem-title">
                 {{ row.questionName }}
               </router-link> -->
               <div class="problem-tags">
                 <!-- elementplus el-tag: 题目标签 -->
-                <el-tag
-                  v-for="tag in row.tags"
-                  :key="tag"
-                  size="small"
-                  effect="plain"
-                  class="tag-item"
-                >
+                <el-tag v-for="tag in row.tags" :key="tag" size="small" effect="plain" class="tag-item">
                   {{ tag }}
                 </el-tag>
               </div>
@@ -136,27 +114,17 @@
           <!-- 通过率列 -->
           <el-table-column label="通过率" width="180">
             <template #default="{ row }">
-              <el-progress
-                :percentage="Number(row.passRate)"
-                text-inside
-                :stroke-width="18"
-                :color="getProgressColor(row.passRate)"
-              />
+              <el-progress :percentage="Number(row.passRate)" text-inside :stroke-width="18"
+                :color="getProgressColor(row.passRate)" />
             </template>
           </el-table-column>
         </el-table>
 
         <!-- elementplus el-pagination: 分页器 -->
         <div class="pagination-container">
-          <el-pagination
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :total="total"
-            :page-sizes="[10, 20, 50]"
-            layout="total, sizes, prev, pager, next"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-          />
+          <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
+            :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
+            @current-change="handleCurrentChange" />
         </div>
       </div>
 
@@ -168,15 +136,13 @@
           <div class="daily-question-header">
             <div class="daily-title">每日一题</div>
             <div class="daily-content">
-              <template v-if="selectedDailyQuestion && selectedDailyQuestion.questionTitle !== '今日暂无题目' && selectedDailyQuestion.questionTitle !== '当日暂无题目'">
-                <div class="question-name"> 
-                  <a 
-                    :href="`/question?id=${selectedDailyQuestion.questionId}`" 
-                    class="daily-question-link" 
-                    @click.prevent="handleQuestionClick(selectedDailyQuestion.questionId)"
-                  >
+              <template
+                v-if="selectedDailyQuestion && selectedDailyQuestion.questionTitle !== '今日暂无题目' && selectedDailyQuestion.questionTitle !== '当日暂无题目'">
+                <div class="question-name">
+                  <a :href="`/question?id=${selectedDailyQuestion.questionId}`" class="daily-question-link"
+                    @click.prevent="handleQuestionClick(selectedDailyQuestion.questionId)">
                     {{ selectedDailyQuestion.questionTitle }}
-                  </a> 
+                  </a>
                   <!-- <router-link 
                     :to="`/question?id=${selectedDailyQuestion.questionId}`"
                     class="daily-question-link"
@@ -198,34 +164,34 @@
               </template>
             </div>
           </div>
-          
+
           <el-divider />
-          
+
           <div class="custom-calendar">
             <div class="calendar-header">
               <div class="calendar-nav">
                 <el-button text @click="changeMonth(-1)">
-                  <el-icon><ArrowLeft /></el-icon>
+                  <el-icon>
+                    <ArrowLeft />
+                  </el-icon>
                 </el-button>
                 <div class="calendar-title">
                   <span>{{ currentMonth }}</span>
-                  <el-button 
-                    class="today-btn"
-                    type="primary" 
-                    text
-                    size="small"
-                    @click="backToToday"
-                  >
-                    <el-icon><Calendar /></el-icon>
+                  <el-button class="today-btn" type="primary" text size="small" @click="backToToday">
+                    <el-icon>
+                      <Calendar />
+                    </el-icon>
                     今日
                   </el-button>
                 </div>
                 <el-button text @click="changeMonth(1)">
-                  <el-icon><ArrowRight /></el-icon>
+                  <el-icon>
+                    <ArrowRight />
+                  </el-icon>
                 </el-button>
               </div>
             </div>
-            
+
             <!-- 添加星期标题行 -->
             <div class="weekday-header">
               <div class="weekday-cell">日</div>
@@ -240,38 +206,30 @@
             <!-- 修改日历网格，添加空白日期填充 -->
             <div class="calendar-grid">
               <!-- 添加空白填充单元格 -->
-              <div 
-                v-for="n in firstDayOfMonth" 
-                :key="'empty-' + n" 
-                class="calendar-cell empty"
-              ></div>
+              <div v-for="n in firstDayOfMonth" :key="'empty-' + n" class="calendar-cell empty"></div>
               <!-- 现有的日期单元格 -->
-              <div
-                v-for="day in calendarDays"
-                :key="day.date"
-                class="calendar-cell"
-                :class="{
-                  'completed': isDailyQuestionCompleted(day.date),
-                  'future': isFutureDate(day.date),
-                  'has-question': hasDailyQuestion(day.date),
-                  'selected': isSelectedDate(day.date)
-                }"
-                @click="handleDateClick(day.date)"
-              >
+              <div v-for="day in calendarDays" :key="day.date" class="calendar-cell" :class="{
+                'completed': isDailyQuestionCompleted(day.date),
+                'future': isFutureDate(day.date),
+                'has-question': hasDailyQuestion(day.date),
+                'selected': isSelectedDate(day.date)
+              }" @click="handleDateClick(day.date)">
                 <span>{{ day.dayOfMonth }}</span>
                 <div v-if="isDailyQuestionCompleted(day.date)" class="check-icon">
-                  <el-icon><Check /></el-icon>
+                  <el-icon>
+                    <Check />
+                  </el-icon>
                 </div>
               </div>
             </div>
           </div>
         </el-card>
-        
+
         <!-- 统计图表卡片 -->
         <!-- <el-card class="side-card stats-card">
           <div class="stats-content"> -->
-            <!-- TODO 未来会传更多数据 -->
-            <!-- <ProblemStatsPie
+        <!-- TODO 未来会传更多数据 -->
+        <!-- <ProblemStatsPie
               :title="hoveredProblem?.questionName"
               :pass-person="hoveredProblem?.passPerson"
               :try-person="hoveredProblem?.tryPerson"
@@ -279,39 +237,25 @@
           </div>
         </el-card> -->
         <!-- 悬浮 如果要原来的就用上面的 -->
-         <!-- 如果希望鼠标移走还在就去掉 handleMouseLeave -->
-        <div 
-          v-if="hoveredProblem" 
-          class="floating-stats-card"
-        >
-          <ProblemStatsPie
-            :title="hoveredProblem?.questionName"
-            :pass-person="hoveredProblem?.passPerson"
-            :try-person="hoveredProblem?.tryPerson"
-          />
+        <!-- 如果希望鼠标移走还在就去掉 handleMouseLeave -->
+        <div v-if="hoveredProblem" class="floating-stats-card">
+          <ProblemStatsPie :title="hoveredProblem?.questionName" :pass-person="hoveredProblem?.passPerson"
+            :try-person="hoveredProblem?.tryPerson" />
         </div>
       </div>
     </div>
   </div>
 
   <!-- elementplus el-dialog: 标签选择弹窗 -->
-  <el-dialog
-    v-model="showTagDialog"
-    title="选择标签"
-    width="45%"
-    :close-on-click-modal="false"
-    style="border-radius: 20px;font-weight: 600;"
-  >
+  <el-dialog v-model="showTagDialog" title="选择标签" width="45%" :close-on-click-modal="false"
+    style="border-radius: 20px;font-weight: 600;">
     <div class="tag-dialog-content">
       <!-- 添加搜索输入框 -->
-      <el-input
-        v-model="tagSearchKeyword"
-        placeholder="搜索标签"
-        class="tag-search-input"
-        clearable
-      >
+      <el-input v-model="tagSearchKeyword" placeholder="搜索标签" class="tag-search-input" clearable>
         <template #prefix>
-          <el-icon><Search /></el-icon>
+          <el-icon>
+            <Search />
+          </el-icon>
         </template>
       </el-input>
 
@@ -321,13 +265,8 @@
         <div class="tag-group-content">
           <template v-if="selectedTagIds.length">
             <!-- elementplus el-check-tag: 可选择的标签 -->
-            <el-check-tag
-              v-for="tagId in selectedTagIds"
-              :key="tagId"
-              :checked="true"
-              class="tag-item"
-              @change="() => handleTagChange(false, tagId)"
-            >
+            <el-check-tag v-for="tagId in selectedTagIds" :key="tagId" :checked="true" class="tag-item"
+              @change="() => handleTagChange(false, tagId)">
               {{ allTags.find(tag => tag.id === tagId)?.name }}
             </el-check-tag>
           </template>
@@ -344,13 +283,8 @@
       <div v-for="group in filteredGroupedTags" :key="group.superName" class="tag-group">
         <div class="tag-group-title">{{ group.superName }}</div>
         <div class="tag-group-content">
-          <el-check-tag
-            v-for="tag in group.tags"
-            :key="tag.id"
-            :checked="selectedTagIds.includes(tag.id)"
-            @change="(checked: boolean) => handleTagChange(checked, tag.id)"
-            class="tag-item"
-          >
+          <el-check-tag v-for="tag in group.tags" :key="tag.id" :checked="selectedTagIds.includes(tag.id)"
+            @change="(checked: boolean) => handleTagChange(checked, tag.id)" class="tag-item">
             {{ tag.name }}
           </el-check-tag>
         </div>
@@ -404,7 +338,7 @@ const handleQuestionClick = (questionId: number) => {
     text: '加载中...',
     background: 'rgba(255, 255, 255, 0.7)'
   })
-  
+
   // 使用 setTimeout 模拟短暂延迟，确保加载动画能够显示
   // setTimeout(() => {
   //   window.location.href = `/question?id=${questionId}`
@@ -436,7 +370,7 @@ const filteredGroupedTags = computed<TagGroup[]>(() => {
   allTags.value.forEach(tag => {
     // 如果有搜索关键词，进行过滤
     if (tagSearchKeyword.value &&
-        !tag.name.toLowerCase().includes(tagSearchKeyword.value.toLowerCase())) {
+      !tag.name.toLowerCase().includes(tagSearchKeyword.value.toLowerCase())) {
       return
     }
 
@@ -552,7 +486,7 @@ onMounted(async () => {
   await getTags()
   await getTotalCount()
 
-  
+
 
 })
 
@@ -614,7 +548,7 @@ const dailyQuestions = ref<any[]>([])
 
 // 修改获取每日一题的方法
 const getDailyQuestions = async (monthStr: string) => {
- 
+
   try {
     const response = await request.post('/userDailyQuestion/getDailyQuestion', {
       "date": monthStr
@@ -622,11 +556,11 @@ const getDailyQuestions = async (monthStr: string) => {
 
     if (response.code === 200) {
       dailyQuestions.value = response.data
-       console.log(response.data)
+      console.log(response.data)
     } else {
-       
+
     }
-  } catch (error) { 
+  } catch (error) {
     console.error('Error:', error);
   }
   // 模拟异步请求
@@ -652,7 +586,7 @@ const isFutureDate = (dateStr: string) => {
 // 检查指定日期是否有每日一题
 const hasDailyQuestion = (dateStr: string) => {
   const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-  return dailyQuestions.value.some(q => 
+  return dailyQuestions.value.some(q =>
     dayjs(q.date).format('YYYY-MM-DD') === formattedDate
   )
 }
@@ -666,12 +600,12 @@ const hasDailyQuestion = (dateStr: string) => {
 // 检查指定日期的每日一题是否已完成
 const isDailyQuestionCompleted = (dateStr: string) => {
   const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-  const question = dailyQuestions.value.find(q => 
+  const question = dailyQuestions.value.find(q =>
     dayjs(q.date).format('YYYY-MM-DD') === formattedDate
   )
   return question?.completed || false
 }
-const getBeijingDate  = () => {
+const getBeijingDate = () => {
   const now = new Date();
 
   const year = now.getFullYear();
@@ -689,12 +623,12 @@ const selectedDailyQuestion = ref<any>(null)
 
 const handleDateClick = (dateStr: string) => {
   const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-  
+
   // 如果是未来日期，不做任何处理
   if (isFutureDate(formattedDate)) {
     return
   }
-  
+
   const question = dailyQuestions.value.find(q => {
     const questionDate = dayjs(q.date).format('YYYY-MM-DD')
     return questionDate === formattedDate
@@ -722,7 +656,7 @@ const calendarDays = computed(() => {
   const days = []
   const startOfMonth = currentMonthDate.value.startOf('month')
   const daysInMonth = currentMonthDate.value.daysInMonth()
-  
+
   for (let i = 1; i <= daysInMonth; i++) {
     const date = startOfMonth.add(i - 1, 'day')
     days.push({
@@ -777,10 +711,13 @@ const firstDayOfMonth = computed(() => {
 
 <style scoped>
 .status-icon.success .check-mark {
-  width: 18px;  /* 4.5 的相对大小 */
+  width: 18px;
+  /* 4.5 的相对大小 */
   height: 18px;
-  fill: none;  /* 重要：不填充 */
-  stroke: #2cbb5d;  /* LeetCode 的绿色 */
+  fill: none;
+  /* 重要：不填充 */
+  stroke: #2cbb5d;
+  /* LeetCode 的绿色 */
   stroke-linecap: round;
   stroke-linejoin: round;
   display: inline-block;
@@ -792,7 +729,7 @@ const firstDayOfMonth = computed(() => {
 /* 可视化的悬浮效果 */
 .floating-stats-card {
   /* position: sticky; */
-  /* right: 20px; */ 
+  /* right: 20px; */
   position: absolute;
   top: 60%;
   transform: translateY(-50%);
@@ -801,9 +738,11 @@ const firstDayOfMonth = computed(() => {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   padding: 20px;
   width: 300px;
-  z-index: 3000; /* 确保在日历上层 */
+  z-index: 3000;
+  /* 确保在日历上层 */
   transition: opacity 0.3s ease;
 }
+
 /* 容器样式 */
 .problem-list-container {
   padding: 20px;
@@ -922,23 +861,31 @@ const firstDayOfMonth = computed(() => {
 .calendar-cell:hover:not(.future) {
   background-color: #f5f7fa;
 }
+
 /* 已完成日历格子的悬浮效果 */
 .calendar-cell.completed:hover {
-  background-color: rgba(103, 194, 58, 0.623); /* 使用更深的绿色 */
+  background-color: rgba(103, 194, 58, 0.623);
+  /* 使用更深的绿色 */
 }
+
 .calendar-cell.selected {
   background-color: #ff4d4f;
   color: white;
 }
+
 .calendar-cell.completed {
   background-color: rgba(103, 194, 58, 0.3);
   color: #303133;
 }
+
 /* 修改组合样式，使用更深的绿色背景 */
 .calendar-cell.completed.selected {
-  background-color: rgba(103, 194, 58, 0.623);  /* 更深的绿色 */
-  color: white;  /* 文字改为白色以提高对比度 */
+  background-color: rgba(103, 194, 58, 0.623);
+  /* 更深的绿色 */
+  color: white;
+  /* 文字改为白色以提高对比度 */
 }
+
 /* 当单元格被选中时隐藏勾勾图标 */
 /* .calendar-cell.selected .check-icon {
   display: none;
@@ -955,7 +902,7 @@ const firstDayOfMonth = computed(() => {
 .stats-content {
   min-height: 350px;
   /* display: flex; */
- 
+
 
 }
 
@@ -1009,8 +956,10 @@ const firstDayOfMonth = computed(() => {
 }
 
 .status-icon.success {
-  background-color: rgba(45, 181, 93, 0.1);  /* 更柔和的绿色背景 */
-  color: #2db55d;  /* LeetCode 风格的绿色 */
+  background-color: rgba(45, 181, 93, 0.1);
+  /* 更柔和的绿色背景 */
+  color: #2db55d;
+  /* LeetCode 风格的绿色 */
 }
 
 .status-icon.success :deep(svg) {
@@ -1020,14 +969,16 @@ const firstDayOfMonth = computed(() => {
 }
 
 .status-icon.pending {
-  background-color: rgba(255, 192, 30, 0.1);  /* 淡黄色背景 */
+  background-color: rgba(255, 192, 30, 0.1);
+  /* 淡黄色背景 */
   position: relative;
 }
 
 .status-icon.pending .dash {
   width: 10px;
   height: 2px;
-  background-color: #ffc01e;  /* 黄色横线 */
+  background-color: #ffc01e;
+  /* 黄色横线 */
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1154,8 +1105,10 @@ const firstDayOfMonth = computed(() => {
 
 /* 修改提交次数列样式 */
 .submission-count-header {
-  float: center;  /* 靠左浮动，使文字靠近题目列 */
-  margin-left: 0;  /* 移除左边距 */
+  float: center;
+  /* 靠左浮动，使文字靠近题目列 */
+  margin-left: 0;
+  /* 移除左边距 */
 }
 
 /* 每日一题头部样式 */
@@ -1225,7 +1178,7 @@ const firstDayOfMonth = computed(() => {
 .daily-question-link:hover {
   text-decoration: underline;
 }
- 
+
 .question-name {
   font-size: 14px;
 }

@@ -1,5 +1,10 @@
 <template>
-  <div class="about-page">
+  <div class="about-page" :class="{ 'light-theme': !themeStore.isDark }">
+    <div class="theme-toggle">
+      <el-icon class="toggle-icon" @click="themeStore.toggleTheme">
+        <component :is="themeStore.isDark ? 'Sunny' : 'Moon'" />
+      </el-icon>
+    </div>
     <!-- 顶部横幅 -->
     <div class="hero-section">
       <div class="hero-content">
@@ -143,7 +148,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ChatDotRound, Location } from '@element-plus/icons-vue'
+import { useThemeStore } from '@/stores/theme'
+import { ChatDotRound, Location, Cpu } from '@element-plus/icons-vue'
 import request from '@/util/request';
 import { ElMessage } from 'element-plus'
 interface Stats {
@@ -167,13 +173,13 @@ const features = ref([
   {
     icon: 'Monitor',
     title: '实时判题',
-    description: '强大的判题系统，支持多种编程语言，实时反馈结果'
+    description: '强大的判题系统，内置多台评测机，通过一致性哈希算法实现任务的高效分发，支持多种编程语言，实时反馈结果'
   },
-  {
-    icon: 'Lock',
-    title: '安全可靠',
-    description: '采用先进的安全机制，保护用户代码和数据安全'
-  },
+  // {
+  //   icon: 'Lock',
+  //   title: '安全可靠',
+  //   description: '采用先进的安全机制，保护用户代码和数据安全'
+  // },
   {
     icon: 'Share',
     title: '在线讨论',
@@ -183,6 +189,11 @@ const features = ref([
     icon: 'DataLine',
     title: '数据分析',
     description: '详细的提交统计和进度追踪，助力编程能力提升'
+  },
+  {
+    icon: 'Cpu',
+    title: 'AI助手',
+    description: '集成多个AI模型，提供代码生成、优化建议和问题解答，提升开发效率'
   }
 ])
 
@@ -203,7 +214,9 @@ const contact = ref({
   email: 'xxxxx@ptuoj.com',
   address: '莆田学院'
 })
+const themeStore = useThemeStore()
 onMounted(() => {
+  themeStore.initTheme()
   getStats()
 })
 const getStats = async () => {
@@ -234,11 +247,42 @@ const getStats = async () => {
 <style scoped lang="scss">
 .about-page {
   min-height: 100vh;
+  background: #0f0f1a;
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 7vh;
+  right: 20px;
+  z-index: 100;
+  cursor: pointer;
+}
+
+.toggle-icon {
+  font-size: 24px;
+  color: #ffffff;
+  padding: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.toggle-icon:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(30deg);
+}
+
+/* 亮色主题样式 */
+.light-theme {
   background: #f8f9fa;
+  color: #2c3e50;
 }
 
 .hero-section {
-  background: linear-gradient(135deg, #1a73e8 0%, #289cf5 100%);
+  background: linear-gradient(45deg, #0f0f1a 0%, #2a1b3d 50%, #1a1b3c 100%);
   color: white;
   padding: 80px 20px;
   text-align: center;
@@ -252,7 +296,7 @@ const getStats = async () => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: url('/path/to/pattern.svg');
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
     opacity: 0.1;
   }
 
@@ -267,6 +311,9 @@ const getStats = async () => {
       font-weight: 700;
       margin-bottom: 1rem;
       animation: fadeInUp 0.8s ease;
+      background: linear-gradient(135deg, #00ffbb 0%, #4d7fff 50%, #ff49e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .subtitle {
@@ -289,11 +336,15 @@ const getStats = async () => {
       font-size: 2.5rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #00ffbb 0%, #4d7fff 50%, #ff49e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .stat-label {
       font-size: 1rem;
       opacity: 0.9;
+      color: inherit;
     }
   }
 }
@@ -306,9 +357,12 @@ const getStats = async () => {
 
 .section-title {
   font-size: 2rem;
-  color: #2c3e50;
+  color: #ffffff;
   text-align: center;
   margin-bottom: 40px;
+  background: linear-gradient(135deg, #00ffbb 0%, #4d7fff 50%, #ff49e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .features-grid {
@@ -319,76 +373,32 @@ const getStats = async () => {
 }
 
 .feature-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.05);
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   transition: transform 0.3s ease;
   text-align: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 
   &:hover {
     transform: translateY(-5px);
   }
 
   .feature-icon {
-    color: #1a73e8;
+    color: #4d7fff;
     margin-bottom: 20px;
   }
 
   h3 {
     font-size: 1.5rem;
     margin-bottom: 15px;
-    color: #2c3e50;
+    color: #ffffff;
   }
 
   p {
-    color: #666;
-    line-height: 1.6;
-  }
-}
-
-.team-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 30px;
-  margin-bottom: 80px;
-}
-
-.team-card {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
-
-  .member-avatar {
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 20px;
-    border-radius: 50%;
-    overflow: hidden;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  }
-
-  h3 {
-    font-size: 1.5rem;
-    color: #2c3e50;
-    margin-bottom: 10px;
-  }
-
-  .member-role {
-    color: #1a73e8;
-    font-weight: 600;
-    margin-bottom: 15px;
-  }
-
-  .member-description {
-    color: #666;
+    color: rgba(255, 255, 255, 0.7);
     line-height: 1.6;
   }
 }
@@ -401,11 +411,13 @@ const getStats = async () => {
 }
 
 .tech-item {
-  background: white;
+  background: rgba(255, 255, 255, 0.05);
   padding: 20px;
   border-radius: 8px;
   text-align: center;
   transition: transform 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 
   &:hover {
     transform: translateY(-5px);
@@ -415,23 +427,26 @@ const getStats = async () => {
     width: 50px;
     height: 50px;
     margin-bottom: 10px;
+    filter: invert(1);
   }
 
   span {
     display: block;
-    color: #2c3e50;
+    color: #ffffff;
     font-weight: 500;
   }
 }
 
 .contact-section {
-  background: #2c3e50;
+  background: rgba(255, 255, 255, 0.05);
   color: white;
   padding: 60px 20px;
   text-align: center;
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 
   .section-title {
-    color: white;
+    color: inherit;
   }
 
   .contact-info {
@@ -448,50 +463,110 @@ const getStats = async () => {
 
     .el-icon {
       font-size: 24px;
+      color: #4d7fff;
+    }
+
+    span {
+      color: inherit;
     }
   }
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
+.light-theme {
+  background: #f8f9fa;
+  color: #2c3e50;
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-// 响应式设计
-@media (max-width: 768px) {
   .hero-section {
-    padding: 60px 20px;
-
-    .title {
-      font-size: 2.5rem;
-    }
+    background: linear-gradient(135deg, #1a73e8 0%, #289cf5 100%);
 
     .subtitle {
-      font-size: 1.2rem;
+      color: white;
+    }
+
+    .hero-stats {
+      .stat-item {
+
+        // 下面三处是修改上面数据字体的颜色
+        .stat-number {
+          color: white !important;
+          background: none;
+          -webkit-text-fill-color: white;
+        }
+
+        .stat-label {
+          color: white;
+          opacity: 0.9;
+        }
+      }
     }
   }
 
-  .hero-stats {
-    flex-direction: column;
-    gap: 30px;
+  .hero-content .title {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  .features-grid,
-  .team-grid {
-    grid-template-columns: 1fr;
+  .stat-number {
+    color: #ffffff !important;
+    background: none;
+    -webkit-text-fill-color: #ffffff;
+  }
+
+  .section-title {
+    color: #2c3e50;
+    background: none;
+    -webkit-text-fill-color: #2c3e50;
+  }
+
+  .feature-card {
+    background: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+
+    h3 {
+      color: #2c3e50;
+    }
+
+    p {
+      color: #666666;
+    }
+  }
+
+  .feature-icon {
+    color: #1a73e8;
+  }
+
+  .tech-item {
+    background: white;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+    span {
+      color: #2c3e50;
+    }
+
+    img {
+      filter: none;
+    }
+  }
+
+  // 修改底部联系方式的字体颜色
+  .contact-section {
+    background: #2c3e50;
+    color: white;
+    border-top: none;
+
+    .section-title {
+      color: white;
+      -webkit-text-fill-color: white;
+    }
+  }
+
+  .about-name {
+    color: #2c3e50;
   }
 }
-
-
-
-
 
 .about-info {
   margin: auto;
@@ -502,7 +577,7 @@ const getStats = async () => {
 .about-name {
   margin: 10px;
   font-size: 20px;
-  color: #0b0b0b;
+  color: #ffffff;
 }
 
 
@@ -552,17 +627,43 @@ const getStats = async () => {
   border-radius: 100%;
   overflow: hidden;
   content: '';
-  /* box-shadow: 0 0 15px 10px #fff; */
-  background: linear-gradient(#14aaf0, #d500f9);
+  background: linear-gradient(135deg, #00ffbb 0%, #4d7fff 50%, #ff49e1 100%);
 }
 
-@keyframes rotate {
+@keyframes fadeInUp {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: translateY(20px);
   }
 
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 60px 20px;
+
+    .title {
+      font-size: 2.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+    }
+  }
+
+  .hero-stats {
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .features-grid,
+  .team-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
