@@ -71,10 +71,11 @@
         <el-form-item label="比赛封面">
           <el-upload
             class="avatar-uploader"
-            action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
+            :action="null"
             :show-file-list="false"
             :on-success="handleAvatarSuccess"
             :before-upload="beforeAvatarUpload"
+            :on-change="handleAvatarUpload"
           >
             <img v-if="cover" :src="cover" class="avatar" />
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
@@ -190,6 +191,35 @@ const contestType = ref('1')
 const mavonEditorRef = ref()
 const active = ref(0)
 const questionListInfo = ref([])
+const handleAvatarSuccess = (response, uploadFile) => {
+  cover.value = uploadFile.url
+}
+const handleAvatarUpload = (file) => {
+  const data = new FormData()
+
+  data.append('file', file.raw)
+  request
+    .post('/oss/upload/user/avatar', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        cover.value = res.data.url
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+}
+const beforeAvatarUpload = (rawFile) => {
+  if (rawFile.size / 1024 / 1024 > 2) {
+    ElMessage.error('Avatar picture size can not exceed 2MB!')
+    return false
+  }
+
+  return true
+}
 const getContest = () => {
   request.get(`/root/contest/get/${contestId.value}`).then((res) => {
     if (res.code == 200) {
@@ -316,12 +346,14 @@ function primary() {
     ElMessage.error('请选择比赛类型')
     return false
   }
+  if (cover.value == '') {
+    ElMessage.error('请选择比赛类型')
+    return false
+  }
   if (isPassword.value == 1 && password.value == '') {
     ElMessage.error('比赛密码不能为空')
     return false
   }
-  cover.value =
-    'https://uploadfiles.nowcoder.com/images/20231115/999991351_1700047623309/5F6F71EEA2A4D8090C0AC8B246CE423D'
   if (props.id == contestId.value && props.id !== undefined) {
     request
       .post('/root/contest/edit', {

@@ -131,7 +131,7 @@ const saveNotice = async () => {
     .then((res) => {
       if (res.code == 200) {
         ElMessage.success('保存成功')
-        // showAddNotice.value = false
+        showAddNotice.value = false
         getNoticeList()
       } else {
         ElMessage.error(res.msg)
