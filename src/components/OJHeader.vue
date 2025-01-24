@@ -365,6 +365,8 @@ onUnmounted(() => {
   display: inline-block;
   text-decoration: none;
   z-index: 3;
+  /* 鼠标悬浮样式 */
+  cursor: pointer;
 }
 
 .slide1,
