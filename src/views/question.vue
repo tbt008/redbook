@@ -158,9 +158,11 @@ const goToSubmissionDetail = (row) => {
                         :toolbarsFlag="false"         // 是否显示工具栏
                         :editable="false"             // 是否可编辑
                         :scrollStyle="true"           // 是否启用滚动条样式
-                        :ishljs="true"               // 是否启用代码高亮 -->
-                <mavon-editor v-model="article.description" :subfield="false" :defaultOpen="'preview'"
-                  :toolbarsFlag="false" :editable="false" :scrollStyle="true" :ishljs="true" />
+                        :ishljs="true"               // 是否启用代码高亮 
+                        :boxShadow="false"            // 是否启用阴影
+                        -->
+                <mavon-editor v-model="article.description" :subfield="false" :boxShadow="false"
+                  :defaultOpen="'preview'" :toolbarsFlag="false" :editable="false" :scrollStyle="true" :ishljs="true" />
               </div>
               <div style="padding: 10px" v-for="(item, index) in article.example" :key="index">
                 <div style="font: 14px sans-serif; font-weight: bold">示例 {{ index + 1 }}</div>
@@ -190,8 +192,8 @@ const goToSubmissionDetail = (row) => {
               </div>
               <div style="font: 14px sans-serif; font-weight: bold; padding-left: 20px">提示：</div>
               <div class="question-tip">
-                <mavon-editor v-model="article.tip" :subfield="false" :defaultOpen="'preview'" :toolbarsFlag="false"
-                  :editable="false" :scrollStyle="true" :ishljs="true" />
+                <mavon-editor v-model="article.tip" :subfield="false" :boxShadow="false" :defaultOpen="'preview'"
+                  :toolbarsFlag="false" :editable="false" :scrollStyle="true" :ishljs="true" />
               </div>
             </div>
           </div>
@@ -309,6 +311,7 @@ const goToSubmissionDetail = (row) => {
   :deep(.v-note-wrapper) {
     min-height: auto !important;
     height: auto !important;
+    border: none !important;
   }
 
   :deep(.v-note-panel) {
