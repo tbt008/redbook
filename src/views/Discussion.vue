@@ -6,48 +6,36 @@
         <el-card class="actions-card">
           <div class="discussion-header">
             <div class="left-actions">
-              <el-button 
-                class="publish-button" 
-                @click="dialogVisible = true"
-              >
-                <el-icon class="publish-icon"><EditPen /></el-icon>
-                <span class="publish-text">发布文章</span> 
+              <el-button class="publish-button" @click="dialogVisible = true">
+                <el-icon class="publish-icon">
+                  <EditPen />
+                </el-icon>
+                <span class="publish-text">发布文章</span>
               </el-button>
-              
+
               <!-- 文章类型筛选 -->
-              <el-select 
-                v-model="filterType" 
-                placeholder="标签选择"
-                class="filter-select"
-              >
+              <el-select v-model="filterType" placeholder="标签选择" class="filter-select">
                 <template #prefix>
                   <span class="select-label">
-                    {{ filterType === 'all' ? '全部文章' : 
-                       filterType === null ? '标签选择' : 
-                       getArticleTypeLabel(Number(filterType)) }}
+                    {{ filterType === 'all' ? '全部文章' :
+                      filterType === null ? '标签选择' :
+                        getArticleTypeLabel(Number(filterType)) }}
                   </span>
                 </template>
                 <el-option label="全部" value="all" />
-                <el-option
-                  v-for="type in articleTypes"
-                  :key="type.value"
-                  :label="type.label"
-                  :value="type.value.toString()"
-                />
+                <el-option v-for="type in articleTypes" :key="type.value" :label="type.label"
+                  :value="type.value.toString()" />
               </el-select>
             </div>
 
             <!-- 排序选项 -->
             <div class="sort-options">
               <div class="sort-buttons-group">
-                <button 
-                  v-for="option in sortOptions" 
-                  :key="option.value"
-                  class="sort-btn"
-                  :class="{ active: sortBy === option.value }"
-                  @click="sortBy = option.value; handleSortChange()"
-                >
-                  <el-icon><component :is="option.icon" /></el-icon>
+                <button v-for="option in sortOptions" :key="option.value" class="sort-btn"
+                  :class="{ active: sortBy === option.value }" @click="sortBy = option.value; handleSortChange()">
+                  <el-icon>
+                    <component :is="option.icon" />
+                  </el-icon>
                   {{ option.label }}
                 </button>
               </div>
@@ -61,61 +49,49 @@
             <!-- 加载状态 -->
             <div v-if="loading" class="loading-state">
               <!-- 加上loading动画 使用is-loading -->
-              <el-icon class="loading-icon is-loading"><Loading /></el-icon>
+              <el-icon class="loading-icon is-loading">
+                <Loading />
+              </el-icon>
               <span>加载中...</span>
             </div>
 
             <!-- 空数据状态 -->
-            <el-empty 
-              v-else-if="!loading && (!articles || articles.length === 0)"
-              description="暂无数据"
-            />
+            <el-empty v-else-if="!loading && (!articles || articles.length === 0)" description="暂无数据" />
 
             <!-- 文章列表 -->
             <template v-else>
-              <el-card 
-                v-for="item in articles" 
-                :key="item.id" 
-                class="discussion-item"
-              >
+              <el-card v-for="item in articles" :key="item.id" class="discussion-item">
                 <div class="article-main" @click="goToDetail(item.id)">
                   <div class="article-meta">
-                    <el-tag 
-                      :type="getArticleTypeTag(item.articleType)" 
-                      class="article-type-tag" 
-                      effect="light"
-                    >
+                    <el-tag :type="getArticleTypeTag(item.articleType)" class="article-type-tag" effect="light">
                       {{ getArticleTypeLabel(item.articleType) }}
                     </el-tag>
                     <h3 class="article-title">{{ item.title }}</h3>
                   </div>
-                  <div 
-                    class="article-brief" 
-                    v-html="renderMarkdown(item.content.substring(0, 150))"
-                  ></div>
+                  <div class="article-brief" v-html="renderMarkdown(item.content.substring(0, 150))"></div>
                 </div>
                 <div class="article-footer">
                   <div class="article-stats">
                     <div class="interaction-buttons">
-                      <button 
-                        class="interaction-btn like-btn" 
-                        :class="{ 'active': item.isLiked }"
-                        @click="handleLike($event, item)"
-                      >
-                        <el-icon><Pointer /></el-icon>
+                      <button class="interaction-btn like-btn" :class="{ 'active': item.isLiked }"
+                        @click="handleLike($event, item)">
+                        <el-icon>
+                          <Pointer />
+                        </el-icon>
                         <span>{{ item.likeNum }}</span>
                       </button>
-                      <button 
-                        class="interaction-btn favorite-btn" 
-                        :class="{ 'active': item.isFavorited }"
-                        @click="handleFavorite($event, item)"
-                      >
-                        <el-icon><Star /></el-icon>
+                      <button class="interaction-btn favorite-btn" :class="{ 'active': item.isFavorited }"
+                        @click="handleFavorite($event, item)">
+                        <el-icon>
+                          <Star />
+                        </el-icon>
                         <span>{{ item.favourNum }}</span>
                       </button>
                     </div>
                     <span class="view-count">
-                      <el-icon><View /></el-icon>
+                      <el-icon>
+                        <View />
+                      </el-icon>
                       {{ item.articleReads }}次浏览
                     </span>
                   </div>
@@ -129,16 +105,9 @@
 
             <!-- 分页组件 -->
             <div v-if="!loading && articles && articles.length > 0" class="pagination-container">
-              <el-pagination
-                v-model:current-page="pageParams.pageStart"
-                v-model:page-size="pageParams.pageSize"
-                :page-sizes="[10, 20, 30, 50]"
-                :total="total"
-                :pager-count="7"
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange"
-                layout="total, sizes, prev, pager, next, jumper"
-              />
+              <el-pagination v-model:current-page="pageParams.pageStart" v-model:page-size="pageParams.pageSize"
+                :page-sizes="[10, 20, 30, 50]" :total="total" :pager-count="7" @size-change="handleSizeChange"
+                @current-change="handleCurrentChange" layout="total, sizes, prev, pager, next, jumper" />
             </div>
           </div>
         </el-card>
@@ -182,57 +151,34 @@
 
     <!-- AI助手按钮 -->
     <div class="ai-button-container">
-      <el-button 
-        class="ai-button" 
-        @click="router.push('/ai')"
-      >
-        <el-icon class="ai-icon"><ChatDotRound /></el-icon>
+      <el-button class="ai-button" @click="router.push('/ai')">
+        <el-icon class="ai-icon">
+          <ChatDotRound />
+        </el-icon>
         <span class="ai-text">AI</span>
       </el-button>
     </div>
 
     <!-- 发布文章对话框 -->
-    <el-drawer
-      v-model="dialogVisible"
-      title="发布文章"
-      size="100%"
-      :with-header="false"
-      direction="ttb"
-      class="publish-drawer"
-    >
+    <el-drawer v-model="dialogVisible" title="发布文章" size="100%" :with-header="false" direction="ttb"
+      class="publish-drawer">
       <div class="publish-container">
         <el-form :model="newArticle" :rules="rules" ref="formRef" class="publish-form">
           <el-form-item label="标题" prop="title">
             <el-input v-model="newArticle.title" placeholder="请输入标题"></el-input>
           </el-form-item>
-          
+
           <el-form-item label="文章类型" prop="articleTypeName">
-            <el-select 
-              v-model="newArticle.articleTypeName" 
-              placeholder="请选择文章类型" 
-              style="width: 100%"
-              @change="handleArticleTypeChange"
-            >
-              <el-option
-                v-for="type in articleTypes"
-                :key="type.value"
-                :label="type.label"
-                :value="type.value"
-              />
+            <el-select v-model="newArticle.articleTypeName" placeholder="请选择文章类型" style="width: 100%"
+              @change="handleArticleTypeChange">
+              <el-option v-for="type in articleTypes" :key="type.value" :label="type.label" :value="type.value" />
             </el-select>
           </el-form-item>
 
           <el-form-item label="内容" prop="content">
             <div class="editor-container">
-              <mavon-editor
-                v-model="newArticle.content"
-                class="md-editor"
-                ref="mavonEditorRef"
-                :ishljs="true"
-                :toolbars="toolbars"
-                @change="handleEditorChange"
-                :boxShadow="false"
-              />
+              <mavon-editor v-model="newArticle.content" class="md-editor" ref="mavonEditorRef" :ishljs="true"
+                :toolbars="toolbars" @change="handleEditorChange" :boxShadow="false" />
             </div>
           </el-form-item>
 
@@ -390,10 +336,10 @@ const getArticles = async () => {
         'auth-token': `Bearer ${token}`
       }
     }) as any
-    
+
     if (response.code === 200) {
       articles.value = response.data.list
-      total.value = response.data.total // 假设后端返回总数
+      total.value = response.data.total
     } else {
       ElMessage.error(response.msg || '获取文章列表失败')
     }
@@ -475,10 +421,10 @@ const goToDetail = (id: string) => {
 // 文章发布
 const submitArticle = async () => {
   if (!formRef.value) return
-  
+
   try {
     await formRef.value.validate()
-    
+
     const response = await request.post('/article/add', {
       title: newArticle.title,
       content: newArticle.content,
@@ -489,7 +435,7 @@ const submitArticle = async () => {
         'auth-token': `Bearer ${token}`
       }
     }) as any
-    
+
     if (response.code === 200) {
       ElMessage.success('发布成功！')
       dialogVisible.value = false
@@ -896,14 +842,17 @@ watch(filterType, () => {
   color: #666;
   gap: 0.5rem;
 }
+
 .like-btn.active {
   background-color: #e1f3d8;
   color: #67c23a;
 }
+
 .favorite-btn.active {
   background-color: #fdf6ec;
   color: #e6a23c;
 }
+
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .main-content {
@@ -1033,7 +982,8 @@ watch(filterType, () => {
 
 /* 调整主内容区域样式 */
 .main-content {
-  padding-top: 2rem; /* 由于移除了横幅，添加适当的顶部间距 */
+  padding-top: 2rem;
+  /* 由于移除了横幅，添加适当的顶部间距 */
 }
 
 .editor-container {

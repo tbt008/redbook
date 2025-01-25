@@ -247,7 +247,8 @@
         </template>
         <div class="author-profile" v-if="discussion">
           <el-avatar :size="64" :src="discussion.avatar" />
-          <h3>{{ discussion.userId }}</h3>
+          <!-- <h3>{{ discussion.userId }}</h3> -->
+          <h3>{{ discussion.nickName }}</h3>
           <div class="author-stats">
             <div class="stat-item">
               <div class="stat-value">{{ authorStats.articles }}</div>

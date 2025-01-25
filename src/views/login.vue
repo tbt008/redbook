@@ -51,7 +51,7 @@
         </form>
       </section>
       <footer>
-        <p><a href="" title="Forgot Password">忘记密码?</a></p>
+        <!-- <p><a href="" title="Forgot Password">忘记密码?</a></p> -->
         <p><a href="/register" title="Register">注册</a></p>
       </footer>
     </section>
