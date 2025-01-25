@@ -287,11 +287,7 @@ const startPolling = () => {
   pollTimer = setInterval(getUnreadCount, 120000) // 每2分钟执行一次
 }
 
-onMounted(() => {
-  if (localStorage.getItem('authToken')) {
-    startPolling()
-  }
-})
+
 
 onUnmounted(() => {
   if (pollTimer) {
