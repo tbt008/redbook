@@ -2,7 +2,7 @@
   <div class="submission-detail">
     <!-- 测试用例结果展示 -->
     <div class="test-case-section">
-      <testCase :test="submissionData"></testCase>
+      <testCase :test="testResult"></testCase>
       <div class="author-info">
         <el-tag size="small" type="info" effect="plain">
           作者：{{ submissionData.userName }}
@@ -101,7 +101,6 @@ const getSubmissionDetail = async () => {
 
     if (response.code === 200) {
       submissionData.value = response.data
-
       // // 获取测试结果
       // const testResponse = await request.get(`/record/get/one/${submissionId}`) as any
       // if (testResponse.code === 200) {
@@ -192,7 +191,7 @@ const copyCode = () => {
 
 onMounted(() => {
   getSubmissionDetail()
-  // getTestResult()
+  getTestResult()
 })
 </script>
 
