@@ -23,6 +23,7 @@ const onSubmit = () => {
     .then((res) => {
       if (res.code === 200) {
         ElMessage.success('更新成功')
+        getUserInfo()
       } else {
         ElMessage.warning(res.msg)
       }
@@ -30,7 +31,6 @@ const onSubmit = () => {
     .catch((err) => {
       ElMessage.warning(err)
     })
-  getUserInfo()
 }
 const handleAvatarSuccess = (response, uploadFile) => {
   form.cover = uploadFile.url
@@ -38,7 +38,7 @@ const handleAvatarSuccess = (response, uploadFile) => {
 const handleAvatarUpload = (file) => {
   const data = new FormData()
   var url = ''
-  data.append('file', file.raw)
+  data.append('file', file)
   request
     .post('/oss/upload/user/avatar', data, {
       headers: {
@@ -55,7 +55,6 @@ const handleAvatarUpload = (file) => {
             cover: url
           })
           .then((res1) => {
-            console.log(res1)
             if (res1.code == 200) {
               ElMessage.success('更新成功')
             } else {
@@ -71,12 +70,11 @@ const handleAvatarUpload = (file) => {
     })
 }
 const beforeAvatarUpload = (rawFile) => {
-  console.log(rawFile)
   if (rawFile.size / 1024 / 1024 > 2) {
     ElMessage.error('Avatar picture size can not exceed 2MB!')
     return false
   }
-
+  handleAvatarUpload(rawFile)
   return true
 }
 import { ElMessage } from 'element-plus'
@@ -398,11 +396,9 @@ const goToSubmissionDetail = (row) => {
             <el-form-item label="头像">
               <el-upload
                 class="avatar-uploader"
-                :action="null"
                 :show-file-list="false"
                 :on-success="handleAvatarSuccess"
                 :before-upload="beforeAvatarUpload"
-                :on-change="handleAvatarUpload"
               >
                 <img v-if="form.cover" :src="form.cover" class="avatar" />
                 <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>

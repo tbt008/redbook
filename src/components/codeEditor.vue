@@ -1,14 +1,14 @@
 <script>
 import { getCurrentInstance, onMounted, watch } from 'vue'
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.main.js'
-import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
+// import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import { debounce } from '@/utils/optimizeUtils'
 // 解决vite Monaco提示错误
-self.MonacoEnvironment = {
-  getWorker() {
-    return new JsonWorker()
-  }
-}
+// self.MonacoEnvironment = {
+//   getWorker() {
+//     return new JsonWorker()
+//   }
+// }
 export default {
   props: {
     value: String,
@@ -57,7 +57,7 @@ export default {
       // 监听值变化
       monacoEditor.onDidChangeModelContent(() => {
         const currenValue = monacoEditor?.getValue()
-        emit('update:value', currenValue)
+        emit('updateCode', currenValue)
       })
       monacoEditor.layout({
         width: 600,

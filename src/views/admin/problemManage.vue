@@ -38,8 +38,14 @@
       <div v-if="selectedTagIds.length" class="selected-tags-bar">
         <div style="font-size: 12px; line-height: 24px">已选择：</div>
         <!-- elementplus el-tag: 已选标签展示 -->
-        <el-tag v-for="tagId in selectedTagIds" :key="tagId" closable type="primary" class="selected-tag"
-          @close="handleTagChange(false, tagId)">
+        <el-tag
+          v-for="tagId in selectedTagIds"
+          :key="tagId"
+          closable
+          type="primary"
+          class="selected-tag"
+          @close="handleTagChange(false, tagId)"
+        >
           {{ allTags.find((tag) => tag.id === tagId)?.name }}
         </el-tag>
       </div>
@@ -61,7 +67,13 @@
             </router-link>
             <div class="problem-tags">
               <!-- elementplus el-tag: 题目标签 -->
-              <el-tag v-for="tag in row.tags" :key="tag" size="small" effect="plain" class="tag-item">
+              <el-tag
+                v-for="tag in row.tags"
+                :key="tag"
+                size="small"
+                effect="plain"
+                class="tag-item"
+              >
                 {{ tag }}
               </el-tag>
             </div>
@@ -87,14 +99,16 @@
         <!-- 难度列 -->
         <el-table-column label="难度" width="100">
           <template #default="{ row }">
-            <span :class="[
-              'difficulty-label',
-              row.difficulty === 1 ? 'difficulty-entry' : '',
-              row.difficulty === 2 ? 'difficulty-easy' : '',
-              row.difficulty === 3 ? 'difficulty-medium' : '',
-              row.difficulty === 4 ? 'difficulty-hard' : '',
-              row.difficulty === 5 ? 'difficulty-expert' : ''
-            ]">
+            <span
+              :class="[
+                'difficulty-label',
+                row.difficulty === 1 ? 'difficulty-entry' : '',
+                row.difficulty === 2 ? 'difficulty-easy' : '',
+                row.difficulty === 3 ? 'difficulty-medium' : '',
+                row.difficulty === 4 ? 'difficulty-hard' : '',
+                row.difficulty === 5 ? 'difficulty-expert' : ''
+              ]"
+            >
               {{ row.difficultyName }}
             </span>
           </template>
@@ -103,8 +117,12 @@
         <!-- 通过率列 -->
         <el-table-column label="通过率" width="180">
           <template #default="{ row }">
-            <el-progress :percentage="Number(row.passRate)" text-inside :stroke-width="18"
-              :color="getProgressColor(row.passRate)" />
+            <el-progress
+              :percentage="Number(row.passRate)"
+              text-inside
+              :stroke-width="18"
+              :color="getProgressColor(row.passRate)"
+            />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150">
@@ -119,9 +137,15 @@
 
       <!-- elementplus el-pagination: 分页器 -->
       <div class="pagination-container">
-        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
-          :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
-          @current-change="handleCurrentChange" />
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total="total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
       </div>
     </div>
   </div>
@@ -130,15 +154,30 @@
     <QuestionEditor @cancel="cancel" @primary="cancel"></QuestionEditor>
   </el-dialog>
   <!-- 修改题目 -->
-  <el-dialog v-model="showUpdateQuestion" title="修改题目" width="90%" :close-on-click-modal="false">
+  <el-dialog
+    v-model="showUpdateQuestion"
+    title="修改题目"
+    width="90%"
+    :close-on-click-modal="false"
+  >
     <QuestionEditor @cancel="cancel" @primary="cancel" :id="questionId"></QuestionEditor>
   </el-dialog>
   <!-- elementplus el-dialog: 标签选择弹窗 -->
-  <el-dialog v-model="showTagDialog" title="选择标签" width="45%" :close-on-click-modal="false"
-    style="border-radius: 20px; font-weight: 600">
+  <el-dialog
+    v-model="showTagDialog"
+    title="选择标签"
+    width="45%"
+    :close-on-click-modal="false"
+    style="border-radius: 20px; font-weight: 600"
+  >
     <div class="tag-dialog-content">
       <!-- 添加搜索输入框 -->
-      <el-input v-model="tagSearchKeyword" placeholder="搜索标签" class="tag-search-input" clearable>
+      <el-input
+        v-model="tagSearchKeyword"
+        placeholder="搜索标签"
+        class="tag-search-input"
+        clearable
+      >
         <template #prefix>
           <el-icon>
             <Search />
@@ -152,8 +191,13 @@
         <div class="tag-group-content">
           <template v-if="selectedTagIds.length">
             <!-- elementplus el-check-tag: 可选择的标签 -->
-            <el-check-tag v-for="tagId in selectedTagIds" :key="tagId" :checked="true" class="tag-item"
-              @change="() => handleTagChange(false, tagId)">
+            <el-check-tag
+              v-for="tagId in selectedTagIds"
+              :key="tagId"
+              :checked="true"
+              class="tag-item"
+              @change="() => handleTagChange(false, tagId)"
+            >
               {{ allTags.find((tag) => tag.id === tagId)?.name }}
             </el-check-tag>
           </template>
@@ -168,8 +212,13 @@
       <div v-for="group in filteredGroupedTags" :key="group.superName" class="tag-group">
         <div class="tag-group-title">{{ group.superName }}</div>
         <div class="tag-group-content">
-          <el-check-tag v-for="tag in group.tags" :key="tag.id" :checked="selectedTagIds.includes(tag.id)"
-            @change="(checked) => handleTagChange(checked, tag.id)" class="tag-item">
+          <el-check-tag
+            v-for="tag in group.tags"
+            :key="tag.id"
+            :checked="selectedTagIds.includes(tag.id)"
+            @change="(checked) => handleTagChange(checked, tag.id)"
+            class="tag-item"
+          >
             {{ tag.name }}
           </el-check-tag>
         </div>
@@ -252,20 +301,16 @@ const onDelete = (row) => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
+  }).then(() => {
+    request.delete(`/root/question/delete/${row.id}`).then((res) => {
+      if (res.code === 200) {
+        ElMessage.success('删除成功')
+        getProblems()
+      } else {
+        ElMessage.error('删除失败')
+      }
+    })
   })
-    .then(() => {
-      request.delete(`/root/question/delete/${row.id}`).then((res) => {
-        if (res.code === 200) {
-          ElMessage.success('删除成功')
-          getProblems()
-        } else {
-          ElMessage.error('删除失败')
-        }
-      })
-    })
-    .catch(() => {
-      ElMessage.error('删除失败')
-    })
 }
 // 添加标签搜索关键词
 const tagSearchKeyword = ref('')

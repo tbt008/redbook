@@ -33,15 +33,19 @@
           <span class="label">占用内存：</span>
           <span class="value">{{ formatMemory(submissionData.memory) }}</span>
         </div>
-        <div class="info-item"> 
+        <div class="info-item">
           <span class="label">运行状态：</span>
-          <span class="value">           
+          <span class="value">
             <el-tag v-if="submissionData.result == 100" type="success">答案正确</el-tag>
-            <el-tag v-else-if="submissionData.result < 100 && submissionData.result > 0" type="primary">部分正确</el-tag>
+            <el-tag
+              v-else-if="submissionData.result < 100 && submissionData.result > 0"
+              type="primary"
+              >部分正确</el-tag
+            >
             <el-tag v-if="submissionData.result == 0" type="danger">答案错误</el-tag>
             <el-tag v-if="submissionData.result == -1" type="danger">等待判题</el-tag>
-            <el-tag v-if="submissionData.result == -2" type="warning">编译错误</el-tag> 
-        </span>
+            <el-tag v-if="submissionData.result == -2" type="warning">编译错误</el-tag>
+          </span>
         </div>
       </div>
     </el-card>
@@ -50,12 +54,7 @@
     <el-card class="code-section">
       <div class="code-header">
         <span class="code-title">提交的代码</span>
-        <el-button 
-          type="primary" 
-          size="small" 
-          @click="copyCode"
-          :icon="Document"
-        >
+        <el-button type="primary" size="small" @click="copyCode" :icon="Document">
           复制代码
         </el-button>
       </div>
@@ -77,7 +76,7 @@ import { Document } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import testCase from '@/components/testCase.vue'
 import hljs from 'highlight.js'
-import 'highlight.js/styles/github.css' 
+import 'highlight.js/styles/github.css'
 
 const route = useRoute()
 const submissionData = ref({
@@ -100,19 +99,19 @@ const testResult = ref({
 const getSubmissionDetail = async () => {
   try {
     const submissionId = route.params.id
-    const response = await request.post('/record/submission', {
+    const response = (await request.post('/record/submission', {
       submissionId: submissionId
-    }) as any
-    
+    })) as any
+
     if (response.code === 200) {
       submissionData.value = response.data
-      
-      // 获取测试结果
-      const testResponse = await request.get(`/record/get/one/${submissionId}`) as any
-      if (testResponse.code === 200) {
-        testResult.value = testResponse.data.test
-      }
-      
+
+      // // 获取测试结果
+      // const testResponse = await request.get(`/record/get/one/${submissionId}`) as any
+      // if (testResponse.code === 200) {
+      //   testResult.value = testResponse.data.test
+      // }
+
       // 代码高亮
       setTimeout(() => {
         document.querySelectorAll('pre code').forEach((block) => {
@@ -129,7 +128,7 @@ const getSubmissionDetail = async () => {
 const getTestResult = async () => {
   try {
     const submissionId = route.params.id
-    const response = await request.get(`/record/get/one/${submissionId}`) as any
+    const response = (await request.get(`/record/get/one/${submissionId}`)) as any
     if (response.code === 200) {
       testResult.value = response.data.test
     }
@@ -144,7 +143,7 @@ const getLanguageName = (languageId: number) => {
     1: 'C',
     2: 'C++',
     3: 'Java',
-    4: 'Python', 
+    4: 'Python'
   }
   return languages[languageId] || '未知语言'
 }
@@ -163,43 +162,41 @@ const getCodeLength = (code: string) => {
 
 // 复制代码
 const copyCode = () => {
-  const code = submissionData?.value?.code;
+  const code = submissionData?.value?.code
 
   if (!code) {
-    ElMessage.error('代码为空，无法复制');
-    return;
+    ElMessage.error('代码为空，无法复制')
+    return
   }
   //解决 浏览器禁用了非安全域 (非 HTTPS) 的 navigator.clipboard API
   // 创建临时的文本区域用于复制
-  const textArea = document.createElement('textarea');
-  textArea.value = code;
-  textArea.style.position = 'absolute';
-  textArea.style.left = '-9999px'; // 确保元素不可见
-  document.body.appendChild(textArea);
+  const textArea = document.createElement('textarea')
+  textArea.value = code
+  textArea.style.position = 'absolute'
+  textArea.style.left = '-9999px' // 确保元素不可见
+  document.body.appendChild(textArea)
 
   // 选中并复制
-  textArea.select();
+  textArea.select()
   try {
-    const success = document.execCommand('copy');
+    const success = document.execCommand('copy')
     if (success) {
-      ElMessage.success('代码已成功复制到剪贴板');
+      ElMessage.success('代码已成功复制到剪贴板')
     } else {
-      ElMessage.error('复制失败，请手动复制');
+      ElMessage.error('复制失败，请手动复制')
     }
   } catch (err) {
-    ElMessage.error('复制失败，请检查浏览器设置');
-    console.error('复制失败:', err);
+    ElMessage.error('复制失败，请检查浏览器设置')
+    console.error('复制失败:', err)
   }
 
   // 移除临时文本区域
-  document.body.removeChild(textArea);
-};
+  document.body.removeChild(textArea)
+}
 
 onMounted(() => {
   getSubmissionDetail()
   getTestResult()
-  
-  
 })
 </script>
 
@@ -234,9 +231,9 @@ onMounted(() => {
   font-size: 13px;
   border: 1px solid #e9e9eb;
   background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(4px);  /* 背景模糊效果 */
+  backdrop-filter: blur(4px); /* 背景模糊效果 */
   /* 字体加粗 */
-  font-weight: 600; 
+  font-weight: 600;
 }
 
 .submission-info {
@@ -250,8 +247,8 @@ onMounted(() => {
 }
 
 .info-item:last-child {
-  grid-column: 1 / -1;   /* 运行状态占据整行 */
-  margin-top: 16px;      
+  grid-column: 1 / -1; /* 运行状态占据整行 */
+  margin-top: 16px;
 }
 
 .info-item {
@@ -332,4 +329,4 @@ code {
   border-radius: 18px;
   overflow: hidden;
 }
-</style> 
+</style>
