@@ -308,7 +308,7 @@
 
 <script lang="ts" setup>
 // Vue 相关
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 // 添加 ElLoading 导入
 import { ElLoading } from 'element-plus'
 // Element Plus 图标
@@ -319,7 +319,9 @@ import { type Problem } from '@/types/problem'
 import { type Tag, type TagGroup } from '@/types/tag'
 import ProblemStatsPie from '@/components/ProblemStatsPie.vue'
 import dayjs from 'dayjs' // 确保项目中安装了 dayjs
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 // 状态变量
 const loading = ref(true)
 const difficulty = ref<number | null>(null)
@@ -350,21 +352,36 @@ const handleQuestionClick = (questionId: number, dailyQuestionId: number) => {
   // }, 1000)
 
   // 在页面卸载时自动关闭加载动画
-  window.addEventListener(
-    'beforeunload',
-    () => {
-      loading.close()
-    },
-    { once: true }
-  )
+  // window.addEventListener(
+  //   'beforeunload',
+  //   () => {
+  //     loading.close()
+  //   },
+  //   { once: true }
+  // )
 
-  if (dailyQuestionId == 0) {
-    // // 直接跳转，不需要 setTimeout
-    window.location.href = `/question?id=${questionId}`
-  } else {
-    // // 直接跳转，不需要 setTimeout
-    window.location.href = `/question?id=${questionId}&daily=${dailyQuestionId}`
-  }
+  // // 直接跳转，不需要 setTimeout
+  // if (dailyQuestionId === 0) {
+  //   router.push(`/question?id=${questionId}`)
+  // } else {
+  //   router.push(`/question?id=${questionId}&daily=${dailyQuestionId}`)
+  // }
+  // 不用beforeunload 事件监听使用路由守卫来处理
+
+  const targetRoute = dailyQuestionId === 0
+    ? `/question?id=${questionId}`
+    : `/question?id=${questionId}&daily=${dailyQuestionId}`
+
+  // 路由跳转
+  router.push(targetRoute).then(() => {
+    // 路由跳转完成后，等待组件渲染完成再关闭 loading
+    nextTick(() => {
+      loading.close()
+    })
+  }).catch(() => {
+    // 路由跳转失败时关闭 loading
+    loading.close()
+  })
 }
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate: number) => {
