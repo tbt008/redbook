@@ -37,11 +37,7 @@
           <span class="label">运行状态：</span>
           <span class="value">
             <el-tag v-if="submissionData.result == 100" type="success">答案正确</el-tag>
-            <el-tag
-              v-else-if="submissionData.result < 100 && submissionData.result > 0"
-              type="primary"
-              >部分正确</el-tag
-            >
+            <el-tag v-else-if="submissionData.result < 100 && submissionData.result > 0" type="primary">部分正确</el-tag>
             <el-tag v-if="submissionData.result == 0" type="danger">答案错误</el-tag>
             <el-tag v-if="submissionData.result == -1" type="danger">等待判题</el-tag>
             <el-tag v-if="submissionData.result == -2" type="warning">编译错误</el-tag>
@@ -105,7 +101,6 @@ const getSubmissionDetail = async () => {
 
     if (response.code === 200) {
       submissionData.value = response.data
-
       // // 获取测试结果
       // const testResponse = await request.get(`/record/get/one/${submissionId}`) as any
       // if (testResponse.code === 200) {
@@ -231,7 +226,8 @@ onMounted(() => {
   font-size: 13px;
   border: 1px solid #e9e9eb;
   background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(4px); /* 背景模糊效果 */
+  backdrop-filter: blur(4px);
+  /* 背景模糊效果 */
   /* 字体加粗 */
   font-weight: 600;
 }
@@ -247,7 +243,8 @@ onMounted(() => {
 }
 
 .info-item:last-child {
-  grid-column: 1 / -1; /* 运行状态占据整行 */
+  grid-column: 1 / -1;
+  /* 运行状态占据整行 */
   margin-top: 16px;
 }
 
