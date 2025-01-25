@@ -84,7 +84,7 @@
               >
             </div>
           </div>
-          <progress-bar :startTime="startTime" :endTime="endTime" />
+          <progress-bar v-if="!isShowCountDown" :startTime="startTime" :endTime="endTime" />
         </template>
       </el-skeleton>
     </div>
@@ -440,6 +440,7 @@ import countDown from '@/components/countDown.vue'
 import progressBar from '@/components/progressBar.vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { tr } from 'element-plus/es/locale/index.mjs'
 const activeName = ref('first')
 const router = useRouter()
 const id = ref()
@@ -572,6 +573,7 @@ const joinContest = () => {
     .then((res) => {
       if (res.code == 200) {
         ElMessage.success('报名比赛成功！')
+        constestInfo.value.isJoin == true
       } else {
         ElMessage.error('报名比赛失败：' + res.msg)
       }
