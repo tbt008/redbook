@@ -3,8 +3,7 @@ import router from '@/router/index' // 修改这里
 import { ElMessage } from 'element-plus'
 import { debounce } from '@/utils/optimizeUtils'
 const request = axios.create({
-  //
-  baseURL: 'http://193.112.178.132',
+  baseURL: import.meta.env.VITE_APP_BASE_API,
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json;charset=UTF-8'

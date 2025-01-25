@@ -2,7 +2,7 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 
 const requestBlob = axios.create({
-  baseURL: 'http://129.204.154.232', // 替换为你的后端地址
+  baseURL: import.meta.env.VITE_APP_BASE_API,
   timeout: 60000,
   responseType: 'blob', // 默认 responseType 为 blob
   headers: {
