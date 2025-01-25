@@ -155,8 +155,8 @@ const router = createRouter({
 
 // 添加路由守卫
 router.beforeEach(async (to, from, next) => {
-  // 检查该路由是否需要管理员权限
-  if (to.matched.some(record => record.meta.requiresAdmin)) {
+  // 检查该路由是否需要管理员权限或是否访问 /admin 路径
+  if (to.matched.some(record => record.meta.requiresAdmin) || to.path.startsWith('/admin')) {
     // 检查是否有token
     const token = localStorage.getItem('authToken')
     if (!token) {
