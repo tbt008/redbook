@@ -59,10 +59,7 @@ const initFun = () => {
     getRecord()
   }
 }
-const changeTab = (index) => {
-  console.log(index)
-  currentTab.value = index
-}
+
 watch(
   () => props.rep,
   () => initFun()

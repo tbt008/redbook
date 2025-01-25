@@ -18,14 +18,17 @@
             />
           </el-select>
         </div>
-        <div class="middle-right">
-          <!-- 刷新代码--恢复到默认 -->
+        <div
+          class="middle-right"
+          style="background-color: rgb(230, 230, 230); padding: 10px; margin-right: 10px"
+        >
+          <!-- 距离比赛结束还有: 20分钟 -->
         </div>
       </div>
     </div>
     <div class="code-region">
       <codeEditor
-        @update:value="_handleDebounce"
+        @updateCode="_handleDebounce"
         :value="code"
         :language="choseLanguage"
       ></codeEditor>
@@ -37,10 +40,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import codeEditor from '@/components/codeEditor.vue'
 import { debounce } from '@/utils/optimizeUtils'
-const currentTab = ref(0)
-const clickToLike = ref(false)
 const choseLanguage = useStorage('ptuCode_language', 1)
-
 const languageList = ref([
   { label: 'C', value: 1 },
   { label: 'C++', value: 2 },
@@ -76,9 +76,6 @@ const getIdFromUrl = (url) => {
     // 返回从 '?id=' 到 '&' 之间的字符
     return decodeURIComponent(substring.substring(0, endIndex))
   }
-}
-const clickTitleTab = (index) => {
-  currentTab.value = index
 }
 
 var key = 'ptuCode_' + choseLanguage.value + '_' + getIdFromUrl(window.location.href)
@@ -146,13 +143,9 @@ public class Main {
     }
   }
 }
-const clickFooter = (type) => {
-  if (type === 1) {
-    clickToLike.value = !clickToLike.value
-  }
-}
 const handleUpdateValue = (value) => {
   code.value = value
+  uploadCode()
 }
 const _handleDebounce = debounce(handleUpdateValue, 200)
 const uploadCode = () => {
@@ -172,12 +165,11 @@ watch(
 )
 
 watch(
-  () => choseLanguage,
+  () => choseLanguage.value,
   () => changeLanguageFun(),
   { deep: true }
 )
 onMounted(() => {
-  uploadCode()
   changeLanguageFun()
   // code.value += '\n'
 })

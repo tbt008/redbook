@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, provide, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import lrSplit from '@/components/lrSplit.vue'
 import tbSplit from '@/components/tbSplit.vue'

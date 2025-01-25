@@ -85,26 +85,22 @@ const contestId = ref(null)
 // 获取公告权限列表
 const getNoticeList = async () => {
   loading.value = true
-  try {
-    const response = await request.post('/system/notice/get', {
-      pageStart: currentPage.value,
-      pageSize: pageSize.value
+
+  const response = await request.post('/system/notice/get', {
+    pageStart: currentPage.value,
+    pageSize: pageSize.value
+  })
+  if (response.code === 200) {
+    noticeList.value = response.data.list
+    // 遍历noticeList判断type里在noticeType里对应的name
+    noticeList.value.forEach((item) => {
+      item.type = noticeType.value.find((type) => type.id === item.type).noticeType
     })
-    if (response.code === 200) {
-      noticeList.value = response.data.list
-      // 遍历noticeList判断type里在noticeType里对应的name
-      noticeList.value.forEach((item) => {
-        item.type = noticeType.value.find((type) => type.id === item.type).noticeType
-      })
-      total.value = response.data.total
-      loading.value = false
-    } else {
-      ElMessage.error(response.msg || '获取公告列表失败')
-      loading.value = false
-    }
-  } catch (error) {
-    ElMessage.error('获取公告列表失败')
+    total.value = response.data.total
+  } else {
+    ElMessage.error(response.msg || '获取公告列表失败')
   }
+  loading.value = false
 }
 // 获取公告类型
 const getNoticeType = async () => {
