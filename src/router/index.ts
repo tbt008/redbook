@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '@/views/Home.vue'
+import request from '@/util/request'
+import { ElMessage } from 'element-plus'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -58,6 +60,7 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: () => import('@/views/admin/admin.vue'),
+      meta: { requiresAdmin: true },
       children: [
         {
           path: 'problem',
@@ -148,6 +151,37 @@ const router = createRouter({
       redirect: '/404'
     }
   ]
+})
+
+// 添加路由守卫
+router.beforeEach(async (to, from, next) => {
+  // 检查该路由是否需要管理员权限
+  if (to.matched.some(record => record.meta.requiresAdmin)) {
+    // 检查是否有token
+    const token = localStorage.getItem('authToken')
+    if (!token) {
+      ElMessage.error('请先登录')
+      next('/login')
+      return
+    }
+
+    try {
+      // 获取用户信息检查权限
+      const res = await request.get('/user/get/user') as any
+      if (res.code === 200 && res.data.permissionList &&
+        (res.data.permissionList.includes(5006) || res.data.permissionList.includes(5007))) {
+        next() // 是管理员，允许访问
+      } else {
+        ElMessage.error('您没有管理员权限')
+        next('/home') // 不是管理员，跳转到首页
+      }
+    } catch (error) {
+      ElMessage.error('获取用户信息失败')
+      next('/login')
+    }
+  } else {
+    next() // 不需要管理员权限的路由直接放行
+  }
 })
 
 export default router
