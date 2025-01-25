@@ -36,11 +36,20 @@
         <div class="info-item">
           <span class="label">运行状态：</span>
           <span class="value">
-            <el-tag v-if="submissionData.result == 100" type="success">答案正确</el-tag>
-            <el-tag v-else-if="submissionData.result < 100 && submissionData.result > 0" type="primary">部分正确</el-tag>
-            <el-tag v-if="submissionData.result == 0" type="danger">答案错误</el-tag>
-            <el-tag v-if="submissionData.result == -1" type="danger">等待判题</el-tag>
-            <el-tag v-if="submissionData.result == -2" type="warning">编译错误</el-tag>
+            <el-tag v-if="submissionData.runResult == '答案正确'" type="success">答案正确</el-tag>
+            <el-tag v-else-if="submissionData.runResult == '部分正确'" type="primary"
+              >部分正确</el-tag
+            >
+            <el-tag v-else-if="submissionData.runResult == '答案错误'" type="danger"
+              >答案错误</el-tag
+            >
+            <el-tag v-else-if="submissionData.runResult == '等待判题'" type="danger"
+              >等待判题</el-tag
+            >
+            <el-tag v-else-if="submissionData.runResult == '编译错误'" type="warning"
+              >编译错误</el-tag
+            >
+            <el-tag v-else type="warning">未知错误</el-tag>
           </span>
         </div>
       </div>
@@ -79,6 +88,7 @@ const submissionData = ref({
   userName: '',
   language: 0,
   result: 0,
+  runResult: '',
   code: '',
   runtime: 0,
   memory: 0,

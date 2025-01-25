@@ -1,8 +1,10 @@
 import axios from 'axios'
 import router from '@/router/index' // 修改这里
 import { ElMessage } from 'element-plus'
+import { debounce } from '@/utils/optimizeUtils'
 const request = axios.create({
-  baseURL: 'http://129.204.154.232',
+  //
+  baseURL: 'http://193.112.178.132',
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json;charset=UTF-8'
@@ -17,6 +19,9 @@ declare module 'axios' {
     data: T
   }
 }
+const errInfo = debounce(() => {
+  ElMessage.error('登录状态已过期，请重新登录！')
+}, 2000)
 request.interceptors.response.use(
   (response) => {
     if (response.data) {
@@ -28,7 +33,8 @@ request.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // 返回 401 清除token信息并跳转到登录页面
       localStorage.removeItem('auth-token')
-      ElMessage.error('用户未登录，或登录已过期！')
+
+      errInfo()
       // router.push('/login')
     }
 
