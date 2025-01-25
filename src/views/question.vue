@@ -53,7 +53,7 @@ const initFun = () => {
     clickToLike.value = props.rep.isThumb
     clickToFavour.value = props.rep.isFavour
     loading.value = false
-    getRecord()
+    // getRecord()
   }
 }
 
@@ -242,11 +242,11 @@ const goToSubmissionDetail = (row) => {
         <el-table-column label="运行状态" prop="runResult">
           <template #default="{ row }">
             <el-tag v-if="row.runResult == '答案正确'" type="success">答案正确</el-tag>
-            <el-tag v-else-if="runResult == '部分正确'" type="primary">部分正确</el-tag>
-            <el-tag v-else-if="runResult == '答案错误'" type="danger">答案错误</el-tag>
-            <el-tag v-else-if="runResult == '等待判题'" type="danger">等待判题</el-tag>
-            <el-tag v-else-if="runResult == '编译错误'" type="warning">编译错误</el-tag>
-            <el-tag v-else type="warning">未知错误</el-tag>
+            <el-tag v-else-if="row.runResult == '部分正确'" type="primary">部分正确</el-tag>
+            <el-tag v-else-if="row.runResult == '答案错误'" type="danger">答案错误</el-tag>
+            <el-tag v-else-if="row.runResult == '等待判题'" type="danger">等待判题</el-tag>
+            <el-tag v-else-if="row.runResult == '编译错误'" type="warning">编译错误</el-tag>
+            <el-tag v-else type="danger">{{ row.runResult }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="时间(ms)" prop="runtime">
@@ -309,8 +309,10 @@ const goToSubmissionDetail = (row) => {
     .title {
       display: flex;
       position: relative;
+      user-select: none;
       left: 10px;
       align-items: center;
+      height: 100%;
       gap: 3px;
       cursor: pointer;
       transition: 0.5s;

@@ -141,7 +141,7 @@ const whileGetResult = async (recordId) => {
           .get(`/record/get/one/${recordId}`)
           .then((res) => {
             // 获取结果  成功后
-            if (res.data.status != 1 && res.data.status != 0) {
+            if (res.data.result != -1 && res.data.runResult != '等待判题') {
               clearInterval(intervalId)
               if (res.data.result == 100) {
                 emit('showACImgfun')

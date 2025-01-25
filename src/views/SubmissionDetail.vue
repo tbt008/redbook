@@ -49,7 +49,7 @@
             <el-tag v-else-if="submissionData.runResult == '编译错误'" type="warning"
               >编译错误</el-tag
             >
-            <el-tag v-else type="warning">未知错误</el-tag>
+            <el-tag v-else type="danger">{{ submissionData.runResult }}</el-tag>
           </span>
         </div>
       </div>

@@ -76,7 +76,9 @@
                 {{ constestInfo.language }}
               </div>
               <el-button
-                v-if="constestInfo.isJoin == false && constestInfo.isInvite == false"
+                v-if="
+                  constestInfo.isJoin == false && constestInfo.isInvite == false && isEnd == false
+                "
                 type="danger"
                 style="margin: 10px"
                 @click="joinContest"
@@ -84,7 +86,11 @@
               >
             </div>
           </div>
-          <progress-bar v-if="!isShowCountDown" :startTime="startTime" :endTime="endTime" />
+          <progress-bar
+            v-if="!isShowCountDown && constestInfo.isJoin == true"
+            :startTime="startTime"
+            :endTime="endTime"
+          />
         </template>
       </el-skeleton>
     </div>
@@ -298,6 +304,8 @@
               />
             </div>
           </el-tab-pane>
+        </div>
+        <div v-if="isEnd == true">
           <el-tab-pane label="排名" name="fourth">
             <el-table :data="rankinglist" style="width: 100%">
               <el-table-column label="名次" prop="rank" width="100"> </el-table-column>
@@ -434,13 +442,12 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import request from '@/util/request.ts'
 import countDown from '@/components/countDown.vue'
 import progressBar from '@/components/progressBar.vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { tr } from 'element-plus/es/locale/index.mjs'
 const activeName = ref('first')
 const router = useRouter()
 const id = ref()
@@ -463,6 +470,7 @@ const rankTotal = ref(0)
 const recordCurrentPage = ref(1)
 const recordPageSize = ref(10)
 const recordTotal = ref(0)
+const isEnd = ref(false)
 // 分页大小改变处理
 const recordHandleSizeChange = async (val) => {
   recordPageSize.value = val
@@ -683,7 +691,8 @@ onMounted(async () => {
     loading.value = false
     startTime.value = new Date(constestInfo.value.startTime).getTime() / 1000 + ' '
     endTime.value = new Date(constestInfo.value.endTime).getTime() / 1000 + ' '
-
+    isEnd.value =
+      new Date(constestInfo.value.endTime).getTime() - new Date().getTime() < 0 ? true : false
     isShowCountDown.value =
       new Date(constestInfo.value.startTime).getTime() - new Date().getTime() > 0 ? true : false
     // 比赛开始，查询题目
