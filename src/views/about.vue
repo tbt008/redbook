@@ -8,7 +8,7 @@
     <!-- 顶部横幅 -->
     <div class="hero-section">
       <div class="hero-content">
-        <h1 class="title">PTU Online Judge</h1>
+        <h1 class="title">Cube Online Judge</h1>
         <p class="subtitle">追求卓越的编程体验</p>
       </div>
       <div class="hero-stats">
@@ -330,8 +330,11 @@ const getStats = async () => {
   gap: 60px;
   margin-top: 60px;
   animation: fadeInUp 0.8s ease 0.4s both;
+  min-height: 100px;
 
   .stat-item {
+    // min-width: 120px;
+
     .stat-number {
       font-size: 2.5rem;
       font-weight: 700;
@@ -339,6 +342,10 @@ const getStats = async () => {
       background: linear-gradient(135deg, #00ffbb 0%, #4d7fff 50%, #ff49e1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .stat-label {
