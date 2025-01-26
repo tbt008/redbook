@@ -48,7 +48,7 @@
 
         <!-- elementplus el-table: 题目列表表格 -->
         <el-table :data="problems" style="width: 100%" v-loading="loading" @cell-mouse-enter="handleMouseEnter"
-          @cell-mouse-leave="handleMouseLeave">
+          @cell-mouse-leave="handleMouseLeave" :row-class-name="getRowClassName">
           <!-- 状态列 -->
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
@@ -308,7 +308,7 @@
 
 <script lang="ts" setup>
 // Vue 相关
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 // 添加 ElLoading 导入
 import { ElLoading } from 'element-plus'
 // Element Plus 图标
@@ -319,9 +319,7 @@ import { type Problem } from '@/types/problem'
 import { type Tag, type TagGroup } from '@/types/tag'
 import ProblemStatsPie from '@/components/ProblemStatsPie.vue'
 import dayjs from 'dayjs' // 确保项目中安装了 dayjs
-import { useRouter } from 'vue-router'
 
-const router = useRouter()
 // 状态变量
 const loading = ref(true)
 const difficulty = ref<number | null>(null)
@@ -352,36 +350,21 @@ const handleQuestionClick = (questionId: number, dailyQuestionId: number) => {
   // }, 1000)
 
   // 在页面卸载时自动关闭加载动画
-  // window.addEventListener(
-  //   'beforeunload',
-  //   () => {
-  //     loading.close()
-  //   },
-  //   { once: true }
-  // )
-
-  // // 直接跳转，不需要 setTimeout
-  // if (dailyQuestionId === 0) {
-  //   router.push(`/question?id=${questionId}`)
-  // } else {
-  //   router.push(`/question?id=${questionId}&daily=${dailyQuestionId}`)
-  // }
-  // 不用beforeunload 事件监听使用路由守卫来处理
-
-  const targetRoute = dailyQuestionId === 0
-    ? `/question?id=${questionId}`
-    : `/question?id=${questionId}&daily=${dailyQuestionId}`
-
-  // 路由跳转
-  router.push(targetRoute).then(() => {
-    // 路由跳转完成后，等待组件渲染完成再关闭 loading
-    nextTick(() => {
+  window.addEventListener(
+    'beforeunload',
+    () => {
       loading.close()
-    })
-  }).catch(() => {
-    // 路由跳转失败时关闭 loading
-    loading.close()
-  })
+    },
+    { once: true }
+  )
+
+  if (dailyQuestionId == 0) {
+    // // 直接跳转，不需要 setTimeout
+    window.location.href = `/question?id=${questionId}`
+  } else {
+    // // 直接跳转，不需要 setTimeout
+    window.location.href = `/question?id=${questionId}&daily=${dailyQuestionId}`
+  }
 }
 // 根据通过率返回不同的颜色
 const getProgressColor = (rate: number) => {
@@ -613,7 +596,10 @@ const isFutureDate = (dateStr: string) => {
 // 检查指定日期是否有每日一题
 const hasDailyQuestion = (dateStr: string) => {
   const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-  return dailyQuestions.value.some((q) => dayjs(q.date).format('YYYY-MM-DD') === formattedDate)
+  if (Array.isArray(dailyQuestions.value)) {
+    return dailyQuestions.value.some((q) => dayjs(q.date).format('YYYY-MM-DD') === formattedDate)
+  }
+  return false
 }
 
 // 获取指定日期的每日一题标题
@@ -624,12 +610,16 @@ const hasDailyQuestion = (dateStr: string) => {
 
 // 检查指定日期的每日一题是否已完成
 const isDailyQuestionCompleted = (dateStr: string) => {
-  const formattedDate = dayjs(dateStr).format('YYYY-MM-DD')
-  const question = dailyQuestions.value.find(
-    (q) => dayjs(q.date).format('YYYY-MM-DD') === formattedDate
-  )
-  return question?.completed || false
-}
+  const formattedDate = dayjs(dateStr).format('YYYY-MM-DD');
+  // 检查 dailyQuestions.value 是否为数组
+  if (Array.isArray(dailyQuestions.value)) {
+    const question = dailyQuestions.value.find(
+      (q) => dayjs(q.date).format('YYYY-MM-DD') === formattedDate
+    );
+    return question?.completed || false;
+  }
+  return false;
+};
 const getBeijingDate = () => {
   const now = new Date()
 
@@ -653,11 +643,13 @@ const handleDateClick = (dateStr: string) => {
   if (isFutureDate(formattedDate)) {
     return
   }
-
-  const question = dailyQuestions.value.find((q) => {
-    const questionDate = dayjs(q.date).format('YYYY-MM-DD')
-    return questionDate === formattedDate
-  })
+  let question = null;
+  if (Array.isArray(dailyQuestions.value)) {
+    question = dailyQuestions.value.find((q) => {
+      const questionDate = dayjs(q.date).format('YYYY-MM-DD');
+      return questionDate === formattedDate;
+    });
+  }
 
   // 判断是否是今天
   const isToday = dayjs(formattedDate).isSame(dayjs(), 'day')
@@ -734,6 +726,17 @@ const firstDayOfMonth = computed(() => {
   const firstDay = currentMonthDate.value.startOf('month').day()
   return firstDay // 返回0-6，0表示周日
 })
+
+// 添加行样式处理函数
+const getRowClassName = ({ row }: { row: Problem }) => {
+  if (row.isPass === 1) {
+    return 'passed-row'
+  }
+  else if (row.isPass === 2) {
+    return 'not-passed-row'
+  }
+  return ''
+}
 </script>
 
 <style scoped>
@@ -1263,5 +1266,64 @@ const firstDayOfMonth = computed(() => {
 .weekday-cell:first-child,
 .weekday-cell:last-child {
   color: #ff9898;
+}
+
+/* TODO: 调整标签容器的样式 */
+/* 设置表格行的固定高度 */
+/* 设置固定高度 */
+:deep(.el-table__row) {
+  /* height: 60px !important; */
+
+}
+
+/* 调整标签容器的样式 */
+/* 确保即使没有标签也保持一致的高度 */
+/* .problem-tags {
+  margin-top: 4px;
+  min-height: 24px;
+  
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+} */
+
+/* 调整标签的样式 */
+/* 移除原有的margin，使用gap来控制间距 */
+/* .tag-item {
+  margin: 0;
+  line-height: 20px;
+} */
+
+/* 调整题目标题的样式 */
+/* .problem-title {
+  display: block;
+  margin-bottom: 4px;
+} */
+
+
+
+/* 添加通过题目的行样式 */
+:deep(.passed-row) {
+  background-color: rgba(103, 194, 58, 0.15);
+  transition: background-color 0.3s ease;
+}
+
+/* 鼠标悬浮时加深背景色 */
+:deep(.passed-row:hover > td) {
+  background-color: rgba(103, 194, 58, 0) !important;
+  /* background-color: rgba(103, 194, 58, 0.25) !important; */
+}
+
+/* :deep(.not-passed-row:hover > td) {
+  background-color: rgba(255, 0, 0, 0.25) !important;
+}
+
+:deep(.not-passed-row) {
+  background-color: rgba(255, 0, 0, 0.15) !important;
+} */
+
+/* 确保表格行过渡效果平滑 */
+:deep(.el-table__row) {
+  transition: background-color 0.3s ease;
 }
 </style>
