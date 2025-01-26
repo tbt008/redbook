@@ -5,44 +5,56 @@
         <template #template> <el-skeleton-item variant="circle" /> </template>
         <template #default>
           <div style="margin: auto; width: 70%; flex-wrap: wrap">
-            <div
-              style="
-                color: rgb(255, 255, 255);
-                padding-top: 50px;
-                font-size: 50px;
-                text-align: center;
-              "
-            >
-              {{ constestInfo.title }}
-            </div>
-            <div style="margin: auto; display: flex; width: auto">
-              <span
-                v-if="constestInfo.isInputPassword"
-                :class="['difficulty-label', 'difficulty-entry']"
+            <div style="margin: auto; display: flex">
+              <div
+                style="
+                  color: rgb(255, 255, 255);
+                  padding-top: 50px;
+                  font-size: 50px;
+                  margin: auto;
+                  display: flex;
+                  text-align: center;
+                "
               >
-                <el-icon><Lock /></el-icon>密码
-              </span>
-              <span
-                style="margin-left: 10px"
-                v-if="constestInfo.isInvite"
-                :class="['difficulty-label', 'difficulty-easy']"
-              >
-                <el-icon><key /></el-icon>邀请
-              </span>
-              <span
-                style="margin-left: 10px"
-                v-if="constestInfo.contestType == 1"
-                :class="['difficulty-label', 'difficulty-medium']"
-              >
-                IOI
-              </span>
-              <span
-                style="margin-left: 10px"
-                v-if="constestInfo.contestType == 2"
-                :class="['difficulty-label', 'difficulty-medium']"
-              >
-                ACM
-              </span>
+                <div style="display: flex">{{ constestInfo.title }}</div>
+                <div
+                  style="
+                    padding-left: 30px;
+                    display: flex;
+                    text-align: center;
+                    margin: auto 0;
+                    height: 25px;
+                  "
+                >
+                  <div
+                    v-if="constestInfo.isInputPassword"
+                    :class="['difficulty-label', 'difficulty-entry']"
+                  >
+                    <el-icon><Lock /></el-icon>密码
+                  </div>
+                  <div
+                    style="margin-left: 10px"
+                    v-if="constestInfo.isInvite"
+                    :class="['difficulty-label', 'difficulty-easy']"
+                  >
+                    <el-icon><key /></el-icon>邀请
+                  </div>
+                  <div
+                    style="margin-left: 10px"
+                    v-if="constestInfo.contestType == 1"
+                    :class="['difficulty-label', 'difficulty-medium']"
+                  >
+                    IOI
+                  </div>
+                  <div
+                    style="margin-left: 10px"
+                    v-if="constestInfo.contestType == 2"
+                    :class="['difficulty-label', 'difficulty-medium']"
+                  >
+                    ACM
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div
@@ -87,7 +99,7 @@
             </div>
           </div>
           <progress-bar
-            v-if="!isShowCountDown && constestInfo.isJoin == true"
+            v-if="!isShowCountDown && constestInfo.isJoin == true && isEnd == false"
             :startTime="startTime"
             :endTime="endTime"
           />
@@ -143,7 +155,7 @@
             </template>
           </el-skeleton>
         </el-tab-pane>
-        <div v-if="constestInfo.isJoin == true">
+        <div v-if="constestInfo.isJoin == true && isEnd == false">
           <el-tab-pane label="题目" name="second"
             ><el-scrollbar height="600px">
               <el-table :data="questionList" style="width: 100%">
@@ -214,7 +226,7 @@
                   <el-link>{{ row.displayTitle }}</el-link>
                 </template>
               </el-table-column>
-              <el-table-column label="运行状态" prop="runningCondition">
+              <el-table-column label="运行状态" prop="runResult">
                 <template #header>
                   <el-dropdown :hide-on-click="false">
                     <span class="el-dropdown-link">
@@ -225,40 +237,25 @@
                     </span>
                     <template #dropdown>
                       <el-dropdown-menu>
-                        <el-dropdown-item>
-                          <el-checkbox label="" size="large" />
-                          答案正确</el-dropdown-item
-                        >
-                        <el-dropdown-item>
-                          <el-checkbox label="" size="large" />部分正确</el-dropdown-item
-                        >
-                        <el-dropdown-item>
-                          <el-checkbox label="" size="large" />答案错误</el-dropdown-item
-                        >
-                        <el-dropdown-item>
-                          <el-checkbox label="" size="large" />编译错误</el-dropdown-item
-                        >
-                        <el-dropdown-item>
-                          <el-checkbox label="" size="large" />正在判题</el-dropdown-item
+                        <el-dropdown-item v-for="(item, index) in runResult" :key="index">
+                          <el-checkbox
+                            @click="handleRun(index)"
+                            v-bind="item.checked"
+                            label=""
+                            size="large"
+                          />
+                          {{ item.text }}</el-dropdown-item
                         >
                       </el-dropdown-menu>
                     </template>
                   </el-dropdown>
                 </template>
                 <template #default="{ row }">
-                  <el-tag v-if="row.runningCondition == '答案正确'" type="success">答案正确</el-tag>
-                  <el-tag v-else-if="row.runningCondition == '部分正确'" type="primary"
-                    >部分正确</el-tag
-                  >
-                  <el-tag v-else-if="row.runningCondition == '答案错误'" type="danger"
-                    >答案错误</el-tag
-                  >
-                  <el-tag v-else-if="row.runningCondition == '编译错误'" type="warning"
-                    >编译错误</el-tag
-                  >
-                  <el-tag v-else-if="row.runningCondition == '正在判题'" type="primary"
-                    >正在判题</el-tag
-                  >
+                  <el-tag v-if="row.runResult == '答案正确'" type="success">答案正确</el-tag>
+                  <el-tag v-else-if="row.runResult == '部分正确'" type="primary">部分正确</el-tag>
+                  <el-tag v-else-if="row.runResult == '答案错误'" type="danger">答案错误</el-tag>
+                  <el-tag v-else-if="row.runResult == '编译错误'" type="warning">编译错误</el-tag>
+                  <el-tag v-else-if="row.runResult == '正在判题'" type="primary">正在判题</el-tag>
                 </template>
               </el-table-column>
 
@@ -305,138 +302,138 @@
             </div>
           </el-tab-pane>
         </div>
-        <div v-if="isEnd == true">
-          <el-tab-pane label="排名" name="fourth">
-            <el-table :data="rankinglist" style="width: 100%">
-              <el-table-column label="名次" prop="rank" width="100"> </el-table-column>
-              <el-table-column label="参赛者" prop="nickName" width="100"> </el-table-column>
-              <el-table-column label="通过" prop="totalNum" width="100"> </el-table-column>
-              <el-table-column label="罚时" width="100">
-                <template #default="{ row }">
-                  <div>{{ penalty(row) }}</div>
-                </template>
-              </el-table-column>
-              <el-table-column
-                v-for="(item, index) in displayTitle"
-                :key="index"
-                :label="item.text"
-                align="center"
-              >
-                <template #default="{ row }">
-                  <!-- acm -->
-                  <div v-if="constestInfo.contestType == 2">
-                    <div
-                      v-if="row.questionInfo[index].score == 100"
-                      class="rank-css"
-                      style="color: #67c23a"
-                    >
-                      <div>
-                        <div>
-                          {{ row.questionInfo[index].score }}
 
-                          (-{{ row.questionInfo[index].count }})
-                        </div>
-
-                        <div style="color: rgb(96, 96, 96); font-size: 13px">
-                          {{ row.questionInfo[index].acceptedTime }}
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      v-else-if="row.questionInfo[index].acceptedTime != null"
-                      class="rank-css"
-                      style="color: red"
-                    >
-                      <div>
-                        <div>
-                          {{ row.questionInfo[index].score }}
-
-                          (-{{ row.questionInfo[index].count }})
-                        </div>
-
-                        <div style="color: rgb(96, 96, 96); font-size: 13px">
-                          {{ row.questionInfo[index].acceptedTime }}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div v-else class="rank-css"></div>
-                  </div>
-                  <!-- ioi -->
-                  <div v-else>
-                    <div
-                      v-if="row.questionInfo[index].score == 100"
-                      class="rank-css"
-                      style="color: #67c23a"
-                    >
-                      <div>
-                        <div>
-                          {{ row.questionInfo[index].score }}
-                        </div>
-
-                        <div style="color: rgb(96, 96, 96); font-size: 13px">
-                          {{ row.questionInfo[index].acceptedTime }}
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      v-else-if="
-                        row.questionInfo[index].acceptedTime != null &&
-                        row.questionInfo[index].score != 0
-                      "
-                      class="rank-css"
-                      style="color: rgb(230, 162, 60)"
-                    >
-                      <div>
-                        <div>
-                          {{ row.questionInfo[index].score }}
-                        </div>
-
-                        <div style="color: rgb(96, 96, 96); font-size: 13px">
-                          {{ row.questionInfo[index].acceptedTime }}
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      v-else-if="
-                        row.questionInfo[index].acceptedTime != null &&
-                        row.questionInfo[index].score == 0
-                      "
-                      class="rank-css"
-                      style="color: red"
-                    >
-                      <div>
-                        <div>
-                          {{ row.questionInfo[index].score }}
-                        </div>
-
-                        <div style="color: rgb(96, 96, 96); font-size: 13px">
-                          {{ row.questionInfo[index].acceptedTime }}
-                        </div>
-                      </div>
-                    </div>
-                    <div v-else class="rank-css"></div>
-                  </div>
-                </template>
-              </el-table-column>
-
-              <template #empty>
-                <el-empty description="没有数据" />
+        <el-tab-pane label="排名" name="fourth">
+          <el-table :data="rankinglist" style="width: 100%">
+            <el-table-column label="名次" prop="rank" width="100"> </el-table-column>
+            <el-table-column label="参赛者" prop="nickName" width="100"> </el-table-column>
+            <el-table-column label="通过" prop="totalNum" width="100"> </el-table-column>
+            <el-table-column label="罚时" width="100">
+              <template #default="{ row }">
+                <div>{{ penalty(row) }}</div>
               </template>
-            </el-table>
-            <!-- elementplus el-pagination: 分页器 -->
-            <div class="pagination-container">
-              <el-pagination
-                v-model:current-page="rankCurrentPage"
-                v-model:page-size="rankPageSize"
-                :total="rankTotal"
-                :page-sizes="[10, 20, 50]"
-                layout="total, sizes, prev, pager, next"
-                @size-change="rankHandleSizeChange"
-                @current-change="rankHandleCurrentChange"
-              /></div
-          ></el-tab-pane>
-        </div>
+            </el-table-column>
+
+            <el-table-column
+              v-for="(item, index) in displayTitle"
+              :key="index"
+              :label="item.text"
+              align="center"
+            >
+              <template #default="{ row }">
+                <!-- acm -->
+                <div v-if="constestInfo.contestType == 2">
+                  <div
+                    v-if="row.questionInfo[index].score == 100"
+                    class="rank-css"
+                    style="color: #67c23a"
+                  >
+                    <div>
+                      <div>
+                        {{ row.questionInfo[index].score }}
+
+                        (-{{ row.questionInfo[index].count }})
+                      </div>
+
+                      <div style="color: rgb(96, 96, 96); font-size: 13px">
+                        {{ row.questionInfo[index].acceptedTime }}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    v-else-if="row.questionInfo[index].acceptedTime != null"
+                    class="rank-css"
+                    style="color: red"
+                  >
+                    <div>
+                      <div>
+                        {{ row.questionInfo[index].score }}
+
+                        (-{{ row.questionInfo[index].count }})
+                      </div>
+
+                      <div style="color: rgb(96, 96, 96); font-size: 13px">
+                        {{ row.questionInfo[index].acceptedTime }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else class="rank-css"></div>
+                </div>
+                <!-- ioi -->
+                <div v-else>
+                  <div
+                    v-if="row.questionInfo[index].score == 100"
+                    class="rank-css"
+                    style="color: #67c23a"
+                  >
+                    <div>
+                      <div>
+                        {{ row.questionInfo[index].score }}
+                      </div>
+
+                      <div style="color: rgb(96, 96, 96); font-size: 13px">
+                        {{ row.questionInfo[index].acceptedTime }}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    v-else-if="
+                      row.questionInfo[index].acceptedTime != null &&
+                      row.questionInfo[index].score != 0
+                    "
+                    class="rank-css"
+                    style="color: rgb(230, 162, 60)"
+                  >
+                    <div>
+                      <div>
+                        {{ row.questionInfo[index].score }}
+                      </div>
+
+                      <div style="color: rgb(96, 96, 96); font-size: 13px">
+                        {{ row.questionInfo[index].acceptedTime }}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    v-else-if="
+                      row.questionInfo[index].acceptedTime != null &&
+                      row.questionInfo[index].score == 0
+                    "
+                    class="rank-css"
+                    style="color: red"
+                  >
+                    <div>
+                      <div>
+                        {{ row.questionInfo[index].score }}
+                      </div>
+
+                      <div style="color: rgb(96, 96, 96); font-size: 13px">
+                        {{ row.questionInfo[index].acceptedTime }}
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="rank-css"></div>
+                </div>
+              </template>
+            </el-table-column>
+
+            <template #empty>
+              <el-empty description="没有数据" />
+            </template>
+          </el-table>
+          <!-- elementplus el-pagination: 分页器 -->
+          <div class="pagination-container">
+            <el-pagination
+              v-model:current-page="rankCurrentPage"
+              v-model:page-size="rankPageSize"
+              :total="rankTotal"
+              :page-sizes="[10, 20, 50]"
+              layout="total, sizes, prev, pager, next"
+              @size-change="rankHandleSizeChange"
+              @current-change="rankHandleCurrentChange"
+            /></div
+        ></el-tab-pane>
       </el-tabs>
     </div>
   </div>
@@ -471,6 +468,26 @@ const recordCurrentPage = ref(1)
 const recordPageSize = ref(10)
 const recordTotal = ref(0)
 const isEnd = ref(false)
+const questionNumber = ref([])
+const runStatusList = ref([])
+const displayTitle = ref([])
+const runResult = ref([
+  { text: '答案正确', checked: false },
+  { text: '部分正确', checked: false },
+  { text: '答案错误', checked: false },
+  { text: '编译错误', checked: false },
+  { text: '正在判题', checked: false }
+])
+const handleRun = (index1) => {
+  runStatusList.value = []
+  runResult.value[index1].checked = !runResult.value[index1].checked
+  runResult.value.forEach((item, index) => {
+    if (item.checked == true) {
+      runStatusList.value.push(item.text)
+    }
+  })
+  selectRecord()
+}
 // 分页大小改变处理
 const recordHandleSizeChange = async (val) => {
   recordPageSize.value = val
@@ -533,36 +550,7 @@ const handleCommand = (index1) => {
       checkedQuestionName.value.push(item.text)
     }
   })
-  // 重新获取数据
-  request
-    .post(`/contest/record/get/all`, {
-      contestId: id.value,
-      questionDisplayNames: checkedQuestionName.value
-    })
-    .then((res) => {
-      if (res.code == 200) {
-        codeRecordList.value = res.data.list
-        // 遍历
-        // codeRecordList.value.forEach((item) => {
-        //   if (item.result == 100) {
-        //     item.result = '答案正确'
-        //   } else if (item.result > 0 && item.result < 100) {
-        //     item.result = '部分正确'
-        //   } else if (item.result == 0) {
-        //     item.result = '答案错误'
-        //   } else if (item.result == -2) {
-        //     item.result = '编译错误'
-        //   } else if (item.result == -1) {
-        //     item.result = '正在判题'
-        //   }
-        // })
-      } else {
-        ElMessage.error('获取提交记录失败：' + res.msg)
-      }
-    })
-    .catch(() => {
-      ElMessage.error('获取提交记录失败！')
-    })
+  selectRecord()
 }
 const updateTab = (tab) => {
   if (tab.paneName == 'second') {
@@ -634,6 +622,19 @@ const refreshRank = () => {
     .then((res) => {
       if (res.code == 200) {
         rankinglist.value = res.data.list
+        questionNumber.value = []
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+
+        res.data.list[0].questionInfo.forEach((item, index) => {
+          item.letter = letters[index]
+          var r = { text: `${letters[index]}`, value: `${letters[index]}` }
+          r.checked = false
+          questionNumber.value.push(r)
+        })
+        if (displayTitle.value == []) {
+          displayTitle.value = questionNumber.value
+        }
+
         rankTotal.value = res.data.total
       } else {
         ElMessage.error(res.msg)
@@ -641,13 +642,14 @@ const refreshRank = () => {
       }
     })
 }
-const displayTitle = ref([])
+
 const selectQuestion = () => {
   request
     .get(`/contest/racepage/${id.value}/question`)
     .then((res) => {
       if (res.code == 200) {
         questionList.value = res.data
+        isShowCountDown.value = false
         displayTitle.value = []
         const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
         questionList.value.forEach((item, index) => {
@@ -663,14 +665,15 @@ const selectQuestion = () => {
     .catch((err) => {
       ElMessage.error(err)
     })
-  isShowCountDown.value = false
 }
 const selectRecord = () => {
   request
     .post(`/contest/record/get/all`, {
       contestId: id.value,
       pageStart: recordCurrentPage.value,
-      pageSize: recordPageSize.value
+      pageSize: recordPageSize.value,
+      questionDisplayNames: checkedQuestionName.value,
+      runStatusList: runStatusList.value
     })
     .then((res) => {
       if (res.code == 200) {
