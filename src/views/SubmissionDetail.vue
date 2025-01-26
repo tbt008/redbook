@@ -37,18 +37,10 @@
           <span class="label">运行状态：</span>
           <span class="value">
             <el-tag v-if="submissionData.runResult == '答案正确'" type="success">答案正确</el-tag>
-            <el-tag v-else-if="submissionData.runResult == '部分正确'" type="primary"
-              >部分正确</el-tag
-            >
-            <el-tag v-else-if="submissionData.runResult == '答案错误'" type="danger"
-              >答案错误</el-tag
-            >
-            <el-tag v-else-if="submissionData.runResult == '等待判题'" type="danger"
-              >等待判题</el-tag
-            >
-            <el-tag v-else-if="submissionData.runResult == '编译错误'" type="warning"
-              >编译错误</el-tag
-            >
+            <el-tag v-else-if="submissionData.runResult == '部分正确'" type="primary">部分正确</el-tag>
+            <el-tag v-else-if="submissionData.runResult == '答案错误'" type="danger">答案错误</el-tag>
+            <el-tag v-else-if="submissionData.runResult == '等待判题'" type="danger">等待判题</el-tag>
+            <el-tag v-else-if="submissionData.runResult == '编译错误'" type="warning">编译错误</el-tag>
             <el-tag v-else type="danger">{{ submissionData.runResult }}</el-tag>
           </span>
         </div>
@@ -213,6 +205,7 @@ onMounted(() => {
 }
 
 .test-case-section {
+  min-height: 120px;
   position: relative;
   margin-bottom: 20px;
   border: 1px solid #e4e7ed;
