@@ -18,7 +18,8 @@ const onSubmit = () => {
       nickName: form.nickName,
       description: form.description,
       email: form.email,
-      phoneNumber: form.phoneNumber
+      phoneNumber: form.phoneNumber,
+      sex: form.sex
     })
     .then((res) => {
       if (res.code === 200) {
@@ -70,8 +71,8 @@ const handleAvatarUpload = (file) => {
     })
 }
 const beforeAvatarUpload = (rawFile) => {
-  if (rawFile.size / 1024 / 1024 > 2) {
-    ElMessage.error('Avatar picture size can not exceed 2MB!')
+  if (rawFile.size / 1024 / 1024 > 4) {
+    ElMessage.error('Avatar picture size can not exceed 4MB!')
     return false
   }
   handleAvatarUpload(rawFile)
@@ -85,7 +86,8 @@ const form = reactive({
   description: '',
   email: '',
   phoneNumber: '',
-  cover: ''
+  cover: '',
+  sex: '0'
 })
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -114,6 +116,7 @@ const getUserInfo = () => {
       form.description = res.data.description
       form.phoneNumber = res.data.phoneNumber
       form.cover = res.data.avatar
+      form.sex = res.data.sex
       loading.value = false
     } else {
       ElMessage.error('用户登录异常！')
@@ -413,7 +416,12 @@ const goToSubmissionDetail = (row) => {
             <el-form-item label="手机号">
               <el-input v-model="form.phoneNumber" />
             </el-form-item>
-
+            <el-form-item label="性别">
+              <el-radio-group v-model="form.sex">
+                <el-radio value="0">男</el-radio>
+                <el-radio value="1">女</el-radio>
+              </el-radio-group>
+            </el-form-item>
             <el-form-item label="个人简介">
               <el-input v-model="form.description" type="textarea" />
             </el-form-item>
@@ -435,15 +443,14 @@ const goToSubmissionDetail = (row) => {
           <div class="t4">
             <el-table :data="codeRecord" style="width: 100%" @row-click="goToSubmissionDetail">
               <el-table-column label="序号" prop="submitId"> </el-table-column>
-              <el-table-column label="运行状态" prop="result">
+              <el-table-column label="运行状态" prop="runResult">
                 <template #default="{ row }">
-                  <el-tag v-if="row.result == 100" type="success">答案正确</el-tag>
-                  <el-tag v-else-if="row.result < 100 && row.result > 0" type="primary"
-                    >部分正确</el-tag
-                  >
-                  <el-tag v-if="row.result == 0" type="danger">答案错误</el-tag>
-                  <el-tag v-if="row.result == -1" type="danger">等待判题</el-tag>
-                  <el-tag v-if="row.result == -2" type="warning">编译错误</el-tag>
+                  <el-tag v-if="row.runResult == '答案正确'" type="success">答案正确</el-tag>
+                  <el-tag v-else-if="row.runResult == '部分正确'" type="primary">部分正确</el-tag>
+                  <el-tag v-else-if="row.runResult == '答案错误'" type="danger">答案错误</el-tag>
+                  <el-tag v-else-if="row.runResult == '等待判题'" type="danger">等待判题</el-tag>
+                  <el-tag v-else-if="row.runResult == '编译错误'" type="warning">编译错误</el-tag>
+                  <el-tag v-else type="danger">{{ row.runResult }}</el-tag>
                 </template>
               </el-table-column>
               <el-table-column label="题目" prop="questionName">

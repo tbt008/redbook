@@ -20,7 +20,7 @@ declare module 'axios' {
 }
 const errInfo = debounce(() => {
   ElMessage.error('登录状态已过期，请重新登录！')
-}, 2000)
+}, 3000)
 request.interceptors.response.use(
   (response) => {
     if (response.data) {
