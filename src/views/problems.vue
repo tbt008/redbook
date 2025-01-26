@@ -34,7 +34,10 @@ const rep = ref({})
 onMounted(async () => {
   questionId.value = router.currentRoute.value.query.id
   contestId.value = router.currentRoute.value.query.contest
-  request.get(`/question/${questionId.value}`).then((res) => {
+  request.post(`/question/info`, {
+    questionId: questionId.value,
+    contestId: contestId.value
+  }).then((res) => {
     rep.value = res.data
   })
 })
@@ -54,22 +57,12 @@ onMounted(async () => {
         <template #two>
           <tbSplit class="right">
             <template #one>
-              <codeRegion
-                :rep="awaitContent"
-                @submitCode="codeNow"
-                @changeLanuage="changeLanuage"
-              ></codeRegion>
+              <codeRegion :rep="awaitContent" @submitCode="codeNow" @changeLanuage="changeLanuage"></codeRegion>
             </template>
             <template #two>
               <div class="footer">
-                <codeTest
-                  @showACImgfun="showACImgfun"
-                  :language="language"
-                  :code="code"
-                  :rep="rep"
-                  :question-id="questionId"
-                  :contest-id="contestId"
-                ></codeTest>
+                <codeTest @showACImgfun="showACImgfun" :language="language" :code="code" :rep="rep"
+                  :question-id="questionId" :contest-id="contestId"></codeTest>
               </div>
             </template>
           </tbSplit>
@@ -100,12 +93,15 @@ onMounted(async () => {
         display: flex;
       }
     }
+
     .right {
       height: 94vh;
     }
+
     .footer {
       overflow-y: hidden;
-      overflow: hidden; /* 隐藏溢出的内容 */
+      overflow: hidden;
+      /* 隐藏溢出的内容 */
       z-index: 10;
     }
   }
