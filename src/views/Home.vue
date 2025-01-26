@@ -137,22 +137,41 @@ onMounted(() => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation-delay: 0.4s;
+  text-shadow:
+    0 0 10px rgba(77, 127, 255, 0.5),
+    0 0 20px rgba(77, 127, 255, 0.3),
+    0 0 30px rgba(77, 127, 255, 0.1);
 }
 
 .word3 {
   font-size: 2.5rem;
   animation-delay: 0.6s;
+  text-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 10px rgba(255, 255, 255, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.3);
 }
 
 .light-theme .word {
   color: #2c3e50;
 }
 
-/* 修改第二个字体颜色 */
+
+/* 添加文字阴影和发光效果 */
 .light-theme .word2 {
-  color: white !important;
-  background: none;
-  -webkit-text-fill-color: white;
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #14b8a6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 0 10px rgba(6, 182, 212, 0.3),
+    0 0 20px rgba(6, 182, 212, 0.2);
+}
+
+.light-theme .word3 {
+  color: #0284c7;
+  text-shadow:
+    1px 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 15px rgba(6, 182, 212, 0.2);
 }
 
 .features-grid {
@@ -219,11 +238,11 @@ onMounted(() => {
 
 /* 亮色主题样式 */
 .light-theme {
-  background: #f8f9fa;
+  background: #f9fafb;
 }
 
 .light-theme .animated-background {
-  background: linear-gradient(135deg, #1a73e8 0%, #289cf5 100%);
+  background: linear-gradient(135deg, #f9fafb 0%, #e8f5ff 50%, #e6fffa 100%);
 }
 
 .light-theme .feature-card {
