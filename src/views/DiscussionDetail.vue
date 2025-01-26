@@ -207,7 +207,8 @@
                     </div>
                     <div class="reply-content markdown-body">
                       <template v-if="reply.parentId !== reply.rootId">
-                        回复 <span class="reply-target">@{{ comment.userId }}</span>：
+                        {{ reply.parentId }}
+                        回复 <span class="reply-target">@{{ findParentCommentUser(reply.parentId) }}</span>：
                       </template>
                       <mavon-editor v-model="reply.content" :subfield="false" :defaultOpen="'preview'"
                         :toolbarsFlag="false" :editable="false" :scrollStyle="true" :ishljs="true" />
@@ -215,7 +216,7 @@
                     <!-- 回复的回复输入框 -->
                     <div v-if="activeReplyId === reply.id" class="nested-reply-input">
                       <div class="reply-to">
-                        回复 <span class="reply-target">@{{ replyToUser }}</span>
+                        回复1 <span class="reply-target">@{{ replyToUser }}</span>
                       </div>
                       <mavon-editor v-model="replyContent" class="reply-editor" :toolbars="commentToolbars"
                         :boxShadow="false" placeholder="写下你的回复..." />
@@ -773,6 +774,26 @@ const commentToolbars = {
   alignright: false, // 右对齐
   subfield: false, // 单双栏模式
   preview: true, // 预览
+}
+
+// 查找父评论用户的方法
+const findParentCommentUser = (parentId: number): string => {
+  // 在所有评论中查找（包括一级评论和回复）
+  const findInComments = (comments: any[]): string => {
+    for (const comment of comments) {
+      if (comment.id === parentId) {
+        return comment.userId
+      }
+      // 如果有子评论，递归查找
+      if (comment.children && comment.children.length > 0) {
+        const found = findInComments(comment.children)
+        if (found) return found
+      }
+    }
+    return ''
+  }
+
+  return findInComments(discussion.value?.comments || [])
 }
 
 // 异步执行来获取文章详情和用户信息
