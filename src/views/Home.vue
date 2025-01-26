@@ -8,14 +8,14 @@
         </el-icon>
       </div>
       <div class="title-container">
+        <!-- <div class="title-word"> -->
+        <!-- <span class="word word1">The</span> -->
+        <!-- </div> -->
         <div class="title-word">
-          <span class="word word1">The</span>
+          <span class="word word2">CubeCode</span>
         </div>
         <div class="title-word">
-          <span class="word word2">ptuCode</span>
-        </div>
-        <div class="title-word">
-          <span class="word word3">OnlineJudge Platform</span>
+          <span class="word word3">判码魔方</span>
         </div>
       </div>
       <div class="features-grid">
@@ -63,22 +63,27 @@ onMounted(() => {
 <style scoped>
 .homepage {
   width: 100%;
-  min-height: 100vh;
+  height: calc(94vh);
   position: relative;
   overflow: hidden;
   background: #0f0f1a;
   transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .content-wrapper {
   position: relative;
   z-index: 1;
   padding: 2rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .animated-background {
   position: absolute;
-  top: 0;
+  top: 0px;
   left: 0;
   right: 0;
   bottom: 0;
@@ -154,7 +159,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 2rem;
-  margin-top: 4rem;
+  margin-top: 6rem;
   padding: 1rem;
 }
 
