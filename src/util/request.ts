@@ -46,6 +46,14 @@ request.interceptors.request.use((config) => {
   if (token) {
     config.headers['auth-Token'] = `Bearer ${token}`
   }
+  else {
+    // 移除 auth-Token 字段
+    if (config.headers.hasOwnProperty('auth-token')) {
+      // console.log('删除');
+      delete config.headers['auth-token'];
+    }
+  }
+  // console.log(config); 
   return config
 })
 function getAuthToken() {
