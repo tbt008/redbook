@@ -1268,7 +1268,6 @@ const getRowClassName = ({ row }: { row: Problem }) => {
   color: #ff9898;
 }
 
-/* TODO: 调整标签容器的样式 */
 /* 设置表格行的固定高度 */
 /* 设置固定高度 */
 :deep(.el-table__row) {
@@ -1276,43 +1275,23 @@ const getRowClassName = ({ row }: { row: Problem }) => {
 
 }
 
-/* 调整标签容器的样式 */
-/* 确保即使没有标签也保持一致的高度 */
-/* .problem-tags {
-  margin-top: 4px;
-  min-height: 24px;
-  
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-} */
 
-/* 调整标签的样式 */
-/* 移除原有的margin，使用gap来控制间距 */
-/* .tag-item {
-  margin: 0;
-  line-height: 20px;
-} */
 
-/* 调整题目标题的样式 */
-/* .problem-title {
-  display: block;
-  margin-bottom: 4px;
-} */
+
 
 
 
 /* 添加通过题目的行样式 */
-:deep(.passed-row) {
+/* :deep(.passed-row) {
   background-color: rgba(103, 194, 58, 0.15);
   transition: background-color 0.3s ease;
-}
+} */
 
 /* 鼠标悬浮时加深背景色 */
-:deep(.passed-row:hover > td) {
-  background-color: rgba(103, 194, 58, 0) !important;
-  /* background-color: rgba(103, 194, 58, 0.25) !important; */
-}
+/* :deep(.passed-row:hover > td) { */
+/* background-color: rgba(103, 194, 58, 0) !important; */
+/* background-color: rgba(103, 194, 58, 0.25) !important; */
+/* } */
 
 /* :deep(.not-passed-row:hover > td) {
   background-color: rgba(255, 0, 0, 0.25) !important;
