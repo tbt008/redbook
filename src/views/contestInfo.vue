@@ -6,103 +6,82 @@
         <template #default>
           <div style="margin: auto; width: 70%; flex-wrap: wrap">
             <div style="margin: auto; display: flex">
-              <div
-                style="
+              <div style="
                   color: rgb(255, 255, 255);
                   padding-top: 50px;
                   font-size: 50px;
                   margin: auto;
                   display: flex;
                   text-align: center;
-                "
-              >
+                ">
                 <div style="display: flex">{{ constestInfo.title }}</div>
-                <div
-                  style="
+                <div style="
                     padding-left: 30px;
                     display: flex;
                     text-align: center;
                     margin: auto 0;
                     height: 25px;
-                  "
-                >
-                  <div
-                    v-if="constestInfo.isInputPassword"
-                    :class="['difficulty-label', 'difficulty-entry']"
-                  >
-                    <el-icon><Lock /></el-icon>密码
+                  ">
+                  <div v-if="constestInfo.isInputPassword" :class="['difficulty-label', 'difficulty-entry']">
+                    <el-icon>
+                      <Lock />
+                    </el-icon>密码
                   </div>
-                  <div
-                    style="margin-left: 10px"
-                    v-if="constestInfo.isInvite"
-                    :class="['difficulty-label', 'difficulty-easy']"
-                  >
-                    <el-icon><key /></el-icon>邀请
+                  <div style="margin-left: 10px" v-if="constestInfo.isInvite"
+                    :class="['difficulty-label', 'difficulty-easy']">
+                    <el-icon>
+                      <key />
+                    </el-icon>邀请
                   </div>
-                  <div
-                    style="margin-left: 10px"
-                    v-if="constestInfo.contestType == 1"
-                    :class="['difficulty-label', 'difficulty-medium']"
-                  >
+                  <div style="margin-left: 10px" v-if="constestInfo.contestType == 1"
+                    :class="['difficulty-label', 'difficulty-medium']">
                     IOI
                   </div>
-                  <div
-                    style="margin-left: 10px"
-                    v-if="constestInfo.contestType == 2"
-                    :class="['difficulty-label', 'difficulty-medium']"
-                  >
+                  <div style="margin-left: 10px" v-if="constestInfo.contestType == 2"
+                    :class="['difficulty-label', 'difficulty-medium']">
                     ACM
                   </div>
                 </div>
               </div>
             </div>
 
-            <div
-              style="color: rgb(220, 220, 220); width: 100%; font-size: 15px; text-align: center"
-            >
-              <el-icon><BellFilled /></el-icon>比赛时间 : {{ constestInfo.startTime }} 至
+            <div style="color: rgb(220, 220, 220); width: 100%; font-size: 15px; text-align: center">
+              <el-icon>
+                <BellFilled />
+              </el-icon>比赛时间 : {{ constestInfo.startTime }} 至
               {{ constestInfo.endTime }}
             </div>
             <div>
-              <div
-                style="color: rgb(220, 220, 220); width: 100%; font-size: 15px; text-align: center"
-              >
-                <el-icon><Promotion /></el-icon>
+              <div style="color: rgb(220, 220, 220); width: 100%; font-size: 15px; text-align: center">
+                <el-icon>
+                  <Promotion />
+                </el-icon>
                 主办方 : ptuCode.com
               </div>
-              <div
-                style="color: rgb(220, 220, 220); width: 100%; font-size: 15px; text-align: center"
-              >
-                <el-icon><UserFilled /></el-icon>参与人数：{{ constestInfo.participationNumber }}
+              <div style="color: rgb(220, 220, 220); width: 100%; font-size: 15px; text-align: center">
+                <el-icon>
+                  <UserFilled />
+                </el-icon>参与人数：{{ constestInfo.participationNumber }}
               </div>
-              <div
-                style="
+              <div style="
                   color: rgb(220, 220, 220);
                   width: 100%;
                   font-size: 15px;
                   text-align: center;
                   margin-bottom: 20px;
-                "
-              >
+                ">
                 语言 :
                 {{ constestInfo.language }}
               </div>
-              <el-button
-                v-if="
-                  constestInfo.isJoin == false && constestInfo.isInvite == false && isEnd == false
-                "
-                type="danger"
-                style="margin: 10px"
-                @click="joinContest"
-                ><el-icon><Sunny /></el-icon> 报名</el-button
-              >
+              <el-button v-if="
+                constestInfo.isJoin == false && constestInfo.isInvite == false && isEnd == false
+              " type="danger" style="margin: 10px" @click="joinContest"><el-icon>
+                  <Sunny />
+                </el-icon> 报名</el-button>
             </div>
           </div>
-          <progress-bar
-            v-if="!isShowCountDown && constestInfo.isJoin == true && isEnd == false"
-            :startTime="startTime"
-            :endTime="endTime"
-          />
+          <progress-bar v-if="!isShowCountDown && constestInfo.isJoin == true && isEnd == false" :startTime="startTime"
+            :endTime="endTime" />
         </template>
       </el-skeleton>
     </div>
@@ -116,48 +95,32 @@
             </template>
             <template #default>
               <div v-if="isShowCountDown" style="margin: auto">
-                <count-down
-                  @selectQuestion="selectQuestion"
-                  :endTime="startTime"
-                  :endText="endText"
-                />
+                <count-down @selectQuestion="selectQuestion" :endTime="startTime" :endText="endText" />
               </div>
-              <div
-                class="warning"
-                v-if="constestInfo.isJoin == false && constestInfo.isInvite == true"
-              >
+              <div class="warning" v-if="constestInfo.isJoin == false && constestInfo.isInvite == true">
                 当前比赛需要邀请，且您未被邀请，无法参加！
               </div>
 
-              <div
-                class="passwordInput"
-                v-if="constestInfo.needPassword == true && constestInfo.isInputPassword == false"
-              >
-                <el-input
-                  v-model="inputPassword"
-                  style="width: 240px"
-                  placeholder="请输入比赛密码"
-                />
+              <div class="passwordInput"
+                v-if="constestInfo.needPassword == true && constestInfo.isInputPassword == false">
+                <el-input v-model="inputPassword" style="width: 240px" placeholder="请输入比赛密码" />
                 <el-button type="primary" @click="submitPassword()">提交</el-button>
               </div>
-              <div
-                style="
+              <div style="
                   background-color: beige;
                   min-height: 300px;
                   height: auto;
                   width: 80%;
                   margin: auto;
                   padding: 30px;
-                "
-              >
+                ">
                 {{ constestInfo.description }}
               </div>
             </template>
           </el-skeleton>
         </el-tab-pane>
         <div v-if="constestInfo.isJoin == true && isEnd == false">
-          <el-tab-pane label="题目" name="second"
-            ><el-scrollbar height="600px">
+          <el-tab-pane label="题目" name="second"><el-scrollbar height="600px">
               <el-table :data="questionList" style="width: 100%">
                 <el-table-column label="题号" prop="letter"> </el-table-column>
                 <el-table-column label="题目" prop="title">
@@ -169,8 +132,7 @@
                 </el-table-column>
                 <el-table-column label="通过率" width="100">
                   <template #default="{ row }">
-                    <el-link>{{ row.acTimes }}/{{ row.tryTimes }} </el-link></template
-                  >
+                    <el-link>{{ row.acTimes }}/{{ row.tryTimes }} </el-link></template>
                 </el-table-column>
                 <el-table-column label="状态" prop="isPass">
                   <template #default="{ row }">
@@ -185,16 +147,10 @@
                 <template #empty>
                   <el-empty description="没有数据" />
                 </template>
-              </el-table> </el-scrollbar
-          ></el-tab-pane>
+              </el-table> </el-scrollbar></el-tab-pane>
           <el-tab-pane label="提交" name="third">
-            <el-input
-              v-model="inputUser"
-              style="width: 240px"
-              placeholder="输入用户名后回车查询"
-              @change="searchUser"
-              :suffix-icon="Search"
-            />
+            <el-input v-model="inputUser" style="width: 240px" placeholder="输入用户名后回车查询" @change="searchUser"
+              :suffix-icon="Search" />
 
             <el-table :data="codeRecordList" style="width: 100%">
               <el-table-column label="用户名" prop="uid"> </el-table-column>
@@ -210,14 +166,8 @@
                     <template #dropdown>
                       <el-dropdown-menu>
                         <el-dropdown-item v-for="(item, index) in displayTitle" :key="index">
-                          <el-checkbox
-                            @click="handleCommand(index)"
-                            v-bind="item.checked"
-                            label=""
-                            size="large"
-                          />
-                          {{ item.text }}</el-dropdown-item
-                        >
+                          <el-checkbox @click="handleCommand(index)" v-bind="item.checked" label="" size="large" />
+                          {{ item.text }}</el-dropdown-item>
                       </el-dropdown-menu>
                     </template>
                   </el-dropdown>
@@ -238,14 +188,8 @@
                     <template #dropdown>
                       <el-dropdown-menu>
                         <el-dropdown-item v-for="(item, index) in runResult" :key="index">
-                          <el-checkbox
-                            @click="handleRun(index)"
-                            v-bind="item.checked"
-                            label=""
-                            size="large"
-                          />
-                          {{ item.text }}</el-dropdown-item
-                        >
+                          <el-checkbox @click="handleRun(index)" v-bind="item.checked" label="" size="large" />
+                          {{ item.text }}</el-dropdown-item>
                       </el-dropdown-menu>
                     </template>
                   </el-dropdown>
@@ -272,8 +216,8 @@
                   <div v-if="row.memory == null">N/A</div>
                   <div v-else>
                     {{ row.memory }}
-                  </div></template
-                >
+                  </div>
+                </template>
               </el-table-column>
               <el-table-column label="语言" prop="language">
                 <template #default="{ row }">
@@ -290,15 +234,9 @@
             </el-table>
             <!-- elementplus el-pagination: 分页器 -->
             <div class="pagination-container">
-              <el-pagination
-                v-model:current-page="recordCurrentPage"
-                v-model:page-size="recordPageSize"
-                :total="recordTotal"
-                :page-sizes="[10, 20, 50]"
-                layout="total, sizes, prev, pager, next"
-                @size-change="recordHandleSizeChange"
-                @current-change="recordHandleCurrentChange"
-              />
+              <el-pagination v-model:current-page="recordCurrentPage" v-model:page-size="recordPageSize"
+                :total="recordTotal" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next"
+                @size-change="recordHandleSizeChange" @current-change="recordHandleCurrentChange" />
             </div>
           </el-tab-pane>
         </div>
@@ -314,20 +252,11 @@
               </template>
             </el-table-column>
 
-            <el-table-column
-              v-for="(item, index) in displayTitle"
-              :key="index"
-              :label="item.text"
-              align="center"
-            >
+            <el-table-column v-for="(item, index) in displayTitle" :key="index" :label="item.text" align="center">
               <template #default="{ row }">
                 <!-- acm -->
                 <div v-if="constestInfo.contestType == 2">
-                  <div
-                    v-if="row.questionInfo[index].score == 100"
-                    class="rank-css"
-                    style="color: #67c23a"
-                  >
+                  <div v-if="row.questionInfo[index].score == 100" class="rank-css" style="color: #67c23a">
                     <div>
                       <div>
                         {{ row.questionInfo[index].score }}
@@ -340,11 +269,7 @@
                       </div>
                     </div>
                   </div>
-                  <div
-                    v-else-if="row.questionInfo[index].acceptedTime != null"
-                    class="rank-css"
-                    style="color: red"
-                  >
+                  <div v-else-if="row.questionInfo[index].acceptedTime != null" class="rank-css" style="color: red">
                     <div>
                       <div>
                         {{ row.questionInfo[index].score }}
@@ -362,11 +287,7 @@
                 </div>
                 <!-- ioi -->
                 <div v-else>
-                  <div
-                    v-if="row.questionInfo[index].score == 100"
-                    class="rank-css"
-                    style="color: #67c23a"
-                  >
+                  <div v-if="row.questionInfo[index].score == 100" class="rank-css" style="color: #67c23a">
                     <div>
                       <div>
                         {{ row.questionInfo[index].score }}
@@ -377,14 +298,10 @@
                       </div>
                     </div>
                   </div>
-                  <div
-                    v-else-if="
-                      row.questionInfo[index].acceptedTime != null &&
-                      row.questionInfo[index].score != 0
-                    "
-                    class="rank-css"
-                    style="color: rgb(230, 162, 60)"
-                  >
+                  <div v-else-if="
+                    row.questionInfo[index].acceptedTime != null &&
+                    row.questionInfo[index].score != 0
+                  " class="rank-css" style="color: rgb(230, 162, 60)">
                     <div>
                       <div>
                         {{ row.questionInfo[index].score }}
@@ -395,14 +312,10 @@
                       </div>
                     </div>
                   </div>
-                  <div
-                    v-else-if="
-                      row.questionInfo[index].acceptedTime != null &&
-                      row.questionInfo[index].score == 0
-                    "
-                    class="rank-css"
-                    style="color: red"
-                  >
+                  <div v-else-if="
+                    row.questionInfo[index].acceptedTime != null &&
+                    row.questionInfo[index].score == 0
+                  " class="rank-css" style="color: red">
                     <div>
                       <div>
                         {{ row.questionInfo[index].score }}
@@ -424,16 +337,11 @@
           </el-table>
           <!-- elementplus el-pagination: 分页器 -->
           <div class="pagination-container">
-            <el-pagination
-              v-model:current-page="rankCurrentPage"
-              v-model:page-size="rankPageSize"
-              :total="rankTotal"
-              :page-sizes="[10, 20, 50]"
-              layout="total, sizes, prev, pager, next"
-              @size-change="rankHandleSizeChange"
-              @current-change="rankHandleCurrentChange"
-            /></div
-        ></el-tab-pane>
+            <el-pagination v-model:current-page="rankCurrentPage" v-model:page-size="rankPageSize" :total="rankTotal"
+              :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="rankHandleSizeChange"
+              @current-change="rankHandleCurrentChange" />
+          </div>
+        </el-tab-pane>
       </el-tabs>
     </div>
   </div>
@@ -631,7 +539,7 @@ const refreshRank = () => {
           r.checked = false
           questionNumber.value.push(r)
         })
-        if (displayTitle.value == []) {
+        if (displayTitle.value.length == 0) {
           displayTitle.value = questionNumber.value
         }
 
@@ -732,6 +640,7 @@ const submitPassword = () => {
   display: flex;
   justify-content: center;
 }
+
 .difficulty-label {
   display: inline-block;
   padding: 2px 8px;
@@ -763,6 +672,7 @@ const submitPassword = () => {
   background-color: #f56c6c;
   color: white;
 }
+
 .rank-css {
   display: flex;
   justify-content: center;
@@ -770,11 +680,11 @@ const submitPassword = () => {
   height: 50px;
   width: 100%;
 }
+
 .contest-info {
   background:
     url(@/views/imgs/contest.png) no-repeat,
-    linear-gradient(
-      303deg,
+    linear-gradient(303deg,
       #186ee8 0%,
       #1b6fe8 9%,
       #2274e9 19%,
@@ -789,25 +699,27 @@ const submitPassword = () => {
       #64b3f4 93%,
       #67b7f4 97%,
       #69b9f5 99%,
-      #6abaf5 100%
-    );
+      #6abaf5 100%);
   background-size: cover;
   object-fit: cover;
   background-position: center center;
   padding: 0%;
   height: 300px;
 }
+
 .warning {
   color: rgb(245, 49, 49);
   font-size: 20px;
   padding: 30px;
   margin: auto;
 }
+
 .passwordInput {
   margin: auto;
   width: 100%;
   padding: 30px;
 }
+
 .contest-tabs {
   /* padding: 25px; */
   /* margin: 30px; */
