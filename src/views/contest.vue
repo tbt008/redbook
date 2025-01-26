@@ -28,23 +28,23 @@
                     <div class="contest-item-info">
                       <el-icon>
                         <BellFilled />
-                      </el-icon>比赛时间:{{ item.startTime }}至{{ item.endTime }}
+                      </el-icon>比赛时间 : {{ item.startTime }} 至 {{ item.endTime }}
                     </div>
                     <div class="contest-item-info" style="display: flex; justify-content: flex-start; gap: 40px;">
                       <div>
                         <el-icon>
                           <Promotion />
-                        </el-icon>
-                        主办方:ptuCode.com
+                        </el-icon> 主办方 : CubeCode.com
+
                       </div>
                       <div>
                         <el-icon>
                           <UserFilled />
-                        </el-icon>参与人数：{{ item.participationNumber }}
+                        </el-icon> 参与人数 ：{{ item.participationNumber }}
                       </div>
                     </div>
                     <div class="contest-item-info">
-                      语言:{{ item.language }}
+                      语言 : {{ item.language }}
                     </div>
                   </div>
                   <div class="apply-button">
@@ -80,7 +80,8 @@
                     <div class="contest-item-info">
                       <el-icon>
                         <BellFilled />
-                      </el-icon>比赛时间:{{ item.startTime }}至{{ item.endTime }}
+                      </el-icon>
+                      <span>比赛时间: {{ item.startTime }} 至 {{ item.endTime }}</span>
                     </div>
                     <div class="contest-item-info" style="display: flex; justify-content: flex-start; gap: 40px;">
                       <div>
