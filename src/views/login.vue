@@ -68,6 +68,16 @@ const router = useRouter()
 
 const id = ref()
 const password = ref('')
+const getInit = async () => {
+
+  request.get('/article/likes/update', {
+
+  });
+  request.get('/article/user/update', {
+
+  });
+
+}
 const login = async () => {
   let obj = {
     uid: id.value,
@@ -80,6 +90,7 @@ const login = async () => {
       localStorage.setItem('authToken', res.data)
 
       localStorage.setItem('uid', uid)
+      getInit()
       ElMessage.success('登录成功！欢迎回来!')
       store.changeLoginStatus(true)
 
