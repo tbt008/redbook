@@ -48,7 +48,8 @@
                             <div v-for="message in messages" :key="message.id" class="message-item"
                                 :class="{ 'message-unread': !message.status }">
                                 <div class="message-title">{{ message.title }}</div>
-                                <div class="message-text">{{ message.content }}</div>
+                                <!-- <div class="message-text">{{ message.content }}</div> -->
+                                <div class="message-text" v-html="message.content"></div>
                                 <div class="message-footer">
                                     <span class="message-time">{{ formatTime(message.messageSentTime) }}</span>
                                 </div>
