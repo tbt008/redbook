@@ -310,16 +310,24 @@ const getStats = async () => {
       font-size: 3.5rem;
       font-weight: 700;
       margin-bottom: 1rem;
-      animation: fadeInUp 0.8s ease;
       background: linear-gradient(135deg, #00ffbb 0%, #4d7fff 50%, #ff49e1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      text-shadow:
+        0 0 10px rgba(77, 127, 255, 0.5),
+        0 0 20px rgba(77, 127, 255, 0.3),
+        0 0 30px rgba(77, 127, 255, 0.1);
     }
 
     .subtitle {
       font-size: 1.5rem;
       opacity: 0.9;
       animation: fadeInUp 0.8s ease 0.2s both;
+      color: #ffffff;
+      text-shadow:
+        2px 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 10px rgba(255, 255, 255, 0.5),
+        0 0 20px rgba(255, 255, 255, 0.3);
     }
   }
 }
