@@ -43,7 +43,7 @@
       </header>
       <section class="main-content">
         <form action="">
-          <input v-model="id" type="username" placeholder="用户名" />
+          <input v-model="id" type="username" placeholder="学号" />
           <!-- <div class="line"></div> -->
           <input v-model="password" type="password" placeholder="密码" />
 
