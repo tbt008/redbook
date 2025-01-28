@@ -142,6 +142,11 @@ const router = createRouter({
       component: () => import('@/views/message/message.vue')
     },
     {
+      path: '/systemUpdate',
+      name: 'systemUpdate',
+      component: () => import('@/views/error/systemUpdate.vue')
+    },
+    {
       path: '/404',
       name: '404',
       component: () => import('@/views/error/404.vue')
