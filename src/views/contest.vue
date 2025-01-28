@@ -22,7 +22,10 @@
                         </el-icon>邀请</el-tag>
                       <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark">IOI</el-tag>
                       <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
-                      <el-tag style="margin-left: 10px" type="success" effect="dark">进行中</el-tag>
+                      <el-tag style="margin-left: 10px"
+                        :type="new Date(item.startTime) > new Date() ? 'warning' : 'success'" effect="dark">
+                        {{ new Date(item.startTime) > new Date() ? '待开始' : '进行中' }}
+                      </el-tag>
                     </div>
 
                     <div class="contest-item-info">
