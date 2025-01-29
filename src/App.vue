@@ -10,14 +10,11 @@ const hideHeaderPaths = ['/ai', '/login', '/systemUpdate'] // 在这里添加不
 
 onMounted(async () => {
   const res = await request.get('/system/healthy') as any
-  let st = false;
+  let st = true;
   if (res.code == 200) {
-    if (!res.data) {
-      st = true;
+    if (res.data) {
+      st = false;
     }
-  }
-  else {
-    st = true;
   }
   if (st) {
     router.push('/systemUpdate')
