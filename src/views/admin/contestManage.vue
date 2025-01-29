@@ -64,11 +64,13 @@
             <el-button :icon="Plus" circle plain type="primary" @click="updateMember(row)"></el-button>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150">
+        <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button :icon="Edit" circle plain type="primary" @click="onEdit(row)"> </el-button>
             <el-button :icon="Download" circle plain type="primary" @click="onDownload(row)">
             </el-button>
+            <el-button :icon="RefreshRight" circle plain type="warning" @click="onReset(row)"
+              :disabled="resetDisabled"></el-button>
             <el-button :icon="Delete" circle plain type="danger" @click="onDelete(row)"></el-button>
           </template>
         </el-table-column>
@@ -94,17 +96,36 @@
   <el-dialog v-model="showUpdateMember" title="成员名单" width="50%" :close-on-click-modal="false">
     <ContestMember @cancel="cancel" @primary="cancel" :id="contestId"></ContestMember>
   </el-dialog>
+  <!-- 重测题目列表弹窗 -->
+  <el-dialog v-model="showResetDialog" title="选择重测题目" width="50%">
+    <!-- <div class="reset-header">
+      <el-button type="primary" @click="handleResetAll" :loading="resetAllLoading">
+        重测全部题目
+      </el-button>
+    </div> -->
+    <el-table :data="resetQuestions" style="width: 100%">
+      <el-table-column prop="questionId" label="题目ID" width="100" />
+      <el-table-column prop="title" label="题目名称" />
+      <el-table-column label="操作" width="120">
+        <template #default="{ row }">
+          <el-button type="primary" size="small" @click="handleResetQuestion(row)" :loading="row.loading">
+            重测
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+  </el-dialog>
 </template>
 
 <script lang="js" setup>
 import ContestEditor from '@/components/contestEditor.vue'
 import ContestMember from '@/components/contestMember.vue'
-import { Delete, Edit, Plus, Download } from '@element-plus/icons-vue'
+import { Delete, Edit, Plus, Download, RefreshRight } from '@element-plus/icons-vue'
 // Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
 // 工具和类型
 import request from '@/util/request'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 const showUpdateContest = ref(false)
 const contestList = ref([])
 const showUpdateMember = ref(false)
@@ -221,6 +242,65 @@ onMounted(async () => {
 })
 
 const showAddContest = ref(false)
+
+// 添加重测相关的响应式变量
+const resetDisabled = ref(false)
+const showResetDialog = ref(false)
+const resetQuestions = ref([])
+
+// 修改重测功能
+const onReset = async (row) => {
+  try {
+    contestId.value = row.id  // 设置当前选中的比赛ID
+    // 获取可重测题目
+    const res = await request.post(`/contest/reset/question`, {
+      contestId: row.id
+    })
+    if (res.code !== 200) {
+      ElMessage.error(res.msg || '获取重测题目失败')
+      return
+    }
+
+    const questions = res.data
+    if (!questions || questions.length === 0) {
+      ElMessage.warning('没有可重测的题目')
+      return
+    }
+
+    // 为每个题目添加loading状态
+    resetQuestions.value = questions.map(q => ({
+      ...q,
+      loading: false
+    }))
+    showResetDialog.value = true
+
+  } catch (error) {
+    ElMessage.error('操作失败：' + error)
+  }
+}
+
+// 修改单个题目重测功能
+const handleResetQuestion = async (question) => {
+  try {
+    question.loading = true
+    const resetRes = await request.post('/contest/reset', {
+      contestId: contestId.value,
+      questionId: question.questionId
+    })
+
+    if (resetRes.code === 200) {
+      ElMessage.success(`题目 "${question.title}" 重测任务已提交`)
+      question.loading = false
+    } else {
+      ElMessage.error(resetRes.msg || '重测失败')
+    }
+  } catch (error) {
+    ElMessage.error('重测失败：' + error)
+  } finally {
+    question.loading = false
+  }
+}
+
 </script>
 
 <style scoped>
@@ -397,5 +477,9 @@ const showAddContest = ref(false)
 .tag-search-input {
   margin-bottom: 16px;
   width: 100%;
+}
+
+.reset-header {
+  margin-bottom: 15px;
 }
 </style>
