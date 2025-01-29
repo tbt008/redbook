@@ -69,8 +69,7 @@
             <el-button :icon="Edit" circle plain type="primary" @click="onEdit(row)"> </el-button>
             <el-button :icon="Download" circle plain type="primary" @click="onDownload(row)">
             </el-button>
-            <el-button :icon="RefreshRight" circle plain type="warning" @click="onReset(row)"
-              :disabled="resetDisabled"></el-button>
+            <el-button :icon="RefreshRight" circle plain type="warning" @click="onReset(row)"></el-button>
             <el-button :icon="Delete" circle plain type="danger" @click="onDelete(row)"></el-button>
           </template>
         </el-table-column>
@@ -248,10 +247,19 @@ const resetDisabled = ref(false)
 const showResetDialog = ref(false)
 const resetQuestions = ref([])
 
-// 修改重测功能
+// 防抖时间控制
+const DEBOUNCE_TIME = 10000 // 10秒
+const enableReset = () => {
+  resetDisabled.value = true
+  setTimeout(() => {
+    resetDisabled.value = false
+  }, DEBOUNCE_TIME)
+}
+
+
 const onReset = async (row) => {
   try {
-    contestId.value = row.id  // 设置当前选中的比赛ID
+    contestId.value = row.id
     // 获取可重测题目
     const res = await request.post(`/contest/reset/question`, {
       contestId: row.id
@@ -281,8 +289,15 @@ const onReset = async (row) => {
 
 // 修改单个题目重测功能
 const handleResetQuestion = async (question) => {
+  if (resetDisabled.value) {
+    ElMessage.warning('操作太频繁，请稍后再试')
+    return
+  }
+
   try {
     question.loading = true
+    enableReset() // 启动防抖
+
     const resetRes = await request.post('/contest/reset', {
       contestId: contestId.value,
       questionId: question.questionId
