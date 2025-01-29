@@ -1,9 +1,29 @@
 <script setup lang="ts">
 import Header from '@/components/OJHeader.vue'
+import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-
+import { useRouter } from 'vue-router'
+import request from './util/request'
+const router = useRouter()
 const route = useRoute()
-const hideHeaderPaths = ['/ai', '/login'] // 在这里添加不需要显示导航栏的路径
+const hideHeaderPaths = ['/ai', '/login', '/systemUpdate'] // 在这里添加不需要显示导航栏的路径
+
+onMounted(async () => {
+  const res = await request.get('/system/healthy') as any
+  let st = false;
+  if (res.code == 200) {
+    if (!res.data) {
+      st = true;
+    }
+  }
+  else {
+    st = true;
+  }
+  if (st) {
+    router.push('/systemUpdate')
+  }
+  console.log(res.code)
+})
 </script>
 
 <template>
