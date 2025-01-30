@@ -60,7 +60,7 @@ import request from '@/util/request'
 import { onMounted, ref, watch, onUnmounted } from 'vue'
 // import store from '@/views/var.js'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElNotification } from 'element-plus'
 import { Bell } from '@element-plus/icons-vue'
 const router = useRouter()
 const links = ref([
@@ -264,15 +264,34 @@ const handleCommand = (command) => {
 const unreadCount = ref(0)
 let pollTimer = null
 
-// 获取未读消息数
+// 添加新的响应式变量
+const lastNotificationTime = ref(0)
+
 const getUnreadCount = async () => {
   try {
     const res = await request.get('/user/Notice/unRead')
     if (res.code === 200) {
       unreadCount.value = res.data
+      // 如果有未读消息，检查是否需要显示弹窗
+      if (res.data > 0) {
+        const now = Date.now()
+        // 检查是否超过10分钟
+        if (now - lastNotificationTime.value > 600000) {
+          const messageRes = await request.get('/user/Notice/message/first')
+          if (messageRes.code === 200) {
+            ElNotification({
+              title: messageRes.data.title,
+              message: messageRes.data.content,
+              type: 'info',
+              duration: 5000
+            })
+            lastNotificationTime.value = now
+          }
+        }
+      }
     }
   } catch (error) {
-    console.error('获取未读消息数失败:', error)
+    console.error('获取未读消息失败:', error)
   }
 }
 
