@@ -207,7 +207,7 @@
                     </div>
                     <div class="reply-content markdown-body">
                       <template v-if="reply.parentId !== reply.rootId">
-                        {{ reply.parentId }}
+                        <!-- {{ reply.parentId }} -->
                         回复 <span class="reply-target">@{{ findParentCommentUser(reply.parentId) }}</span>：
                       </template>
                       <mavon-editor v-model="reply.content" :subfield="false" :defaultOpen="'preview'"
@@ -216,7 +216,7 @@
                     <!-- 回复的回复输入框 -->
                     <div v-if="activeReplyId === reply.id" class="nested-reply-input">
                       <div class="reply-to">
-                        回复1 <span class="reply-target">@{{ replyToUser }}</span>
+                        回复 <span class="reply-target">@{{ replyToUser }}</span>
                       </div>
                       <mavon-editor v-model="replyContent" class="reply-editor" :toolbars="commentToolbars"
                         :boxShadow="false" placeholder="写下你的回复..." />
