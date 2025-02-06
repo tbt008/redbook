@@ -25,6 +25,12 @@
           </el-icon>
           <template #title>讯飞星火</template>
         </el-menu-item>
+        <el-menu-item index="deepseek">
+          <el-icon>
+            <ChatDotRound />
+          </el-icon>
+          <template #title>deepseek</template>
+        </el-menu-item>
       </el-menu>
 
       <!-- 底部按钮区域 - 主题切换和信息按钮 -->
@@ -141,6 +147,41 @@
           </div>
         </div>
 
+        <!-- 添加 deepseek 的消息区域 -->
+        <div v-if="selectedAI === 'deepseek'" class="messages" ref="messagesContainer">
+          <!-- 添加欢迎消息 -->
+          <div v-if="showWelcome && messages['deepseek'].length === 0" class="welcome-message">
+            欢迎使用 PTUCODE AI 聊天应用
+          </div>
+
+          <div v-for="(message, index) in messages['deepseek']" :key="index"
+            :class="['message-item', message.role === 'user' ? 'message-user' : '']">
+            <!-- AI消息布局 -->
+            <template v-if="message.role === 'ai'">
+              <el-avatar :size="40" :src="getAiAvatar" class="avatar clickable" @click="showImageViewer(getAiAvatar)" />
+              <div class="message-bubble ai-bubble" v-html="formatMessage(message.content)"></div>
+            </template>
+
+            <!-- 用户消息布局 -->
+            <template v-else>
+              <div class="message-content-wrapper">
+                <div class="message-bubble user-bubble preserve-whitespace">
+                  {{ message.content }}
+                </div>
+                <el-avatar :size="40" :src="userAvatar" class="avatar clickable" @click="showImageViewer(userAvatar)" />
+              </div>
+            </template>
+          </div>
+
+          <!-- 修改加载动画显示条件 -->
+          <div v-if="isLoading['deepseek']" class="message-item">
+            <el-avatar :size="40" :src="getAiAvatar" class="avatar" />
+            <div class="message-bubble ai-bubble loading-bubble">
+              <span class="loading-dots"> <i></i><i></i><i></i> </span>
+            </div>
+          </div>
+        </div>
+
         <!-- 输入区域 -->
         <div class="input-section">
           <div class="input-wrapper">
@@ -204,22 +245,26 @@ const selectedAI = ref('智谱清言') // 当前选中的 AI
 const messagesContainer = ref<HTMLElement | null>(null)
 const isLoading = ref<{ [key: string]: boolean }>({
   '智谱清言': false,
-  '讯飞星火': false
+  '讯飞星火': false,
+  'deepseek': false
 })
 const isDarkMode = ref(false) // 暗色模式状态
 const useCustomBg = ref<{ [key: string]: boolean }>({
   '智谱清言': false,
-  '讯飞星火': false
+  '讯飞星火': false,
+  'deepseek': false
 })
 const currentBgIndex = ref<{ [key: string]: number }>({
   '智谱清言': 0,
-  '讯飞星火': 0
+  '讯飞星火': 0,
+  'deepseek': 0
 })
 
 // 消息存储----为每个 AI 维护独立的消息列表
 const messages = ref<{ [key: string]: { role: string; content: string; isNew?: boolean }[] }>({
-  智谱清言: [],
-  讯飞星火: []
+  '智谱清言': [],
+  '讯飞星火': [],
+  'deepseek': []  // 确保使用完全相同的键名
 })
 // 补充点击事件
 const goHome = () => {
@@ -280,7 +325,49 @@ const selectAI = (index: string) => {
   // })
 }
 
-// 消息发送处理
+// 修改删除聊天记录的函数
+const deleteChat = async () => {
+  const uid = localStorage.getItem('uid')
+  // 修改 AI 类型判断逻辑
+  let ai
+  switch (selectedAI.value) {
+    case '讯飞星火':
+      ai = 1
+      break
+    case '智谱清言':
+      ai = 2
+      break
+    case 'deepseek':
+      ai = 3
+      break
+    default:
+      ai = 2
+  }
+
+  try {
+    const deleteDto = {
+      uid: uid,
+      ai: ai
+    }
+
+    const response = await request.delete('/AI/delete', {
+      data: deleteDto
+    }) as any
+
+    if (response.code === 200) {
+      messages.value[selectedAI.value] = []
+      // 更新 localStorage 中的消息
+      localStorage.setItem('aiMessages', JSON.stringify(messages.value))
+      ElMessage.success('聊天记录已清空')
+    } else {
+      ElMessage.error(response.data || '删除失败')
+    }
+  } catch (error) {
+    ElMessage.error('删除请求失败')
+  }
+}
+
+// 修改发送消息的函数
 const sendMessage = async (e?: KeyboardEvent) => {
   if (e?.shiftKey) return
   const currentAI = selectedAI.value
@@ -344,33 +431,6 @@ const sendMessage = async (e?: KeyboardEvent) => {
   }
 }
 
-// 清空聊天记录
-const deleteChat = async () => {
-  const uid = localStorage.getItem('uid')
-  const ai = selectedAI.value === '讯飞星火' ? 1 : 2
-  try {
-    const deleteDto = {
-      uid: uid,
-      ai: ai
-    }
-
-    const response = await request.delete('/AI/delete', {
-      data: deleteDto
-    }) as any
-
-    if (response.code === 200) {
-      messages.value[selectedAI.value] = []
-      // 更新 localStorage 中的消息
-      localStorage.setItem('aiMessages', JSON.stringify(messages.value))
-      ElMessage.success('聊天记录已清空')
-    } else {
-      ElMessage.error(response.data || '删除失败')
-    }
-  } catch (error) {
-    ElMessage.error('删除请求失败')
-  }
-}
-
 // 主题切换
 const handleThemeChange = (command: string) => {
   isDarkMode.value = command === 'dark'
@@ -392,7 +452,13 @@ onMounted(() => {
   // 从 localStorage 加载历史消息
   const savedMessages = localStorage.getItem('aiMessages')
   if (savedMessages) {
-    messages.value = JSON.parse(savedMessages)
+    const parsedMessages = JSON.parse(savedMessages)
+    // 确保所有必需的 AI 类型都有对应的消息数组
+    messages.value = {
+      '智谱清言': parsedMessages['智谱清言'] || [],
+      '讯飞星火': parsedMessages['讯飞星火'] || [],
+      'deepseek': parsedMessages['deepseek'] || []
+    }
   }
 
   // 从 localStorage 恢复主题状态
@@ -458,39 +524,6 @@ const getAiAvatar = computed(() => {
   }
   return currentBgIndex.value[currentAI] === 1 ? aiAvatar3 : aiAvatar
 })
-
-// 修改切换主题方法 被ban了
-// const toggleTheme = () => {
-//   const messagesEl = document.querySelector('.messages') as HTMLElement
-//   const currentAI = selectedAI.value
-
-//   if (!useCustomBg.value[currentAI]) {
-//     useCustomBg.value[currentAI] = true
-//     currentBgIndex.value[currentAI] = 0
-//   } 
-
-//   currentBgIndex.value[currentAI] = (currentBgIndex.value[currentAI] + 1) % 3
-
-//   if (currentBgIndex.value[currentAI] === 0) {
-//     useCustomBg.value[currentAI] = false
-//     messagesEl.style.backgroundImage = 'none'
-//   } else if (currentBgIndex.value[currentAI] === 1) {
-//     messagesEl.style.backgroundImage = `url(${usagiAvatar})`
-//   } else {
-//     messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
-//   }
-
-//   if (useCustomBg.value[currentAI]) {
-//     messagesEl.style.backgroundSize = 'cover'
-//     messagesEl.style.backgroundPosition = 'center'
-//   }
-
-//   // 保存主题状态到 localStorage
-//   localStorage.setItem('aiThemes', JSON.stringify({
-//     useCustomBg: useCustomBg.value,
-//     currentBgIndex: currentBgIndex.value
-//   }))
-// }
 
 // 添加markdown格式化函数
 const formatMessage = (content: string) => {
