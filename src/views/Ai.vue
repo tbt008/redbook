@@ -264,7 +264,7 @@ const currentBgIndex = ref<{ [key: string]: number }>({
 const messages = ref<{ [key: string]: { role: string; content: string; isNew?: boolean }[] }>({
   '智谱清言': [],
   '讯飞星火': [],
-  'deepseek': []  // 确保使用完全相同的键名
+  'deepseek': []
 })
 // 补充点击事件
 const goHome = () => {
@@ -489,7 +489,7 @@ const showInfo = () => {
     `欢迎使用 PTUCODE AI 聊天应用！<br><br>` +
     `使用指南：<br>` +
     `• 点击左上角的<strong>AI Chat</strong>可快速回到首页<br>` +
-    `• 智谱清言和讯飞星火两种对话模型<br>` +
+    `• 拥有智谱清言、讯飞星火、deepseek三种对话模型<br>` +
     `• 在左侧可以切换不同的 AI 模型<br>` +
     `• 按 Enter 键快速发送消息<br>` +
     `• Shift + Enter 换行<br>` +
