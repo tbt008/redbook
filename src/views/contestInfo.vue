@@ -107,6 +107,9 @@
                 <el-button type="primary" @click="submitPassword()">提交</el-button>
               </div>
               <div style="
+               
+  border-radius: 20px;
+  box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                   background-color: beige;
                   min-height: 300px;
                   height: auto;
@@ -152,7 +155,7 @@
             <el-input v-model="inputUser" style="width: 240px" placeholder="输入用户名后回车查询" @change="searchUser"
               :suffix-icon="Search" />
 
-            <el-table :data="codeRecordList" style="width: 100%">
+            <el-table :data="codeRecordList" style="width: 100%" @row-click="goToSubmissionDetail">
               <el-table-column label="用户名" prop="uid"> </el-table-column>
               <el-table-column label="题号" prop="displayTitle">
                 <template #header>
@@ -200,6 +203,7 @@
                   <el-tag v-else-if="row.runResult == '答案错误'" type="danger">答案错误</el-tag>
                   <el-tag v-else-if="row.runResult == '编译错误'" type="warning">编译错误</el-tag>
                   <el-tag v-else-if="row.runResult == '正在判题'" type="primary">正在判题</el-tag>
+                  <el-tag v-else type="danger">{{ row.runResult }}</el-tag>
                 </template>
               </el-table-column>
 
@@ -242,9 +246,24 @@
         </div>
 
         <el-tab-pane label="排名" name="fourth">
+
+          <div style="float: right;">
+            <span style="font-size: 12px; margin: 10px; color:rgb(100,100,100)">默认每分钟刷新</span>
+            <el-button @click="refreshRank" type="primary" :icon="Refresh" circle><el-icon>
+                <Refresh />
+              </el-icon></el-button>
+          </div>
           <el-table :data="rankinglist" style="width: 100%">
+
             <el-table-column label="名次" prop="rank" width="100"> </el-table-column>
-            <el-table-column label="参赛者" prop="nickName" width="100"> </el-table-column>
+            <el-table-column label="参赛者" prop="userName" width="100">
+              <template #default="{ row }">
+                <el-tooltip class="box-item" effect="dark" :content="row.nickName" placement="top">
+                  <div>{{ row.userName }}</div>
+                </el-tooltip>
+
+              </template>
+            </el-table-column>
             <el-table-column label="通过" prop="totalNum" width="100"> </el-table-column>
             <el-table-column label="罚时" width="100">
               <template #default="{ row }">
@@ -265,11 +284,11 @@
                       </div>
 
                       <div style="color: rgb(96, 96, 96); font-size: 13px">
-                        {{ row.questionInfo[index].acceptedTime }}
+                        {{ row.questionInfo[index].submitTime }}
                       </div>
                     </div>
                   </div>
-                  <div v-else-if="row.questionInfo[index].acceptedTime != null" class="rank-css" style="color: red">
+                  <div v-else-if="row.questionInfo[index].submitTime != null" class="rank-css" style="color: red">
                     <div>
                       <div>
                         {{ row.questionInfo[index].score }}
@@ -278,7 +297,7 @@
                       </div>
 
                       <div style="color: rgb(96, 96, 96); font-size: 13px">
-                        {{ row.questionInfo[index].acceptedTime }}
+                        {{ row.questionInfo[index].submitTime }}
                       </div>
                     </div>
                   </div>
@@ -294,12 +313,12 @@
                       </div>
 
                       <div style="color: rgb(96, 96, 96); font-size: 13px">
-                        {{ row.questionInfo[index].acceptedTime }}
+                        {{ row.questionInfo[index].submitTime }}
                       </div>
                     </div>
                   </div>
                   <div v-else-if="
-                    row.questionInfo[index].acceptedTime != null &&
+                    row.questionInfo[index].submitTime != null &&
                     row.questionInfo[index].score != 0
                   " class="rank-css" style="color: rgb(230, 162, 60)">
                     <div>
@@ -308,12 +327,12 @@
                       </div>
 
                       <div style="color: rgb(96, 96, 96); font-size: 13px">
-                        {{ row.questionInfo[index].acceptedTime }}
+                        {{ row.questionInfo[index].submitTime }}
                       </div>
                     </div>
                   </div>
                   <div v-else-if="
-                    row.questionInfo[index].acceptedTime != null &&
+                    row.questionInfo[index].submitTime != null &&
                     row.questionInfo[index].score == 0
                   " class="rank-css" style="color: red">
                     <div>
@@ -322,7 +341,7 @@
                       </div>
 
                       <div style="color: rgb(96, 96, 96); font-size: 13px">
-                        {{ row.questionInfo[index].acceptedTime }}
+                        {{ row.questionInfo[index].submitTime }}
                       </div>
                     </div>
                   </div>
@@ -347,7 +366,7 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import request from '@/util/request.ts'
 import countDown from '@/components/countDown.vue'
 import progressBar from '@/components/progressBar.vue'
@@ -386,6 +405,10 @@ const runResult = ref([
   { text: '编译错误', checked: false },
   { text: '正在判题', checked: false }
 ])
+const goToSubmissionDetail = (row) => {
+  row.uid
+  router.push(`/submission/${row.submitId}?contest=${id.value}`)
+}
 const handleRun = (index1) => {
   runStatusList.value = []
   runResult.value[index1].checked = !runResult.value[index1].checked
@@ -432,13 +455,27 @@ const penalty = (row) => {
   if (constestInfo.value.contestType == 2) {
     var sum_ac_time = 0
     var sum_count = 0
+
     row.questionInfo.forEach((item, index) => {
       if (item.acceptedTime != null && item.score == 100) {
         sum_ac_time += timeToSeconds(item.acceptedTime)
         sum_count += item.count
       }
     })
-    return (sum_ac_time / 60 + sum_count * 20).toFixed(2)
+
+    // 计算小时、分钟和秒
+    const hours = Math.floor(sum_ac_time / 3600);
+    const minutes = Math.floor((sum_ac_time % 3600) / 60);
+    const secs = sum_ac_time % 60;
+
+    // 将小时、分钟和秒格式化为两位数
+    const paddedHours = String(hours).padStart(2, '0');
+    const paddedMinutes = String(minutes).padStart(2, '0') + sum_count * 20;
+    const paddedSeconds = String(secs).padStart(2, '0');
+
+    // 拼接成 00:00:00 格式
+    return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`
+
   } else {
     var maxTime = 0
     row.questionInfo.forEach((item, index) => {
@@ -446,7 +483,19 @@ const penalty = (row) => {
         maxTime = Math.max(maxTime, timeToSeconds(item.acceptedTime))
       }
     })
-    return (maxTime / 60).toFixed(2)
+    // 计算小时、分钟和秒
+    const hours = Math.floor(maxTime / 3600);
+    const minutes = Math.floor((maxTime % 3600) / 60);
+    const secs = maxTime % 60;
+
+    // 将小时、分钟和秒格式化为两位数
+    const paddedHours = String(hours).padStart(2, '0');
+    const paddedMinutes = String(minutes).padStart(2, '0')
+    const paddedSeconds = String(secs).padStart(2, '0');
+
+    // 拼接成 00:00:00 格式
+    return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`
+
   }
 }
 const handleCommand = (index1) => {
@@ -460,14 +509,36 @@ const handleCommand = (index1) => {
   })
   selectRecord()
 }
+
+const timer = ref(null)
 const updateTab = (tab) => {
   if (tab.paneName == 'second') {
     selectQuestion()
+    if (timer.value != null) {
+      clearInterval(timer.value)
+      timer.value = null
+    }
   } else if (tab.paneName == 'third') {
     selectRecord()
+    if (timer.value != null) {
+      clearInterval(timer.value)
+      timer.value = null
+    }
   } else if (tab.paneName == 'fourth') {
     refreshRank()
+    // 创建一个定时器，每分钟执行一遍
+    timer.value = setInterval(() => {
+      refreshRank()
+    }, 60000)
+
+  } else {
+
+    if (timer.value != null) {
+      clearInterval(timer.value)
+      timer.value = null
+    }
   }
+
 }
 const joinContest = () => {
   request
@@ -495,18 +566,7 @@ const searchUser = (value) => {
     .then((res) => {
       if (res.code == 200) {
         codeRecordList.value = res.data.list
-        // 遍历
-        codeRecordList.value.forEach((item) => {
-          if (item.result == 100) {
-            item.result = '答案正确'
-          } else if (item.result > 0 && item.result < 100) {
-            item.result = '部分正确'
-          } else if (item.result == 0) {
-            item.result = '答案错误'
-          } else if (item.result == -2) {
-            item.result = '编译错误'
-          }
-        })
+
       } else {
         ElMessage.error('获取提交记录失败：' + res.msg)
       }
@@ -595,22 +655,38 @@ const selectRecord = () => {
       ElMessage.error('获取提交记录失败！')
     })
 }
+onBeforeUnmount(async () => {
+  if (timer.value != null) {
+    clearInterval(timer.value)
+    timer.value = null
+  }
+})
 onMounted(async () => {
   id.value = router.currentRoute.value.params.id
   request.get(`/contest/racepage/${id.value}`).then((res) => {
-    constestInfo.value = res.data
-    loading.value = false
-    startTime.value = new Date(constestInfo.value.startTime).getTime() / 1000 + ' '
-    endTime.value = new Date(constestInfo.value.endTime).getTime() / 1000 + ' '
-    isEnd.value =
-      new Date(constestInfo.value.endTime).getTime() - new Date().getTime() < 0 ? true : false
-    isShowCountDown.value =
-      new Date(constestInfo.value.startTime).getTime() - new Date().getTime() > 0 ? true : false
-    // 比赛开始，查询题目
-    if (isShowCountDown.value == false) {
-      selectQuestion()
-      selectRecord()
-      refreshRank()
+    if (res.code == 200) {
+      constestInfo.value = res.data
+      loading.value = false
+      startTime.value = new Date(constestInfo.value.startTime).getTime() / 1000 + ' '
+      endTime.value = new Date(constestInfo.value.endTime).getTime() / 1000 + ' '
+      isEnd.value =
+        new Date(constestInfo.value.endTime).getTime() - new Date().getTime() < 0 ? true : false
+      isShowCountDown.value =
+        new Date(constestInfo.value.startTime).getTime() - new Date().getTime() > 0 ? true : false
+      // 比赛开始，查询题目
+      if (isShowCountDown.value == false) {
+        selectQuestion()
+        selectRecord()
+        refreshRank()
+      }
+    } else if (res.code === 401) {
+      // 返回 401 清除token信息并跳转到登录页面
+      localStorage.removeItem('auth-token')
+
+
+      router.push('/login')
+    } else {
+      ElMessage.error(res.msg)
     }
   })
 })

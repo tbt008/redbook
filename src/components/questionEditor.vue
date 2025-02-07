@@ -21,14 +21,8 @@
         <!-- 已选标签显示区域 -->
         <div v-if="selectedTagIds.length" class="selected-tags-bar">
           <!-- elementplus el-tag: 已选标签展示 -->
-          <el-tag
-            v-for="tagId in selectedTagIds"
-            :key="tagId"
-            closable
-            type="primary"
-            class="selected-tag"
-            @close="handleTagChange(false, tagId)"
-          >
+          <el-tag v-for="tagId in selectedTagIds" :key="tagId" closable type="primary" class="selected-tag"
+            @close="handleTagChange(false, tagId)">
             {{ allTags.find((tag) => tag.id === tagId)?.name }}
           </el-tag>
         </div>
@@ -65,37 +59,13 @@
         </div>
       </div>
       <el-form-item label="题目样例">
-        <el-input
-          v-model="input"
-          style="width: 60%"
-          :rows="1"
-          type="textarea"
-          placeholder="输入数据"
-        />
-        <el-input
-          v-model="output"
-          style="width: 60%"
-          :rows="1"
-          type="textarea"
-          placeholder="输出数据"
-        />
-        <el-input
-          v-model="explain"
-          style="width: 60%"
-          :rows="1"
-          type="textarea"
-          placeholder="解释"
-        />
+        <el-input v-model="input" style="width: 60%" :rows="1" type="textarea" placeholder="输入数据" />
+        <el-input v-model="output" style="width: 60%" :rows="1" type="textarea" placeholder="输出数据" />
+        <el-input v-model="explain" style="width: 60%" :rows="1" type="textarea" placeholder="解释" />
         <el-button type="primary" @click="addExample">添加</el-button>
       </el-form-item>
       <el-form-item label="题目提示">
-        <el-input
-          v-model="tip"
-          style="width: 100%"
-          :rows="2"
-          type="textarea"
-          placeholder="Please input"
-        />
+        <el-input v-model="tip" style="width: 100%" :rows="2" type="textarea" placeholder="Please input" />
       </el-form-item>
       <el-form-item label="题目内容" prop="content">
         <mavon-editor style="height: 500px" ref="mavonEditorRef" v-model="content" :ishljs="true" />
@@ -118,13 +88,8 @@
         <div class="tag-group-content">
           <template v-if="selectedTagIds.length">
             <!-- elementplus el-check-tag: 可选择的标签 -->
-            <el-check-tag
-              v-for="tagId in selectedTagIds"
-              :key="tagId"
-              :checked="true"
-              class="tag-item"
-              @change="() => handleTagChange(false, tagId)"
-            >
+            <el-check-tag v-for="tagId in selectedTagIds" :key="tagId" :checked="true" class="tag-item"
+              @change="() => handleTagChange(false, tagId)">
               {{ allTags.find((tag) => tag.id === tagId)?.name }}
             </el-check-tag>
           </template>
@@ -140,13 +105,8 @@
         <div class="tag-group-title">{{ group.superName }}</div>
         <div class="tag-group-content">
           <!-- elementplus el-check-tag: 可选择的标签 -->
-          <el-check-tag
-            v-for="tag in group.tags"
-            :key="tag.id"
-            :checked="selectedTagIds.includes(tag.id)"
-            @change="(checked) => handleTagChange(checked, tag.id)"
-            class="tag-item"
-          >
+          <el-check-tag v-for="tag in group.tags" :key="tag.id" :checked="selectedTagIds.includes(tag.id)"
+            @change="(checked) => handleTagChange(checked, tag.id)" class="tag-item">
             {{ tag.name }}
           </el-check-tag>
         </div>
@@ -205,6 +165,7 @@ const addExample = () => {
 onMounted(() => {
   getTags()
   if (props.id) {
+    selectedTagIds.value = []
     request.get(`/root/question/get/${props.id}`).then((res) => {
       if (res.code == 200) {
         title.value = res.data.title
@@ -365,6 +326,7 @@ watch(
   height: 178px;
   display: block;
 }
+
 .editor {
   width: 100%;
 }
@@ -378,12 +340,15 @@ watch(
   padding: 20px;
   margin: 10px;
 }
+
 .editorType {
   margin: 20px;
 }
+
 .ql-editor {
   height: 300px;
 }
+
 .manage-editor {
   background-color: aliceblue;
   margin: auto;
@@ -391,6 +356,7 @@ watch(
   border-radius: 15px;
   padding: 50px;
 }
+
 .avatar-uploader .el-upload {
   border: 1px dashed var(--el-border-color);
   border-radius: 6px;

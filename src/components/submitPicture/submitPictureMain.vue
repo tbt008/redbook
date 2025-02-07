@@ -3,17 +3,12 @@
     <div class="calendar">
       <div class="column" v-for="(columnData, columnIndex) in allDateData" :key="columnIndex">
         <div class="my-title">{{ columnData.title }}</div>
-        <div
-          class="date-wrapper"
-          v-for="(dateItem, dateIndex) in columnData.data"
-          :key="dateIndex"
-          :style="{ background: getColor(dateItem.number).color }"
-          :class="{
+        <div class="date-wrapper" v-for="(dateItem, dateIndex) in columnData.data" :key="dateIndex"
+          :style="{ background: getColor(dateItem.number).color }" :class="{
             hiddenDate: columnIndex == 0 && dateIndex < prevTodayWeek - 1,
             active: getColor(dateItem.number).level == hoverLevel
-          }"
-        >
-          <el-tooltip class="box-item" effect="dark" :content="dateItem.date" placement="top">
+          }">
+          <el-tooltip class="box-item" :hide-after="0" effect="dark" :content="dateItem.date" placement="top">
             <div class="date"></div>
           </el-tooltip>
         </div>
@@ -52,7 +47,7 @@ onMounted(() => {
 const props = defineProps({
   timeData: {
     type: Object,
-    default: () => {}
+    default: () => { }
   },
   maxData: {
     type: Number,
@@ -70,9 +65,9 @@ const init = () => {
   let firstMondayDate =
     prevTodayWeekNum > 1
       ? dayjs()
-          .subtract(1, 'year')
-          .subtract(prevTodayWeekNum - 1, 'days')
-          .format('YYYY-MM-DD')
+        .subtract(1, 'year')
+        .subtract(prevTodayWeekNum - 1, 'days')
+        .format('YYYY-MM-DD')
       : prevToday
   // 初始日期至今日的天数，包括今日
   let days = dayjs().diff(dayjs(firstMondayDate), 'days') + 1
