@@ -91,7 +91,7 @@
                         <el-icon>
                           <Promotion />
                         </el-icon>
-                        主办方:ptuCode.com
+                        主办方:CubeCode.com
                       </div>
                       <div>
                         <el-icon>
