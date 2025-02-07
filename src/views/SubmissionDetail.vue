@@ -86,7 +86,7 @@ const submissionData = ref({
   memory: 0,
   createTime: ''
 })
-
+const contestId = ref()
 const testResult = ref({
   result: 0,
   memory: 0,
@@ -97,25 +97,37 @@ const testResult = ref({
 const getSubmissionDetail = async () => {
   try {
     const submissionId = route.params.id
-    const response = (await request.post('/record/submission', {
-      submissionId: submissionId
-    })) as any
 
-    if (response.code === 200) {
-      submissionData.value = response.data
-      // // 获取测试结果
-      // const testResponse = await request.get(`/record/get/one/${submissionId}`) as any
-      // if (testResponse.code === 200) {
-      //   testResult.value = testResponse.data.test
-      // }
-
-      // 代码高亮
-      setTimeout(() => {
-        document.querySelectorAll('pre code').forEach((block) => {
-          hljs.highlightElement(block as HTMLElement)
-        })
-      }, 0)
+    if (contestId.value != null) {
+      const response = (await request.post('/contest/record/submission', {
+        submissionId: submissionId
+      })) as any
+      if (response.code === 200) {
+        submissionData.value = response.data
+        // 代码高亮
+        setTimeout(() => {
+          document.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block as HTMLElement)
+          })
+        }, 0)
+      }
+    } else {
+      const response = (await request.post('/record/submission', {
+        submissionId: submissionId
+      })) as any
+      if (response.code === 200) {
+        submissionData.value = response.data
+        // 代码高亮
+        setTimeout(() => {
+          document.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block as HTMLElement)
+          })
+        }, 0)
+      }
     }
+
+
+
   } catch (error) {
     ElMessage.error('获取提交详情失败')
   }
@@ -125,10 +137,18 @@ const getSubmissionDetail = async () => {
 const getTestResult = async () => {
   try {
     const submissionId = route.params.id
-    const response = (await request.get(`/record/get/one/${submissionId}`)) as any
-    if (response.code === 200) {
-      testResult.value = response.data.test
+    if (contestId.value != null) {
+      const response = (await request.get(`/contest/record/get/one/${submissionId}`)) as any
+      if (response.code === 200) {
+        testResult.value = response.data.test
+      }
+    } else {
+      const response = (await request.get(`/record/get/one/${submissionId}`)) as any
+      if (response.code === 200) {
+        testResult.value = response.data.test
+      }
     }
+
   } catch (error) {
     ElMessage.error('获取测试结果失败')
   }
@@ -192,6 +212,7 @@ const copyCode = () => {
 }
 
 onMounted(() => {
+  contestId.value = route.query.contest
   getSubmissionDetail()
   getTestResult()
 })

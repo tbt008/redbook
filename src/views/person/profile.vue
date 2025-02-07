@@ -116,7 +116,14 @@ const getUserInfo = () => {
       form.description = res.data.description
       form.phoneNumber = res.data.phoneNumber
       form.cover = res.data.avatar
-      form.sex = res.data.sex
+      if (res.data.sex == '男') {
+        form.sex = 0
+      } else if (res.data.sex == '女') {
+        form.sex = 1
+      } else {
+        form.sex = 3
+      }
+
       loading.value = false
     } else {
       ElMessage.error('用户登录异常！')

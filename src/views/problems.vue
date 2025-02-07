@@ -50,7 +50,7 @@ onMounted(async () => {
         <!-- 左边题目描述 -->
         <template #one>
           <div class="question-info">
-            <question :rep="rep"></question>
+            <question :rep="rep" :contest-id="contestId"></question>
           </div>
         </template>
         <!-- 右边代码区域 -->

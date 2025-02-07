@@ -31,10 +31,11 @@
         </el-table-column>
         <el-table-column label="比赛名" min-width="100">
           <template #default="{ row }">
-            <router-link :to="`/contest/detail/${id}`" class="problem-title">
+            <el-link @click="intoContest(row.id)">
               {{ row.title }}
-            </router-link>
+            </el-link>
           </template>
+
         </el-table-column>
 
         <el-table-column label="作者" width="200">
@@ -143,6 +144,12 @@ const statusList = ref([
   { label: '未开始', value: -1 }
 ])
 const status = ref(2)
+const intoContest = (id) => {
+  // 打开新标签页
+
+  const url = `/contest/detail/${id}`
+  window.open(url, '_blank')
+}
 const onEdit = (row) => {
   contestId.value = row.id
   showUpdateContest.value = true

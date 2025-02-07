@@ -12,6 +12,9 @@ const props = defineProps({
   rep: {
     type: Object,
     default: null
+  },
+  contestId: {
+    type: Number
   }
 })
 const loading = ref(true)
@@ -38,13 +41,27 @@ const judgeColor = (difficulty) => {
   else return 'color: #FF2800'
 }
 const getRecord = async () => {
-  request.get(`/record/get/list/${article.value.id}`).then((res) => {
-    if (res.code == 200) {
-      codeRecords.value = res.data
-    } else {
-      ElMessage.error('提交记录获取：' + res.msg)
-    }
-  })
+  if (props.contestId != null) {
+    request.post(`/contest/record/get/submit/list`, {
+      contestId: props.contestId,
+      questionId: article.value.id
+    }).then((res) => {
+      if (res.code == 200) {
+        codeRecords.value = res.data
+      } else {
+        ElMessage.error('提交记录获取：' + res.msg)
+      }
+    })
+  } else {
+    request.get(`/record/get/list/${article.value.id}`).then((res) => {
+      if (res.code == 200) {
+        codeRecords.value = res.data
+      } else {
+        ElMessage.error('提交记录获取：' + res.msg)
+      }
+    })
+  }
+
 }
 const initFun = () => {
   if (props.rep !== null) {
@@ -53,7 +70,6 @@ const initFun = () => {
     clickToLike.value = props.rep.isThumb
     clickToFavour.value = props.rep.isFavour
     loading.value = false
-    // getRecord()
   }
 }
 
@@ -61,10 +77,10 @@ watch(
   () => props.rep,
   () => initFun()
 )
-onMounted(() => {})
+onMounted(() => { })
 
 const goToSubmissionDetail = (row) => {
-  router.push(`/submission/${row.submitId}`)
+  router.push(`/submission/${row.submitId}?contest=${props.contestId}`)
 }
 </script>
 
@@ -72,57 +88,40 @@ const goToSubmissionDetail = (row) => {
   <div class="item">
     <div class="top">
       <!-- //题目描述 -->
-      <div
-        @click="clickTitleTab(0)"
-        class="title"
-        :style="currentTab === 0 ? 'color: black' : 'color:gray'"
-      >
+      <div @click="clickTitleTab(0)" class="title" :style="currentTab === 0 ? 'color: black' : 'color:gray'">
         题目描述
       </div>
       <!-- //题解-->
       <span style="position: relative; left: 8px; color: #e0e0e0"> | </span>
-      <div
-        class="title"
-        @click="clickTitleTab(1)"
-        :style="currentTab === 1 ? 'color: black' : 'color:gray'"
-      >
+      <div class="title" @click="clickTitleTab(1)" :style="currentTab === 1 ? 'color: black' : 'color:gray'">
         题解
       </div>
       <!-- //提交记录-->
       <span style="position: relative; left: 8px; color: #e0e0e0"> | </span>
-      <div
-        @click="clickTitleTab(2)"
-        class="title"
-        :style="currentTab === 2 ? 'color: black' : 'color:gray'"
-      >
+      <div @click="clickTitleTab(2)" class="title" :style="currentTab === 2 ? 'color: black' : 'color:gray'">
         提交记录
       </div>
     </div>
     <div class="content" v-show="currentTab === 0">
       <el-skeleton :loading="loading" animated>
         <template #template>
-          <el-skeleton-item
-            variant="text"
-            style="
+          <el-skeleton-item variant="text" style="
               width: 40%;
               height: 30px;
               margin-left: 10px;
               margin-top: 50px;
               margin-bottom: 20px;
-            "
-          />
+            " />
           <el-skeleton :rows="5" style="width: 90%; margin-left: 10px" animated />
           <el-skeleton :rows="5" style="width: 90%; margin-left: 10px" animated />
-          <div
-            style="
+          <div style="
               width: 90%;
               display: flex;
               align-items: center;
               justify-items: space-between;
               margin-top: 16px;
               height: 16px;
-            "
-          >
+            ">
             <el-skeleton-item variant="text" style="margin-right: 16px" />
             <el-skeleton-item variant="text" style="width: 30%" />
           </div>
@@ -134,31 +133,26 @@ const goToSubmissionDetail = (row) => {
                 <div style="position: relative; font-size: 25px; font-weight: bold">
                   {{ rep.id + '. ' + rep.title }}
                 </div>
-                <div
-                  v-if="rep.status === true"
-                  style="position: relative; top: 8px; display: flex; align-items: center; gap: 5px"
-                >
+                <div v-if="rep.status === true"
+                  style="position: relative; top: 8px; display: flex; align-items: center; gap: 5px">
                   <div style="color: #737373">已解答</div>
                 </div>
               </div>
               <div style="display: flex; gap: 5px">
-                <div
-                  style="
+                <div style="
                     cursor: pointer;
                     padding: 5px 8px;
                     border-radius: 10px;
                     background-color: #f0f0f0;
                     font-size: 12px;
-                  "
-                >
+                  ">
                   <div :style="judgeColor(rep.difficulty)">{{ scoreJudge(rep.difficulty) }}</div>
                 </div>
                 <el-tag v-for="item in article.tags" :key="item" :type="item.type" effect="dark">
                   {{ item }}
                 </el-tag>
               </div>
-              <code
-                style="
+              <code style="
                   display: block;
                   border-radius: 5px;
                   padding: 3px;
@@ -166,37 +160,25 @@ const goToSubmissionDetail = (row) => {
                   color: rgb(115, 115, 115);
                   background-color: rgb(247, 247, 248);
                   width: 200px;
-                "
-              >
+                ">
                 时间限制：{{ rep.timeLimit }}s 空间限制：{{ rep.memoryLimit }}MB
               </code>
             </div>
             <div style="min-height: 505px">
               <div class="question-content">
-                <mavon-editor
-                  style="border: #f0f0f0"
-                  v-model="article.description"
-                  :subfield="false"
-                  :boxShadow="false"
-                  previewBackground="#ffffff"
-                  :defaultOpen="'preview'"
-                  :toolbarsFlag="false"
-                  :editable="false"
-                  :scrollStyle="true"
-                  :ishljs="true"
-                />
+                <mavon-editor style="border: #f0f0f0" v-model="article.description" :subfield="false" :boxShadow="false"
+                  previewBackground="#ffffff" :defaultOpen="'preview'" :toolbarsFlag="false" :editable="false"
+                  :scrollStyle="true" :ishljs="true" />
               </div>
               <div style="padding: 10px" v-for="(item, index) in article.example" :key="index">
                 <div style="font: 14px sans-serif; font-weight: bold">示例 {{ index + 1 }}</div>
 
-                <div
-                  style="
+                <div style="
                     margin: 15px;
                     background-color: rgb(247, 248, 249);
                     border-radius: 10px;
                     padding: 15px;
-                  "
-                >
+                  ">
                   <div style="display: flex">
                     <div style="font: 16px sans-serif; font-weight: bold">输入:</div>
 
@@ -216,18 +198,9 @@ const goToSubmissionDetail = (row) => {
               </div>
               <div style="font: 14px sans-serif; font-weight: bold; padding-left: 20px">提示：</div>
               <div class="question-tip">
-                <mavon-editor
-                  style="border: #f0f0f0"
-                  v-model="article.tip"
-                  :subfield="false"
-                  :boxShadow="false"
-                  previewBackground="#ffffff"
-                  :defaultOpen="'preview'"
-                  :toolbarsFlag="false"
-                  :editable="false"
-                  :scrollStyle="true"
-                  :ishljs="true"
-                />
+                <mavon-editor style="border: #f0f0f0" v-model="article.tip" :subfield="false" :boxShadow="false"
+                  previewBackground="#ffffff" :defaultOpen="'preview'" :toolbarsFlag="false" :editable="false"
+                  :scrollStyle="true" :ishljs="true" />
               </div>
             </div>
           </div>
