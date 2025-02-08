@@ -81,7 +81,7 @@
         <div v-if="selectedAI === '智谱清言'" class="messages" ref="messagesContainer">
           <!-- 添加欢迎消息 -->
           <div v-if="showWelcome && messages['智谱清言'].length === 0" class="welcome-message">
-            欢迎使用 PTUCODE AI 聊天应用
+            欢迎使用 CUBECODE AI 聊天应用
           </div>
 
           <div v-for="(message, index) in messages['智谱清言']" :key="index"
@@ -116,7 +116,7 @@
         <div v-if="selectedAI === '讯飞星火'" class="messages" ref="messagesContainer">
           <!-- 添加欢迎消息 -->
           <div v-if="showWelcome && messages['讯飞星火'].length === 0" class="welcome-message">
-            欢迎使用 PTUCODE AI 聊天应用
+            欢迎使用 CUBECODE AI 聊天应用
           </div>
 
           <div v-for="(message, index) in messages['讯飞星火']" :key="index"
@@ -151,7 +151,7 @@
         <div v-if="selectedAI === 'deepseek'" class="messages" ref="messagesContainer">
           <!-- 添加欢迎消息 -->
           <div v-if="showWelcome && messages['deepseek'].length === 0" class="welcome-message">
-            欢迎使用 PTUCODE AI 聊天应用
+            欢迎使用 CUBECODE AI 聊天应用
           </div>
 
           <div v-for="(message, index) in messages['deepseek']" :key="index"
@@ -486,7 +486,7 @@ onMounted(() => {
 
 const showInfo = () => {
   ElMessageBox.alert(
-    `欢迎使用 PTUCODE AI 聊天应用！<br><br>` +
+    `欢迎使用 CUBECODE AI 聊天应用！<br><br>` +
     `使用指南：<br>` +
     `• 点击左上角的<strong>AI Chat</strong>可快速回到首页<br>` +
     `• 拥有智谱清言、讯飞星火、deepseek三种对话模型<br>` +
