@@ -78,6 +78,10 @@
               " type="danger" style="margin: 10px" @click="joinContest"><el-icon>
                   <Sunny />
                 </el-icon> 报名</el-button>
+              <el-button v-if="constestInfo.isJoin == true || constestInfo.isInvite == true" type="danger"
+                style="margin: 10px" plain disabled><el-icon>
+                  <Sunny />
+                </el-icon> 已报名</el-button>
             </div>
           </div>
           <progress-bar v-if="!isShowCountDown && constestInfo.isJoin == true && isEnd == false" :startTime="startTime"
@@ -151,100 +155,100 @@
                   <el-empty description="没有数据" />
                 </template>
               </el-table> </el-scrollbar></el-tab-pane>
-          <el-tab-pane label="提交" name="third">
-            <el-input v-model="inputUser" style="width: 240px" placeholder="输入用户名后回车查询" @change="searchUser"
-              :suffix-icon="Search" />
 
-            <el-table :data="codeRecordList" style="width: 100%" @row-click="goToSubmissionDetail">
-              <el-table-column label="用户名" prop="uid"> </el-table-column>
-              <el-table-column label="题号" prop="displayTitle">
-                <template #header>
-                  <el-dropdown :hide-on-click="false">
-                    <span class="el-dropdown-link">
-                      题号
-                      <el-icon class="el-icon--right">
-                        <arrow-down />
-                      </el-icon>
-                    </span>
-                    <template #dropdown>
-                      <el-dropdown-menu>
-                        <el-dropdown-item v-for="(item, index) in displayTitle" :key="index">
-                          <el-checkbox @click="handleCommand(index)" v-bind="item.checked" label="" size="large" />
-                          {{ item.text }}</el-dropdown-item>
-                      </el-dropdown-menu>
-                    </template>
-                  </el-dropdown>
-                </template>
-                <template #default="{ row }">
-                  <el-link>{{ row.displayTitle }}</el-link>
-                </template>
-              </el-table-column>
-              <el-table-column label="运行状态" prop="runResult">
-                <template #header>
-                  <el-dropdown :hide-on-click="false">
-                    <span class="el-dropdown-link">
-                      运行状态
-                      <el-icon class="el-icon--right">
-                        <arrow-down />
-                      </el-icon>
-                    </span>
-                    <template #dropdown>
-                      <el-dropdown-menu>
-                        <el-dropdown-item v-for="(item, index) in runResult" :key="index">
-                          <el-checkbox @click="handleRun(index)" v-bind="item.checked" label="" size="large" />
-                          {{ item.text }}</el-dropdown-item>
-                      </el-dropdown-menu>
-                    </template>
-                  </el-dropdown>
-                </template>
-                <template #default="{ row }">
-                  <el-tag v-if="row.runResult == '答案正确'" type="success">答案正确</el-tag>
-                  <el-tag v-else-if="row.runResult == '部分正确'" type="primary">部分正确</el-tag>
-                  <el-tag v-else-if="row.runResult == '答案错误'" type="danger">答案错误</el-tag>
-                  <el-tag v-else-if="row.runResult == '编译错误'" type="warning">编译错误</el-tag>
-                  <el-tag v-else-if="row.runResult == '正在判题'" type="primary">正在判题</el-tag>
-                  <el-tag v-else type="danger">{{ row.runResult }}</el-tag>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="时间(ms)" prop="runtime">
-                <template #default="{ row }">
-                  <div v-if="row.runtime == null">N/A</div>
-                  <div v-else>
-                    {{ row.runtime }}
-                  </div>
-                </template>
-              </el-table-column>
-              <el-table-column label="内存(kb)" prop="memory">
-                <template #default="{ row }">
-                  <div v-if="row.memory == null">N/A</div>
-                  <div v-else>
-                    {{ row.memory }}
-                  </div>
-                </template>
-              </el-table-column>
-              <el-table-column label="语言" prop="language">
-                <template #default="{ row }">
-                  <div v-if="row.language == 1">C</div>
-                  <div v-if="row.language == 2">C++</div>
-                  <div v-if="row.language == 3">Java</div>
-                  <div v-if="row.language == 4">Python</div>
-                </template>
-              </el-table-column>
-              <el-table-column label="提交时间" prop="createTime"> </el-table-column>
-              <template #empty>
-                <el-empty description="没有数据" />
-              </template>
-            </el-table>
-            <!-- elementplus el-pagination: 分页器 -->
-            <div class="pagination-container">
-              <el-pagination v-model:current-page="recordCurrentPage" v-model:page-size="recordPageSize"
-                :total="recordTotal" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next"
-                @size-change="recordHandleSizeChange" @current-change="recordHandleCurrentChange" />
-            </div>
-          </el-tab-pane>
         </div>
+        <el-tab-pane label="提交" name="third">
+          <el-input v-model="inputUser" style="width: 240px" placeholder="输入用户名后回车查询" @change="searchUser"
+            :suffix-icon="Search" />
 
+          <el-table :data="codeRecordList" style="width: 100%" @row-click="goToSubmissionDetail">
+            <el-table-column label="用户名" prop="uid"> </el-table-column>
+            <el-table-column label="题号" prop="displayTitle">
+              <template #header>
+                <el-dropdown :hide-on-click="false">
+                  <span class="el-dropdown-link">
+                    题号
+                    <el-icon class="el-icon--right">
+                      <arrow-down />
+                    </el-icon>
+                  </span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item v-for="(item, index) in displayTitle" :key="index">
+                        <el-checkbox @click="handleCommand(index)" v-bind="item.checked" label="" size="large" />
+                        {{ item.text }}</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </template>
+              <template #default="{ row }">
+                <el-link>{{ row.displayTitle }}</el-link>
+              </template>
+            </el-table-column>
+            <el-table-column label="运行状态" prop="runResult">
+              <template #header>
+                <el-dropdown :hide-on-click="false">
+                  <span class="el-dropdown-link">
+                    运行状态
+                    <el-icon class="el-icon--right">
+                      <arrow-down />
+                    </el-icon>
+                  </span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item v-for="(item, index) in runResult" :key="index">
+                        <el-checkbox @click="handleRun(index)" v-bind="item.checked" label="" size="large" />
+                        {{ item.text }}</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </template>
+              <template #default="{ row }">
+                <el-tag v-if="row.runResult == '答案正确'" type="success">答案正确</el-tag>
+                <el-tag v-else-if="row.runResult == '部分正确'" type="primary">部分正确</el-tag>
+                <el-tag v-else-if="row.runResult == '答案错误'" type="danger">答案错误</el-tag>
+                <el-tag v-else-if="row.runResult == '编译错误'" type="warning">编译错误</el-tag>
+                <el-tag v-else-if="row.runResult == '正在判题'" type="primary">正在判题</el-tag>
+                <el-tag v-else type="danger">{{ row.runResult }}</el-tag>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="时间(ms)" prop="runtime">
+              <template #default="{ row }">
+                <div v-if="row.runtime == null">N/A</div>
+                <div v-else>
+                  {{ row.runtime }}
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="内存(kb)" prop="memory">
+              <template #default="{ row }">
+                <div v-if="row.memory == null">N/A</div>
+                <div v-else>
+                  {{ row.memory }}
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="语言" prop="language">
+              <template #default="{ row }">
+                <div v-if="row.language == 1">C</div>
+                <div v-if="row.language == 2">C++</div>
+                <div v-if="row.language == 3">Java</div>
+                <div v-if="row.language == 4">Python</div>
+              </template>
+            </el-table-column>
+            <el-table-column label="提交时间" prop="createTime"> </el-table-column>
+            <template #empty>
+              <el-empty description="没有数据" />
+            </template>
+          </el-table>
+          <!-- elementplus el-pagination: 分页器 -->
+          <div class="pagination-container">
+            <el-pagination v-model:current-page="recordCurrentPage" v-model:page-size="recordPageSize"
+              :total="recordTotal" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next"
+              @size-change="recordHandleSizeChange" @current-change="recordHandleCurrentChange" />
+          </div>
+        </el-tab-pane>
         <el-tab-pane label="排名" name="fourth">
 
           <div style="float: right;">

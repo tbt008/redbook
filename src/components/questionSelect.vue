@@ -5,12 +5,7 @@
         <div class="section-title">已选题目</div>
         <div class="tag-group-content">
           <template v-if="selectedQuestion.length">
-            <el-check-tag
-              v-for="(item, index) in selectedQuestion"
-              :key="index"
-              :checked="true"
-              class="tag-item"
-            >
+            <el-check-tag v-for="(item, index) in selectedQuestion" :key="index" :checked="true" class="tag-item">
               {{ item }}
             </el-check-tag>
           </template>
@@ -38,7 +33,9 @@
         <el-input v-model="searchKeyword" placeholder="搜索题目" class="filter-item" clearable>
           <template #prefix>
             <!-- elementplus el-icon: 搜索图标 -->
-            <el-icon><Search /></el-icon>
+            <el-icon>
+              <Search />
+            </el-icon>
           </template>
         </el-input>
       </div>
@@ -46,14 +43,8 @@
       <!-- 已选标签显示区域 -->
       <div v-if="selectedTagIds.length" class="selected-tags-bar">
         <!-- elementplus el-tag: 已选标签展示 -->
-        <el-tag
-          v-for="tagId in selectedTagIds"
-          :key="tagId"
-          closable
-          type="primary"
-          class="selected-tag"
-          @close="handleTagChange(false, tagId)"
-        >
+        <el-tag v-for="tagId in selectedTagIds" :key="tagId" closable type="primary" class="selected-tag"
+          @close="handleTagChange(false, tagId)">
           {{ allTags.find((tag) => tag.id === tagId)?.name }}
         </el-tag>
       </div>
@@ -63,12 +54,8 @@
         <!-- 状态列 -->
         <el-table-column label="选择" width="80">
           <template #default="{ row }">
-            <el-checkbox
-              v-model="row.isSelected"
-              label=""
-              size="large"
-              @change="changeQuestion(row.isSelected, row.questionId)"
-            />
+            <el-checkbox v-model="row.isSelected" label="" size="large"
+              @change="changeQuestion(row.isSelected, row.questionId)" />
           </template>
         </el-table-column>
 
@@ -80,13 +67,7 @@
             </router-link>
             <div class="problem-tags">
               <!-- elementplus el-tag: 题目标签 -->
-              <el-tag
-                v-for="tag in row.tags"
-                :key="tag"
-                size="small"
-                effect="plain"
-                class="tag-item"
-              >
+              <el-tag v-for="tag in row.tags" :key="tag" size="small" effect="plain" class="tag-item">
                 {{ tag }}
               </el-tag>
             </div>
@@ -103,27 +84,17 @@
         <!-- 通过率列 -->
         <el-table-column label="通过率" width="180">
           <template #default="{ row }">
-            <el-progress
-              :percentage="Number(row.passRate)"
-              text-inside
-              :stroke-width="18"
-              :color="getProgressColor(row.passRate)"
-            />
+            <el-progress :percentage="Number(row.passRate)" text-inside :stroke-width="18"
+              :color="getProgressColor(row.passRate)" />
           </template>
         </el-table-column>
       </el-table>
 
       <!-- elementplus el-pagination: 分页器 -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, , 50]"
-          layout="total, sizes, prev, pager, next"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
+          :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
+          @current-change="handleCurrentChange" />
       </div>
     </div>
   </div>
@@ -137,13 +108,8 @@
         <div class="tag-group-content">
           <template v-if="selectedTagIds.length">
             <!-- elementplus el-check-tag: 可选择的标签 -->
-            <el-check-tag
-              v-for="tagId in selectedTagIds"
-              :key="tagId"
-              :checked="true"
-              class="tag-item"
-              @change="() => handleTagChange(false, tagId)"
-            >
+            <el-check-tag v-for="tagId in selectedTagIds" :key="tagId" :checked="true" class="tag-item"
+              @change="() => handleTagChange(false, tagId)">
               {{ allTags.find((tag) => tag.id === tagId)?.name }}
             </el-check-tag>
           </template>
@@ -159,13 +125,8 @@
         <div class="tag-group-title">{{ group.superName }}</div>
         <div class="tag-group-content">
           <!-- elementplus el-check-tag: 可选择的标签 -->
-          <el-check-tag
-            v-for="tag in group.tags"
-            :key="tag.id"
-            :checked="selectedTagIds.includes(tag.id)"
-            @change="(checked) => handleTagChange(checked, tag.id)"
-            class="tag-item"
-          >
+          <el-check-tag v-for="tag in group.tags" :key="tag.id" :checked="selectedTagIds.includes(tag.id)"
+            @change="(checked) => handleTagChange(checked, tag.id)" class="tag-item">
             {{ tag.name }}
           </el-check-tag>
         </div>

@@ -80,7 +80,12 @@ watch(
 onMounted(() => { })
 
 const goToSubmissionDetail = (row) => {
-  router.push(`/submission/${row.submitId}?contest=${props.contestId}`)
+  if (props.contestId != null) {
+    router.push(`/submission/${row.submitId}?contest=${props.contestId}`)
+  } else {
+    router.push(`/submission/${row.submitId}`)
+  }
+
 }
 </script>
 
