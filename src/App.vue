@@ -9,17 +9,22 @@ const route = useRoute()
 const hideHeaderPaths = ['/ai', '/login', '/systemUpdate'] // 在这里添加不需要显示导航栏的路径
 
 onMounted(async () => {
-  const res = await request.get('/system/healthy') as any
   let st = true;
-  if (res.code == 200) {
-    if (res.data) {
-      st = false;
+  try {
+    const res = await request.get('/system/healthy') as any;
+    console.log('请求响应:', res);
+
+    if (res.code === 200) {
+      if (res.data) {
+        st = false;
+      }
     }
+  } catch (error) {
+    console.error('请求出错:', error);
   }
   if (st) {
-    router.push('/systemUpdate')
+    router.push('/systemUpdate');
   }
-  console.log(res.code)
 })
 </script>
 
