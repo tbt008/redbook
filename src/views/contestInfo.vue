@@ -78,7 +78,7 @@
               " type="danger" style="margin: 10px" @click="joinContest"><el-icon>
                   <Sunny />
                 </el-icon> 报名</el-button>
-              <el-button v-if="constestInfo.isJoin == true || constestInfo.isInvite == true" type="danger"
+              <el-button v-else-if="constestInfo.isJoin == true || constestInfo.isInvite == true" type="danger"
                 style="margin: 10px" plain disabled><el-icon>
                   <Sunny />
                 </el-icon> 已报名</el-button>
