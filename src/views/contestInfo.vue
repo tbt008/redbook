@@ -22,7 +22,7 @@
                     margin: auto 0;
                     height: 25px;
                   ">
-                  <div v-if="constestInfo.isInputPassword" :class="['difficulty-label', 'difficulty-entry']">
+                  <div v-if="constestInfo.needPassword" :class="['difficulty-label', 'difficulty-entry']">
                     <el-icon>
                       <Lock />
                     </el-icon>密码

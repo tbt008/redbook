@@ -1,9 +1,5 @@
 <template>
-  <el-steps
-    style="max-width: 600px; margin: auto; padding: 50px"
-    :active="active"
-    finish-status="success"
-  >
+  <el-steps style="max-width: 600px; margin: auto; padding: 50px" :active="active" finish-status="success">
     <el-step title="新建比赛" />
     <el-step title="添加题目" />
     <el-step title="题目设置" />
@@ -35,99 +31,57 @@
           <el-radio-group v-model="isPassword">
             <el-radio value="1" size="large">是</el-radio>
             <el-radio value="2" size="large">否</el-radio>
-          </el-radio-group></el-form-item
-        >
+          </el-radio-group></el-form-item>
         <el-form-item v-if="isPassword == '1'" label="密码">
           <el-radio-group>
-            <el-input
-              v-model="password"
-              style="width: 240px"
-              placeholder="请输入密码"
-            /> </el-radio-group
-        ></el-form-item>
-        <el-form-item label="是否要邀请"
-          ><el-radio-group v-model="isInvite">
+            <el-input v-model="password" style="width: 240px" placeholder="请输入密码" /> </el-radio-group></el-form-item>
+        <el-form-item label="是否要邀请"><el-radio-group v-model="isInvite">
             <el-radio value="true" size="large">是</el-radio>
             <el-radio value="false" size="large">否</el-radio>
           </el-radio-group>
         </el-form-item>
 
         <el-form-item label="比赛时间">
-          <el-date-picker
-            v-model="startTime"
-            format="YYYY-MM-DD HH:mm:ss"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            type="datetime"
-            placeholder="比赛开始时间"
-          />至
-          <el-date-picker
-            v-model="endTime"
-            format="YYYY-MM-DD HH:mm:ss"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            type="datetime"
-            placeholder="比赛结束时间"
-          />
+          <el-date-picker v-model="startTime" format="YYYY-MM-DD HH:mm:ss" value-format="YYYY-MM-DD HH:mm:ss"
+            type="datetime" placeholder="比赛开始时间" />至
+          <el-date-picker v-model="endTime" format="YYYY-MM-DD HH:mm:ss" value-format="YYYY-MM-DD HH:mm:ss"
+            type="datetime" placeholder="比赛结束时间" />
         </el-form-item>
         <el-form-item label="比赛封面">
-          <el-upload
-            class="avatar-uploader"
-            :action="null"
-            :show-file-list="false"
-            :on-success="handleAvatarSuccess"
-            :before-upload="beforeAvatarUpload"
-            :on-change="handleAvatarUpload"
-          >
+          <el-upload class="avatar-uploader" :action="null" :show-file-list="false" :on-success="handleAvatarSuccess"
+            :before-upload="beforeAvatarUpload" :on-change="handleAvatarUpload">
             <img v-if="cover" :src="cover" class="avatar" />
-            <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+            <el-icon v-else class="avatar-uploader-icon">
+              <Plus />
+            </el-icon>
           </el-upload>
         </el-form-item>
         <el-form-item label="比赛说明" prop="content">
-          <mavon-editor
-            style="height: 500px"
-            ref="mavonEditorRef"
-            v-model="description"
-            :ishljs="true"
-          />
+          <mavon-editor style="height: 500px" ref="mavonEditorRef" v-model="description" :ishljs="true" />
         </el-form-item>
 
         <el-form-item>
           <el-button @click="primary" type="primary">创建</el-button>
-          <el-button
-            v-if="props.id !== undefined"
-            @click="
-              () => {
-                active++
-              }
-            "
-            type="cancel"
-            >跳过</el-button
-          >
+          <el-button v-if="props.id !== undefined" @click="() => {
+              active++
+            }
+            " type="cancel">跳过</el-button>
           <el-button @click="cancel" type="cancel">取消</el-button>
         </el-form-item>
       </el-form>
     </div>
     <div v-if="active == 1">
       <QuestionSelect @selectedQuestion="selectedQuestion" :contestId="contestId"></QuestionSelect>
-      <el-button
-        @click="
-          () => {
-            active--
-          }
-        "
-        type="primary"
-        >上一步</el-button
-      >
+      <el-button @click="() => {
+          active--
+        }
+        " type="primary">上一步</el-button>
       <el-button @click="saveQuestion" type="cancel">保存</el-button>
-      <el-button
-        @click="
-          () => {
-            active++
-            getSelectedQuestion()
-          }
-        "
-        type="cancel"
-        >跳过</el-button
-      >
+      <el-button @click="() => {
+          active++
+          getSelectedQuestion()
+        }
+        " type="cancel">跳过</el-button>
     </div>
     <div v-if="active == 2">
       <el-table :data="questionListInfo" style="width: 100%">
@@ -145,28 +99,18 @@
           </template>
         </el-table-column>
       </el-table>
-      <el-button
-        @click="
-          () => {
-            active--
-          }
-        "
-        type="primary"
-        >上一步</el-button
-      >
+      <el-button @click="() => {
+          active--
+        }
+        " type="primary">上一步</el-button>
       <el-button @click="saveOrder" type="cancel">保存</el-button>
       <el-button @click="next" type="cancel">完成</el-button>
     </div>
     <div v-if="active == 3">
-      <el-button
-        @click="
-          () => {
-            active--
-          }
-        "
-        type="primary"
-        >上一步</el-button
-      >
+      <el-button @click="() => {
+          active--
+        }
+        " type="primary">上一步</el-button>
       <el-button @click="next" type="cancel">完成</el-button>
     </div>
   </div>
@@ -231,7 +175,7 @@ const getContest = () => {
       language.value = unConvert(res.data.language)
 
       contestType.value = res.data.type == 1 ? '1' : '2'
-      if (res.data.password) {
+      if (res.data.password != null) {
         isPassword.value = '1'
         password.value = res.data.password
       }
@@ -482,6 +426,7 @@ watch(
   height: 178px;
   display: block;
 }
+
 .editor {
   width: 100%;
 }
@@ -495,12 +440,15 @@ watch(
   padding: 20px;
   margin: 10px;
 }
+
 .editorType {
   margin: 20px;
 }
+
 .ql-editor {
   height: 300px;
 }
+
 .manage-editor {
   background-color: aliceblue;
   margin: auto;
@@ -508,6 +456,7 @@ watch(
   border-radius: 15px;
   padding: 50px;
 }
+
 .avatar-uploader .el-upload {
   border: 1px dashed var(--el-border-color);
   border-radius: 6px;
