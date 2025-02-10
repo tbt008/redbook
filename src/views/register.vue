@@ -104,6 +104,10 @@ const register = async () => {
     ElMessage.warning('请填写所有必填项')
     return
   }
+  if (username.value.length !== 12 || username.value.charAt(0) !== '2') {
+    ElMessage.warning('账号必须是以2开头的12位数')
+    return
+  }
 
   if (password.value !== confirmPassword.value) {
     ElMessage.error('两次输入的密码不一致')
