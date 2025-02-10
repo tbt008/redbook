@@ -14,9 +14,29 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import request from '@/util/request'
+import { useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
+onMounted(async () => {
+    let st = true;
+    try {
+        const res = await request.get('/system/healthy');
+        // console.log('请求响应:', res);
 
-onMounted(() => {
+        if (res.code === 200) {
+            if (res.data) {
+                st = false;
+            }
+        }
+    } catch (error) {
+        console.error('请求出错:', error);
+    }
+    if (!st) {
+
+        router.push('/home');
+    }
 })
 </script>
 

@@ -245,7 +245,7 @@ const handleCommand = (command) => {
   } else if (command === 'logout') {
     request.post('/user/logout').then((res) => {
       if (res.code === 200) {
-        console.log(res)
+        // console.log(res)
         localStorage.removeItem('authToken')
         localStorage.removeItem('avatar')
         userImg.value = null
