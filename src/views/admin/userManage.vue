@@ -6,19 +6,9 @@
         <div style="font-size: 12px; line-height: 32px; width: 60px; margin-left: 10px">
           筛选条件
         </div>
-        <el-select
-          v-model="filterType"
-          placeholder="所有"
-          class="filter-item"
-          @change="getUserList"
-        >
+        <el-select v-model="filterType" placeholder="所有" class="filter-item" @change="getUserList">
           <el-option label="所有" value="all" />
-          <el-option
-            v-for="role in roleList"
-            :key="role.roleId"
-            :label="role.roleName"
-            :value="role.roleId"
-          />
+          <el-option v-for="role in roleList" :key="role.roleId" :label="role.roleName" :value="role.roleId" />
         </el-select>
 
         <!-- <el-input
@@ -34,23 +24,17 @@
 
         <el-button type="primary" @click="handleAddUser">
           <el-icon>
-            <Plus /> </el-icon
-          >添加用户
+            <Plus />
+          </el-icon>添加用户
         </el-button>
 
         <!-- 新增批量导入按钮 -->
-        <el-upload
-          class="upload-excel"
-          :action="null"
-          :auto-upload="false"
-          :show-file-list="false"
-          accept=".xlsx,.xls"
-          :on-change="handleExcelUpload"
-        >
+        <el-upload class="upload-excel" :action="null" :auto-upload="false" :show-file-list="false" accept=".xlsx,.xls"
+          :on-change="handleExcelUpload">
           <el-button type="success">
             <el-icon>
-              <Upload /> </el-icon
-            >批量导入
+              <Upload />
+            </el-icon>批量导入
           </el-button>
         </el-upload>
       </div>
@@ -71,11 +55,10 @@
           </template>
         </el-table-column>
         <el-table-column prop="status" label="禁用" align="center">
+          <!-- :disabled 来禁用超级管理员的禁用开关 -->
           <template #default="{ row }">
-            <el-switch
-              :model-value="row.isDelete === '1'"
-              @change="(val: any) => handleStatusToggle(row)"
-            />
+            <el-switch :model-value="row.isDelete === '1'" :disabled="getRoleName(row.roleId) === '超级管理员'"
+              @change="(val: any) => handleStatusToggle(row)" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220" align="center">
@@ -89,15 +72,9 @@
 
       <!-- 添加分页组件 -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]"
+          :total="total" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
+          @current-change="handleCurrentChange" />
       </div>
 
       <!-- 编辑对话框 -->
@@ -108,22 +85,12 @@
           </el-form-item>
           <el-form-item label="班级" prop="className">
             <el-select v-model="userFormEdit.classic" style="width: 150px">
-              <el-option
-                v-for="item in classicList"
-                :key="item.id"
-                :label="item.className"
-                :value="item.id"
-              />
+              <el-option v-for="item in classicList" :key="item.id" :label="item.className" :value="item.id" />
             </el-select>
           </el-form-item>
           <el-form-item label="用户角色" prop="roleId">
             <el-select v-model="userFormEdit.roleId" style="width: 150px">
-              <el-option
-                v-for="role in roleList"
-                :key="role.roleId"
-                :label="role.roleName"
-                :value="role.roleId"
-              />
+              <el-option v-for="role in roleList" :key="role.roleId" :label="role.roleName" :value="role.roleId" />
             </el-select>
           </el-form-item>
         </el-form>
@@ -150,12 +117,7 @@
         </el-form-item> -->
           <el-form-item label="班级" prop="className">
             <el-select v-model="userForm.classic" style="width: 150px">
-              <el-option
-                v-for="item in classicList"
-                :key="item.id"
-                :label="item.className"
-                :value="item.id"
-              />
+              <el-option v-for="item in classicList" :key="item.id" :label="item.className" :value="item.id" />
             </el-select>
           </el-form-item>
           <!-- <el-form-item label="班级" prop="className">

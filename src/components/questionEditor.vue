@@ -227,7 +227,7 @@ const getTags = async () => {
     const response = await request.post('/tag/list', {})
     if (response.code === 200) {
       allTags.value = response.data
-      console.log(allTags.value)
+      // console.log(allTags.value)
     }
   } catch (error) {
     console.error('获取标签列表失败:', error)

@@ -12,7 +12,7 @@ onMounted(async () => {
   let st = true;
   try {
     const res = await request.get('/system/healthy') as any;
-    console.log('请求响应:', res);
+    // console.log('请求响应:', res);
 
     if (res.code === 200) {
       if (res.data) {

@@ -223,7 +223,7 @@ const getProblems = async () => {
           (questionId) => questionId === problem.questionId
         )
       })
-      console.log(problems.value)
+      // console.log(problems.value)
     }
   } catch (error) {
     console.error('获取题目列表失败:', error)
@@ -255,7 +255,7 @@ const getSelectedQuestion = async () => {
     const response = await request.get(`/root/contest/problem/${props.contestId}`)
     if (response.code === 200) {
       selectedQuestion.value = response.data
-      console.log(response.data)
+      // console.log(response.data)
     }
   } catch (error) {
     console.error('获取已选题目失败:', error)
