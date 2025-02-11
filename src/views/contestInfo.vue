@@ -262,8 +262,8 @@
               </template>
             </el-input>
             <div style="float: right;">
-              <span v-if="selfRank" style="margin-right: 20px; color: #409EFF">
-                我的排名: 第 {{ selfRank }} 名
+              <span v-if="selfRank.value != null" style="margin-right: 20px; color: #409EFF">
+                我的排名: 第 {{ selfRank.value }} 名
               </span>
               <span style="font-size: 12px; margin: 10px; color:rgb(100,100,100)">默认每分钟刷新</span>
               <el-button @click="refreshRank" type="primary" :icon="Refresh" circle><el-icon>
@@ -780,7 +780,7 @@ const getSelfRank = async () => {
       return
     }
 
-    const res = await request.get(`/ranking/get/self/${id.value}`)
+    const res = await request.post(`/ranking/get/self/${id.value}`)
 
     if (res.code == 200) {
       selfRank.value = res.data
