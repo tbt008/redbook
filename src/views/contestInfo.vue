@@ -56,7 +56,7 @@
                 <el-icon>
                   <Promotion />
                 </el-icon>
-                主办方 : ptuCode.com
+                主办方 : cubecode.cn
               </div>
               <div style="color: rgb(220, 220, 220); width: 100%; font-size: 15px; text-align: center">
                 <el-icon>
@@ -250,12 +250,26 @@
           </div>
         </el-tab-pane>
         <el-tab-pane label="排名" name="fourth">
-
-          <div style="float: right;">
-            <span style="font-size: 12px; margin: 10px; color:rgb(100,100,100)">默认每分钟刷新</span>
-            <el-button @click="refreshRank" type="primary" :icon="Refresh" circle><el-icon>
-                <Refresh />
-              </el-icon></el-button>
+          <div style="display: flex; justify-content: space-between;">
+            <!-- elementplus el-input: 搜索输入框 -->
+            <el-input v-model="searchKeyword" placeholder="输入完整学号后按回车搜索" class="filter-item" clearable
+              @keyup.enter="handleSearch">
+              <template #prefix>
+                <!-- elementplus el-icon: 搜索图标 -->
+                <el-icon>
+                  <Search />
+                </el-icon>
+              </template>
+            </el-input>
+            <div style="float: right;">
+              <span style="margin-right: 20px; color: #409EFF">
+                我的排名: 第 {{ selfRank }} 名
+              </span>
+              <span style="font-size: 12px; margin: 10px; color:rgb(100,100,100)">默认每分钟刷新</span>
+              <el-button @click="refreshRank" type="primary" :icon="Refresh" circle><el-icon>
+                  <Refresh />
+                </el-icon></el-button>
+            </div>
           </div>
           <el-table :data="rankinglist" style="width: 100%">
 
@@ -370,7 +384,7 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import request from '@/util/request.ts'
 import countDown from '@/components/countDown.vue'
 import progressBar from '@/components/progressBar.vue'
@@ -409,6 +423,28 @@ const runResult = ref([
   { text: '编译错误', checked: false },
   { text: '正在判题', checked: false }
 ])
+const searchKeyword = ref('')
+const selfRank = ref(null)
+const handleSearch = async () => {
+  rankCurrentPage.value = 1
+  await getUser()
+}
+const getUser = async () => {
+  try {
+    const res = await request.post(`/ranking/get/search`, {
+      contestId: id.value,
+      uid: searchKeyword.value
+    })
+
+    if (res.code == 200) {
+      rankinglist.value = res.data.list
+    } else {
+      ElMessage.error('搜索失败：' + res.msg)
+    }
+  } catch (error) {
+    ElMessage.error('搜索失败！')
+  }
+}
 const goToSubmissionDetail = (row) => {
   row.uid
   router.push(`/submission/${row.submitId}?contest=${id.value}`)
@@ -682,6 +718,7 @@ onMounted(async () => {
         selectQuestion()
         selectRecord()
         refreshRank()
+        getSelfRank()
       }
     } else if (res.code === 401) {
       // 返回 401 清除token信息并跳转到登录页面
@@ -712,8 +749,31 @@ const submitPassword = () => {
     }
   })
 }
+
+// 获取自己的排名
+const getSelfRank = async () => {
+  try {
+    // 检查是否登录
+    const token = localStorage.getItem('authToken')
+    if (!token) {
+      return
+    }
+
+    const res = await request.get(`/ranking/get/self/${id.value}`)
+
+    if (res.code == 200) {
+      selfRank.value = res.data
+    }
+  } catch (error) {
+    console.error('获取个人排名失败:', error)
+  }
+}
 </script>
 <style>
+.filter-item {
+  width: 240px;
+}
+
 /* 分页容器样式 */
 .pagination-container {
   margin-top: 20px;
