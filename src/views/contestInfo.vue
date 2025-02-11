@@ -447,9 +447,27 @@ const getUser = async () => {
     ElMessage.error('搜索失败！')
   }
 }
-const goToSubmissionDetail = (row) => {
-  row.uid
-  router.push(`/submission/${row.submitId}?contest=${id.value}`)
+const goToSubmissionDetail = async (row) => {
+  const isSelf = await getSubmissionDetail(row.submitId)
+  if (isSelf) {
+    row.uid
+    router.push(`/submission/${row.submitId}?contest=${id.value}`)
+  } else {
+    ElMessage.warning('无权限查看')
+  }
+}
+// 获取提交详情
+const getSubmissionDetail = async (submissionId) => {
+  try {
+    const response = (await request.post('/contest/record/submission', {
+      submissionId: submissionId
+    }))
+    if (response.code === 200) {
+      return true;
+    }
+  } catch (error) {
+    console.log("获取提交详情失败" + error)
+  }
 }
 const handleRun = (index1) => {
   runStatusList.value = []
