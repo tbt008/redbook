@@ -262,7 +262,7 @@
               </template>
             </el-input>
             <div style="float: right;">
-              <span style="margin-right: 20px; color: #409EFF">
+              <span v-if="selfRank" style="margin-right: 20px; color: #409EFF">
                 我的排名: 第 {{ selfRank }} 名
               </span>
               <span style="font-size: 12px; margin: 10px; color:rgb(100,100,100)">默认每分钟刷新</span>
