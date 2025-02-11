@@ -37,7 +37,7 @@
                       <div>
                         <el-icon>
                           <Promotion />
-                        </el-icon> 主办方 : CubeCode.cn
+                        </el-icon> 主办方 : cubecode.cn
 
                       </div>
                       <div>
