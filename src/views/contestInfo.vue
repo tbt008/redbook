@@ -282,6 +282,7 @@
 
               </template>
             </el-table-column>
+            <el-table-column label="班级" prop="className" width="100"> </el-table-column>
             <el-table-column label="通过" prop="totalNum" width="100"> </el-table-column>
             <el-table-column label="罚时" width="100">
               <template #default="{ row }">
@@ -425,6 +426,7 @@ const runResult = ref([
 ])
 const searchKeyword = ref('')
 const selfRank = ref(null)
+const classNames = ref([])
 const handleSearch = async () => {
   rankCurrentPage.value = 1
   await getUser()
@@ -703,7 +705,7 @@ onBeforeUnmount(async () => {
 })
 onMounted(async () => {
   id.value = router.currentRoute.value.params.id
-  request.get(`/contest/racepage/${id.value}`).then((res) => {
+  request.get(`/contest/racepage/${id.value}`).then(async (res) => {
     if (res.code == 200) {
       constestInfo.value = res.data
       loading.value = false
@@ -720,9 +722,10 @@ onMounted(async () => {
         refreshRank()
         getSelfRank()
       }
+      await getClassList()
     } else if (res.code === 401) {
       // 返回 401 清除token信息并跳转到登录页面
-      localStorage.removeItem('auth-token')
+      localStorage.removeItem('authToken')
 
 
       router.push('/login')
@@ -766,6 +769,21 @@ const getSelfRank = async () => {
     }
   } catch (error) {
     console.error('获取个人排名失败:', error)
+  }
+}
+
+// 获取班级列表
+const getClassList = async () => {
+  try {
+    const res = await request.post('/classic/list', {
+      //TODO 后端需要修改 
+
+    })
+    if (res.code === 200) {
+      classNames.value = res.data.list.map(item => item.className)
+    }
+  } catch (error) {
+    console.error('获取班级列表失败:', error)
   }
 }
 </script>
