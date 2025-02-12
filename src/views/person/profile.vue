@@ -352,8 +352,8 @@ const goToSubmissionDetail = (row) => {
             </el-form-item>
             <el-form-item label="性别">
               <el-radio-group v-model="form.sex">
-                <el-radio value="0">男</el-radio>
-                <el-radio value="1">女</el-radio>
+                <el-radio :value="0">男</el-radio>
+                <el-radio :value="1">女</el-radio>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="个人简介">
