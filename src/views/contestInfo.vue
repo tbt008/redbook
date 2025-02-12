@@ -165,7 +165,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
         </div>
         <el-tab-pane label="提交" name="third">
           <el-input v-model="inputUser" style="width: 240px" placeholder="输入用户名后回车查询" @change="searchUser"
-            :suffix-icon="Search" />
+            :prefix-icon="Search" />
 
           <el-table :data="codeRecordList" style="width: 100%" @row-click="goToSubmissionDetail">
             <el-table-column label="用户名" prop="uid"> </el-table-column>
@@ -401,6 +401,7 @@ import countDown from '@/components/countDown.vue'
 import progressBar from '@/components/progressBar.vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Search, Refresh, ArrowDown } from '@element-plus/icons-vue'
 const activeName = ref('first')
 const router = useRouter()
 const id = ref()
@@ -450,7 +451,9 @@ const getUser = async () => {
     })
 
     if (res.code == 200) {
-      rankinglist.value = res.data.list
+      console.log(rankinglist.value)
+      rankinglist.value = [res.data]
+
     } else {
       ElMessage.error('搜索失败：' + res.msg)
     }
