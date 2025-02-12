@@ -7,21 +7,21 @@
           <div style="margin: auto; width: 70%; flex-wrap: wrap">
             <div style="margin: auto; display: flex">
               <div style="
-                  color: rgb(255, 255, 255);
-                  padding-top: 50px;
-                  font-size: 50px;
-                  margin: auto;
-                  display: flex;
-                  text-align: center;
-                ">
+                color: rgb(255, 255, 255);
+                padding-top: 50px;
+                font-size: 50px;
+                margin: auto;
+                display: flex;
+                text-align: center;
+              ">
                 <div style="display: flex">{{ constestInfo.title }}</div>
                 <div style="
-                    padding-left: 30px;
-                    display: flex;
-                    text-align: center;
-                    margin: auto 0;
-                    height: 25px;
-                  ">
+                  padding-left: 30px;
+                  display: flex;
+                  text-align: center;
+                  margin: auto 0;
+                  height: 25px;
+                ">
                   <div v-if="constestInfo.needPassword" :class="['difficulty-label', 'difficulty-entry']">
                     <el-icon>
                       <Lock />
@@ -64,24 +64,30 @@
                 </el-icon>参与人数：{{ constestInfo.participationNumber }}
               </div>
               <div style="
-                  color: rgb(220, 220, 220);
-                  width: 100%;
-                  font-size: 15px;
-                  text-align: center;
-                  margin-bottom: 20px;
-                ">
+                color: rgb(220, 220, 220);
+                width: 100%;
+                font-size: 15px;
+                text-align: center;
+                margin-bottom: 20px;
+              ">
                 语言 :
                 {{ constestInfo.language }}
               </div>
-              <el-button v-if="
-                constestInfo.isJoin == false && constestInfo.isInvite == false && isEnd == false
-              " type="danger" style="margin: 10px" @click="joinContest"><el-icon>
-                  <Sunny />
-                </el-icon> 报名</el-button>
-              <el-button v-else-if="constestInfo.isJoin == true || constestInfo.isInvite == true" type="danger"
-                style="margin: 10px" plain disabled><el-icon>
-                  <Sunny />
-                </el-icon> 已报名</el-button>
+              <div style="
+                text-align: left;
+                width: 100%;
+                margin-bottom: 20px;
+              ">
+                <el-button v-if="
+                  constestInfo.isJoin == false && constestInfo.isInvite == false && isEnd == false
+                " type="danger" @click="joinContest"><el-icon>
+                    <Sunny />
+                  </el-icon> 报名</el-button>
+                <el-button v-else-if="constestInfo.isJoin == true || constestInfo.isInvite == true" type="danger" plain
+                  disabled><el-icon>
+                    <Sunny />
+                  </el-icon> 已报名</el-button>
+              </div>
             </div>
           </div>
           <progress-bar v-if="!isShowCountDown && constestInfo.isJoin == true && isEnd == false" :startTime="startTime"
@@ -111,16 +117,16 @@
                 <el-button type="primary" @click="submitPassword()">提交</el-button>
               </div>
               <div style="
-               
-  border-radius: 20px;
-  box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
-                  background-color: beige;
-                  min-height: 300px;
-                  height: auto;
-                  width: 80%;
-                  margin: auto;
-                  padding: 30px;
-                ">
+             
+border-radius: 20px;
+box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
+                background-color: beige;
+                min-height: 300px;
+                height: auto;
+                width: 80%;
+                margin: auto;
+                padding: 30px;
+              ">
                 {{ constestInfo.description }}
               </div>
             </template>
@@ -262,7 +268,7 @@
               </template>
             </el-input>
             <div style="float: right;">
-              <span v-if="selfRank.value != null" style="margin-right: 20px; color: #409EFF">
+              <span v-if="selfRank?.value" style="margin-right: 20px; color: #409EFF">
                 我的排名: 第 {{ selfRank.value }} 名
               </span>
               <span style="font-size: 12px; margin: 10px; color:rgb(100,100,100)">默认每分钟刷新</span>
@@ -282,7 +288,11 @@
 
               </template>
             </el-table-column>
-            <el-table-column label="班级" prop="className" width="100"> </el-table-column>
+            <el-table-column label="班级" prop="classic" width="100">
+              <template #default="{ row }">
+                {{ getClassName(row.classic) }}
+              </template>
+            </el-table-column>
             <el-table-column label="通过" prop="totalNum" width="100"> </el-table-column>
             <el-table-column label="罚时" width="100">
               <template #default="{ row }">
@@ -427,6 +437,7 @@ const runResult = ref([
 const searchKeyword = ref('')
 const selfRank = ref(null)
 const classNames = ref([])
+const classMap = ref(new Map())
 const handleSearch = async () => {
   rankCurrentPage.value = 1
   await getUser()
@@ -794,15 +805,23 @@ const getSelfRank = async () => {
 const getClassList = async () => {
   try {
     const res = await request.post('/classic/list', {
-      //TODO 后端需要修改 
-
+      pageStart: 1,
+      pageSize: 1000000
     })
     if (res.code === 200) {
-      classNames.value = res.data.list.map(item => item.className)
+      // 创建班级ID到班级名称的映射
+      res.data.list.forEach(item => {
+        classMap.value.set(item.id, item.className)
+      })
     }
   } catch (error) {
     console.error('获取班级列表失败:', error)
   }
+}
+
+// 新增：根据班级ID获取班级名称的函数
+const getClassName = (classicId) => {
+  return classMap.value.get(classicId) || '未知班级'
 }
 </script>
 <style>
