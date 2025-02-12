@@ -2,13 +2,7 @@
   <el-row class="tac">
     <el-col :span="4">
       <h5 class="mb-2" style="text-align: center">后台管理</h5>
-      <el-menu
-        :router="true"
-        default-active="1"
-        class="el-menu-vertical-demo"
-        @open="handleOpen"
-        @close="handleClose"
-      >
+      <el-menu :router="true" default-active="1" class="el-menu-vertical-demo" @open="handleOpen" @close="handleClose">
         <el-menu-item index="/admin/problem">
           <template #title>
             <el-icon>
@@ -61,9 +55,15 @@
         </el-menu-item>
         <el-menu-item index="/admin/notice">
           <el-icon>
-            <ChatDotRound />
+            <Bell />
           </el-icon>
           <span>公告管理</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/solution">
+          <el-icon>
+            <Reading />
+          </el-icon>
+          <span>题解管理</span>
         </el-menu-item>
       </el-menu>
     </el-col>
@@ -76,7 +76,7 @@
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const handleOpen = (key, keyPath) => {}
+const handleOpen = (key, keyPath) => { }
 const handleClose = (key, keyPath) => {
   console.log(key, keyPath)
 }
