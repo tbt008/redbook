@@ -37,32 +37,23 @@ onMounted(async () => {
     <div class="item-processor">
       <el-skeleton :loading="loading" animated>
         <template #template>
-          <el-skeleton-item
-            variant="image"
-            style="width: 120px; height: 120px; border-radius: 1000px"
-          />
+          <el-skeleton-item variant="image" style="width: 120px; height: 120px; border-radius: 1000px" />
         </template>
         <template #default>
-          <div
-            style="
+          <div style="
               width: 100%;
               display: flex;
               font-size: 30px;
               color: black;
               center-align: center;
               justify-content: center;
-            "
-          >
+            ">
             {{ acInfo.acNumberTotal }}
 
             {{ '/' + acInfo.submitNumberTotal }}
           </div>
-          <el-progress
-            type="dashboard"
-            :percentage="
-              Math.floor((acInfo.acNumberTotal / acInfo.submitNumberTotal) * 100 * 100) / 100
-            "
-          >
+          <el-progress type="dashboard" :percentage="Math.floor((acInfo.acNumberTotal / acInfo.submitNumberTotal) * 100 * 100) / 100
+            ">
             <template #default="{ percentage }">
               <span class="percentage-value">{{ percentage }}%</span>
               <span class="percentage-label">通过率</span>
@@ -74,14 +65,8 @@ onMounted(async () => {
     <div class="item-digest-wrapper">
       <el-skeleton :loading="loading" animated>
         <template #template>
-          <el-skeleton-item
-            variant="text"
-            style="position: relative; top: 15px; width: 121.75px; height: 25px"
-          />
-          <el-skeleton-item
-            variant="text"
-            style="position: relative; top: 30px; width: 121.75px; height: 50px"
-          />
+          <el-skeleton-item variant="text" style="position: relative; top: 15px; width: 121.75px; height: 25px" />
+          <el-skeleton-item variant="text" style="position: relative; top: 30px; width: 121.75px; height: 50px" />
         </template>
         <template #default>
           <div class="font-item">
@@ -92,11 +77,7 @@ onMounted(async () => {
                 {{ '/' + acInfo.allBase }}
               </div>
             </div>
-            <el-progress
-              :percentage="(acInfo.base / acInfo.allBase) * 100"
-              :format="format"
-              :color="`#909399`"
-            />
+            <el-progress :percentage="(acInfo.base / acInfo.allBase) * 100" :format="format" :color="`#909399`" />
           </div>
           <div class="font-item">
             <div style="display: flex; font-size: medium; color: black">
@@ -106,11 +87,7 @@ onMounted(async () => {
                 {{ '/' + acInfo.allEasy }}
               </div>
             </div>
-            <el-progress
-              :percentage="(acInfo.easy / acInfo.allEasy) * 100"
-              :color="`#67c23a`"
-              :format="format"
-            />
+            <el-progress :percentage="(acInfo.easy / acInfo.allEasy) * 100" :color="`#67c23a`" :format="format" />
           </div>
           <div class="font-item">
             <div style="display: flex; font-size: medium; color: black">
@@ -120,11 +97,7 @@ onMounted(async () => {
                 {{ '/' + acInfo.allPopular }}
               </div>
             </div>
-            <el-progress
-              :percentage="(acInfo.popular / acInfo.allPopular) * 100"
-              :color="`#e6a23c`"
-              :format="format"
-            />
+            <el-progress :percentage="(acInfo.popular / acInfo.allPopular) * 100" :color="`#e6a23c`" :format="format" />
           </div>
           <div class="font-item">
             <div style="display: flex; font-size: medium; color: black">
@@ -134,11 +107,8 @@ onMounted(async () => {
                 {{ '/' + acInfo.allIncrease }}
               </div>
             </div>
-            <el-progress
-              :percentage="(acInfo.increase / acInfo.allIncrease) * 100"
-              :format="format"
-              :color="`#1989fa`"
-            />
+            <el-progress :percentage="(acInfo.increase / acInfo.allIncrease) * 100" :format="format"
+              :color="`#1989fa`" />
           </div>
           <div class="font-item">
             <div style="display: flex; font-size: medium; color: black">
@@ -148,11 +118,8 @@ onMounted(async () => {
                 {{ '/' + acInfo.allHard }}
               </div>
             </div>
-            <el-progress
-              :percentage="acInfo.allHard == 0 ? 0 : (acInfo.hard / acInfo.allHard) * 100"
-              :format="format"
-              :color="`#f56c6c`"
-            />
+            <el-progress :percentage="acInfo.allHard == 0 ? 0 : (acInfo.hard / acInfo.allHard) * 100" :format="format"
+              :color="`#f56c6c`" />
           </div>
         </template>
       </el-skeleton>
@@ -164,6 +131,7 @@ onMounted(async () => {
 .item-digest-wrapper {
   width: 50%;
 }
+
 .item-processor {
   display: flex;
   center-align: center;
@@ -172,20 +140,24 @@ onMounted(async () => {
   flex-wrap: wrap;
   margin-top: 40px;
 }
+
 .font-item {
   margin-top: 10px;
   margin-left: 10px;
   display: block;
 }
+
 .item {
   display: flex;
   width: 100%;
 }
+
 .percentage-value {
   display: block;
 
   font-size: 28px;
 }
+
 .percentage-label {
   display: block;
   margin-top: 10px;

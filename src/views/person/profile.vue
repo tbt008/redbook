@@ -130,10 +130,22 @@ const getUserInfo = () => {
     }
   })
 }
+const starArticles = ref([])
+
+const getStarArticles = () => {
+  request.get('/article/user/stars').then((res) => {
+    if (res.code === 200) {
+      starArticles.value = res.data
+    } else {
+      ElMessage.error('获取收藏文章失败')
+    }
+  })
+}
+
 onMounted(async () => {
   getUserInfo()
-
   getCodeRecord()
+  getStarArticles()
 })
 const codeRecord = ref([])
 // 分页大小改变处理
@@ -150,6 +162,41 @@ const handleCurrentChange = async (val) => {
 }
 const goToSubmissionDetail = (row) => {
   router.push(`/submission/${row.submitId}`)
+}
+
+// 文章类型标签颜色映射函数
+const getArticleTypeTag = (type) => {
+  const types = {
+    0: 'success',   // 算法文章
+    1: 'warning',   // 题解文章
+    2: 'info',      // 经验分享
+    3: 'default',   // 杂谈
+    4: 'danger',    // 竞赛
+    5: 'primary'    // 算法模板
+  }
+  return types[type] || 'default'
+}
+
+// 文章类型名称映射函数
+const getArticleTypeName = (type) => {
+  const types = {
+    0: '算法文章',
+    1: '题解文章',
+    2: '经验分享',
+    3: '杂谈',
+    4: '竞赛',
+    5: '算法模板'
+  }
+  return types[type] || '未知类型'
+}
+const formatDate = (dateArray) => {
+  if (!dateArray) return 'error'
+  const date = new Date(dateArray[0], dateArray[1] - 1, dateArray[2])
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }).format(date)
 }
 </script>
 
@@ -234,12 +281,12 @@ const goToSubmissionDetail = (row) => {
               </template>
             </el-skeleton>
           </div>
-          <div class="left-bottommore">
-            <el-skeleton :loading="loading" animated>
+          <!-- <div class="left-bottommore"> -->
+          <!-- <el-skeleton :loading="loading" animated>
               <template #template>
                 <el-skeleton :rows="7"></el-skeleton>
-              </template>
-              <template #default>
+              </template> -->
+          <!-- <template #default>
                 <div style="display: flex; position: relative; gap: 20px; size: 24px; color: aqua">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="20" fill="#5AC8FA"
                     class="text-teal dark:text-dark-teal">
@@ -288,48 +335,35 @@ const goToSubmissionDetail = (row) => {
                     <span style="color: gray; font-size: small">{{ userInfo.favourNum }}</span>
                   </div>
                 </div>
-              </template>
-            </el-skeleton>
-          </div>
-          <div class="leidaChart">
-            <!-- <radarChart></radarChart> -->
-          </div>
-          <div class="languageset">
-            <el-skeleton :loading="loading" animated>
-              <!-- <template #template>
-                <el-skeleton :rows="3" />
-              </template>
-              <template #default>
-                <div style="color: #85858a">语言</div>
-                <el-empty
-                  v-if="userInfo.solveMsgVoList === null || userInfo.solveMsgVoList.length === 0"
-                  description="快去提交题目吧"
-                />
-                <div
-                  style="justify-content: space-between; display: flex"
-                  v-for="(item, index) in userInfo.solveMsgVoList"
-                  :key="item.id"
-                >
-                  <div
-                    style="
-                      display: flex;
-                      border-radius: 10px;
-                      width: 40px;
-                      height: 15px;
-                      background-color: #f2f3f4;
-                      align-items: center;
-                      padding: 3px 5px;
-                      justify-content: center;
-                    "
-                  >
-                    {{ item.language }}
-                  </div>
-                  <span style="display: flex; color: #85858a">{{ '提交次数: ' + item.num }}</span>
-                </div>
               </template> -->
-            </el-skeleton>
+          <!-- </el-skeleton> -->
+          <!-- </div> -->
+          <!-- <div class="leidaChart"> -->
+          <!-- <radarChart></radarChart> -->
+          <!-- </div> -->
+          <div class="languageset">
+            <div style="padding: 20px">
+              <div style="font-weight: bold; margin-bottom: 15px">收藏的文章</div>
+              <el-empty v-if="starArticles.length === 0" description="暂无收藏文章" />
+              <div v-else class="article-list-container">
+                <div v-for="article in starArticles" :key="article.id" class="article-item"
+                  @click="router.push(`/discuss/${article.id}`)">
+                  <div class="article-header">
+                    <el-tag :type="getArticleTypeTag(article.articleType)" class="article-type-tag" effect="light">
+                      {{ getArticleTypeName(article.articleType) }}
+                    </el-tag>
+                    <div class="article-title">{{ article.title }}</div>
+                  </div>
+                  <div class="article-info">
+                    <span class="author">作者:<br />{{ article.userId }}</span>
+                    <span class="time">收藏于<br />{{ formatDate(article.createTime) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+
         <div v-if="editInfo" style="padding: 30px" class="updateInfo bottom-right">
           <el-form :model="form" label-width="auto" style="max-width: 600px">
             <el-form-item label="头像">
@@ -361,7 +395,7 @@ const goToSubmissionDetail = (row) => {
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="onSubmit">保存</el-button>
-              <el-button @click="editInfo = !editInfo">取消</el-button>
+              <el-button @click="editInfo = !editInfo">关闭</el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -655,11 +689,38 @@ const goToSubmissionDetail = (row) => {
         }
 
         .languageset {
-          padding: 0px 10px;
+          // padding: 0px 10px;
           position: relative;
           display: flex;
           gap: 15px;
           flex-direction: column;
+
+          //最大高度和滚动
+          .article-list-container {
+            max-height: 800px; // 设置最大高度
+            overflow-y: auto; // 添加垂直滚动
+            padding-right: 5px; // 为滚动条预留空间
+            // background-color: #0a84ff;
+
+            // 滚动条样式
+            &::-webkit-scrollbar {
+              width: 6px;
+            }
+
+            &::-webkit-scrollbar-track {
+              background: #f1f1f1;
+              border-radius: 3px;
+            }
+
+            &::-webkit-scrollbar-thumb {
+              background: #888;
+              border-radius: 3px;
+            }
+
+            &::-webkit-scrollbar-thumb:hover {
+              background: #555;
+            }
+          }
         }
 
         .leidaChart {
@@ -738,5 +799,54 @@ const goToSubmissionDetail = (row) => {
   margin-top: 20px;
   display: flex;
   justify-content: center;
+}
+
+.article-item {
+  padding: 12px 0px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background-color: #f5f7fa;
+  }
+
+  .article-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .article-type-tag {
+    font-size: 12px;
+    padding: 2px 6px;
+  }
+
+  .article-title {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+  }
+
+  .article-info {
+    font-size: 12px;
+    color: #999;
+    display: flex;
+    gap: 15px;
+
+    .author,
+    .time {
+      color: #666;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .time {
+      margin-left: 20px;
+      color: #999;
+    }
+  }
 }
 </style>
