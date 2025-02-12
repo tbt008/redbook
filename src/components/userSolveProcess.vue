@@ -138,7 +138,7 @@ onMounted(async () => {
   justify-content: center;
   width: 50%;
   flex-wrap: wrap;
-  margin-top: 40px;
+  margin-top: 20px;
 }
 
 .font-item {
