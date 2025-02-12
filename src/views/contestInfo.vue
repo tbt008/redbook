@@ -279,7 +279,8 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
           </div>
           <el-table :data="rankinglist" style="width: 100%">
 
-            <el-table-column label="名次" prop="rank" width="100"> </el-table-column>
+            <el-table-column label="名次" prop="rank" width="80"> </el-table-column>
+            <el-table-column label="学号" prop="uid" width="150"> </el-table-column>
             <el-table-column label="参赛者" prop="userName" width="100">
               <template #default="{ row }">
                 <el-tooltip class="box-item" effect="dark" :content="row.nickName" placement="top">
@@ -293,7 +294,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                 {{ getClassName(row.classic) }}
               </template>
             </el-table-column>
-            <el-table-column label="通过" prop="totalNum" width="100"> </el-table-column>
+            <el-table-column label="通过" prop="totalNum" width="80"> </el-table-column>
             <el-table-column label="罚时" width="100">
               <template #default="{ row }">
                 <div>{{ penalty(row) }}</div>
