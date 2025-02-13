@@ -25,7 +25,7 @@ export interface Article {
   articleTypeName: string
   articleType: number
   articleReads: number
-  sourceId: string
+  sourceId: number
   comments: Comment[]
   isLiked: boolean
   isFavorited: boolean

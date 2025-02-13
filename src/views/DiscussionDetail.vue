@@ -13,9 +13,19 @@
         <div class="article-header">
           <h1 class="article-title">{{ discussion.title }}</h1>
           <div class="article-meta">
-            <el-tag :type="getArticleTypeTag(discussion.articleTypeName)" size="small" class="article-type-tag">
-              {{ discussion.articleTypeName }}
-            </el-tag>
+            <div class="article-info-row">
+              <el-tag :type="getArticleTypeTag(discussion.articleTypeName)" size="small" class="article-type-tag">
+                {{ discussion.articleTypeName }}
+              </el-tag>
+              <!-- 修改题目链接显示 -->
+              <el-link v-if="discussion?.articleTypeName === '题解文章' && discussion?.sourceId"
+                :href="`/question?id=${discussion.sourceId}`" type="primary" class="problem-link">
+                <el-icon>
+                  <Link />
+                </el-icon>
+                题目：{{ discussion.sourceId }}. {{ questionTitle }}
+              </el-link>
+            </div>
             <div class="author-info">
               <el-avatar :size="32" :src="discussion.avatar" />
               <span class="author-name">{{ discussion.userId }}</span>
@@ -50,6 +60,15 @@
                 <el-select v-model="newArticle.articleTypeName" placeholder="请选择文章类型" style="width: 100%"
                   @change="handleArticleTypeChange">
                   <el-option v-for="type in articleTypes" :key="type.value" :label="type.label" :value="type.value" />
+                </el-select>
+              </el-form-item>
+
+              <!-- 添加题解文章关联题目选项 -->
+              <el-form-item v-if="newArticle.articleType === 1" label="关联题目" prop="sourceId">
+                <el-select v-model="newArticle.sourceId" placeholder="请输入题目名称选择关联的题目" filterable remote
+                  :remote-method="searchProblems" :loading="problemsLoading" style="width: 100%">
+                  <el-option v-for="item in problemOptions" :key="item.questionId"
+                    :label="`${item.questionId}. ${item.title}`" :value="item.questionId" />
                 </el-select>
               </el-form-item>
 
@@ -269,7 +288,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { View, Star, Pointer, ArrowLeft, Edit, Delete, ChatLineRound, ArrowDown } from '@element-plus/icons-vue'
+import { View, Star, Pointer, ArrowLeft, Edit, Delete, ChatLineRound, ArrowDown, Link } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
 import request from '@/util/request'
 const route = useRoute()
@@ -342,13 +361,17 @@ const newArticle = reactive({
   likeNum: 0,
   favourNum: 0,
   articleReads: 0,
-  sourceId: 0
+  sourceId: null as number | null
 })
 // 编辑器变更处理函数
 const handleEditorChange = (value: string, render: string) => {
   newArticle.content = value // 保存 markdown 内容
 }
-// 文章类型列表
+// 添加响应式数据
+const problemOptions = ref<Problem[]>([])
+const problemsLoading = ref(false)
+
+// 添加文章类型列表
 const articleTypes = [
   { value: 0, label: '算法文章' },
   { value: 1, label: '题解文章' },
@@ -357,9 +380,46 @@ const articleTypes = [
   { value: 4, label: '竞赛' },
   { value: 5, label: '算法模板' },
 ]
+
+// 添加类型定义
+interface Problem {
+  questionId: number
+  title: string
+}
+
+// 文章类型变更处理方法
 const handleArticleTypeChange = (value: number) => {
   newArticle.articleType = value
+  if (value !== 1) {
+    newArticle.sourceId = null
+  }
 }
+
+// 搜索题目方法
+const searchProblems = async (query: string) => {
+  if (query) {
+    problemsLoading.value = true
+    try {
+      const response = await request.post('question/list',
+        {
+          pageStart: 1,
+          pageSize: 10,
+          title: query,
+        }) as any
+
+      if (response.code === 200) {
+        problemOptions.value = response.data.list
+      }
+    } catch (error) {
+      console.error('搜索题目失败:', error)
+    } finally {
+      problemsLoading.value = false
+    }
+  } else {
+    problemOptions.value = []
+  }
+}
+
 // 编辑文章
 const editArticle = async () => {
   try {
@@ -395,15 +455,36 @@ const editArticle = async () => {
     ElMessage.error(error || '编辑文章失败')
   }
 }
-// 处理编辑按钮点击
-const handleEdit = () => {
-  // 填充表单数据
+
+const handleEdit = async () => {
   if (discussion.value) {
     newArticle.title = discussion.value.title
     newArticle.content = discussion.value.content
     newArticle.articleTypeName = discussion.value.articleTypeName
     newArticle.articleType = discussion.value.articleType
-    newArticle.sourceId = Number(discussion.value.id)
+    newArticle.sourceId = discussion.value.sourceId
+
+    // 如果是题解文章，获取关联题目的详细信息
+    if (discussion.value.articleTypeName === '题解文章') {
+      handleArticleTypeChange(1)
+      if (discussion.value.sourceId) {
+        try {
+          const response = await request.post('/question/info', {
+            questionId: discussion.value.sourceId
+          }) as any
+          console.log(response)
+          if (response.code === 200) {
+            // 将关联题目添加到选项中
+            problemOptions.value = [{
+              questionId: response.data.id,
+              title: response.data.title
+            }]
+          }
+        } catch (error) {
+          console.error('获取关联题目信息失败:', error)
+        }
+      }
+    }
   }
   disabled.value = true
 }
@@ -454,7 +535,26 @@ const transformComments = (comments: Comment[]) => {
   return rootComments
 }
 
-// 修改获取文章详情的方法
+
+const questionTitle = ref<string>('')
+
+// 获取题目详情
+const getQuestionTitle = async (questionId: number) => {
+  try {
+    const response = await request.post('/question/info', {
+      questionId: questionId
+    }) as any
+
+    if (response.code === 200) {
+      questionTitle.value = response.data.title
+    }
+  } catch (error) {
+    console.error('获取题目信息失败:', error)
+    questionTitle.value = '获取失败'
+  }
+}
+
+
 const getDiscussionDetail = async () => {
   try {
     loading.value = true
@@ -465,12 +565,17 @@ const getDiscussionDetail = async () => {
     }) as any
 
     if (response.code === 200) {
-      // 转换评论数据为树形结构
       const articleData = response.data
       if (articleData.comments) {
         articleData.comments = transformComments(articleData.comments)
       }
       discussion.value = articleData
+
+      // 如果是题解文章，获取题目信息 
+      if (articleData.articleTypeName === '题解文章' && articleData.sourceId) {
+
+        await getQuestionTitle(articleData.sourceId)
+      }
     } else {
       ElMessage.error(response.msg || '获取文章详情失败')
     }
@@ -1030,11 +1135,24 @@ onMounted(async () => {
   background-color: #f5f7fa;
 }
 
+.article-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
 .article-type-tag {
   padding: 0 8px;
   height: 24px;
   width: 100px;
   line-height: 22px;
+}
+
+.problem-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .article-operations {
