@@ -59,12 +59,12 @@
           </el-icon>
           <span>公告管理</span>
         </el-menu-item>
-        <el-menu-item index="/admin/solution">
+        <!-- <el-menu-item index="/admin/solution">
           <el-icon>
             <Reading />
           </el-icon>
           <span>题解管理</span>
-        </el-menu-item>
+        </el-menu-item> -->
       </el-menu>
     </el-col>
 
