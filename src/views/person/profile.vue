@@ -356,7 +356,7 @@ const formatDate = (dateArray) => {
                   </div>
                   <div class="article-info">
                     <span class="author">作者:<br />{{ article.userId }}</span>
-                    <span class="time">收藏于<br />{{ formatDate(article.createTime) }}</span>
+                    <span class="time">发布于<br />{{ formatDate(article.createTime) }}</span>
                   </div>
                 </div>
               </div>
