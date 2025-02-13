@@ -634,12 +634,16 @@ const searchUser = (value) => {
   request
     .post(`/contest/record/get/all`, {
       contestId: id.value,
-      uid: value
+      uid: value,
+      pageStart: recordCurrentPage.value,
+      pageSize: recordPageSize.value,
+      questionDisplayNames: checkedQuestionName.value,
+      runStatusList: runStatusList.value
     })
     .then((res) => {
       if (res.code == 200) {
         codeRecordList.value = res.data.list
-
+        recordTotal.value = res.data.total
       } else {
         ElMessage.error('获取提交记录失败：' + res.msg)
       }
@@ -711,6 +715,7 @@ const selectRecord = () => {
   request
     .post(`/contest/record/get/all`, {
       contestId: id.value,
+      uid: inputUser.value,
       pageStart: recordCurrentPage.value,
       pageSize: recordPageSize.value,
       questionDisplayNames: checkedQuestionName.value,
