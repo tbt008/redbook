@@ -72,7 +72,7 @@
                       <el-icon>
                         <Link />
                       </el-icon>
-                      查看题目 <!-- {{ item.sourceId }} -->
+                      题目 {{ item.sourceId }}.{{ questionIdToTitle[item.sourceId] }}
                     </el-link>
                   </div>
                   <div class="article-brief" v-html="renderMarkdown(item.content.substring(0, 150))"></div>
@@ -226,7 +226,8 @@ const total = ref(0)
 const loading = ref(false)
 const token = localStorage.getItem('auth-token')
 const uid = localStorage.getItem('uid')
-
+// 题目id跟题目名称的映射
+const questionIdToTitle = ref<Record<number, string>>({})
 // 文章列表相关
 const articles = ref<Array<Article>>([])
 const filterType = ref<string | null>("all")
@@ -330,6 +331,23 @@ const renderMarkdown = (content: string) => {
   }
 }
 
+// 获取题目信息
+const getQuestionInfo = async (questionId: number) => {
+  try {
+    const response = await request.post('/question/info', {
+      questionId: questionId
+    }) as any
+
+    if (response.code === 200) {
+      return response.data.title
+    }
+    return null
+  } catch (error) {
+    console.error('获取题目信息失败:', error)
+    return null
+  }
+}
+
 
 const getArticles = async () => {
   try {
@@ -341,7 +359,6 @@ const getArticles = async () => {
       sortOrder: pageParams.sortOrder,
     }
 
-    // 如果选择了具体标签（不是"全部"），添加 articleType 参数
     if (filterType.value && filterType.value !== 'all') {
       params.articleType = Number(filterType.value)
     }
@@ -353,7 +370,23 @@ const getArticles = async () => {
     }) as any
 
     if (response.code === 200) {
-      articles.value = response.data.list
+      // 获取文章列表
+      const articleList = response.data.list
+
+      // 对于题解文章，获取题目信息
+      for (let article of articleList) {
+        if (article.articleType === 1 && article.sourceId) {
+          const questionInfo = await getQuestionInfo(article.sourceId)
+          if (questionInfo) {
+            article.questionTitle = questionInfo.title
+          }
+          //设置一个哈希将题目id跟题目名称对应
+          //记得需要是value，因为是一个ref，需要通过value来访问
+          questionIdToTitle.value[article.sourceId] = questionInfo
+        }
+      }
+
+      articles.value = articleList
       total.value = response.data.total
     } else {
       ElMessage.error(response.msg || '获取文章列表失败')
