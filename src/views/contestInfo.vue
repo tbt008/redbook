@@ -164,7 +164,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
 
         </div>
         <el-tab-pane label="提交" name="third">
-          <el-input v-model="inputUser" style="width: 240px" placeholder="输入用户名后回车查询" @change="searchUser"
+          <el-input v-model="inputUser" style="width: 240px" placeholder="输入完整学号后回车查询" @change="searchUser"
             :prefix-icon="Search" />
 
           <el-table :data="codeRecordList" style="width: 100%" @row-click="goToSubmissionDetail">
@@ -443,6 +443,11 @@ const handleSearch = async () => {
   await getUser()
 }
 const getUser = async () => {
+  //不是数字就禁止
+  if (isNaN(searchKeyword.value)) {
+    ElMessage.error('请输入正确的学号')
+    return
+  }
   try {
     const res = await request.post(`/ranking/get/search`, {
       contestId: id.value,
@@ -631,6 +636,10 @@ const joinContest = () => {
     })
 }
 const searchUser = (value) => {
+  if (isNaN(value)) {
+    ElMessage.error('请输入正确的学号')
+    return
+  }
   request
     .post(`/contest/record/get/all`, {
       contestId: id.value,
