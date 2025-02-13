@@ -10,28 +10,16 @@
         <div class="middle-left">
           <el-select v-model="choseLanguage" style="width: 100px">
             <!-- 选择语言 -->
-            <el-option
-              v-for="item in languageList"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
+            <el-option v-for="item in languageList" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </div>
-        <div
-          class="middle-right"
-          style="background-color: rgb(230, 230, 230); padding: 10px; margin-right: 10px"
-        >
+        <div class="middle-right" style="background-color: rgb(230, 230, 230); padding: 10px; margin-right: 10px">
           <!-- 距离比赛结束还有: 20分钟 -->
         </div>
       </div>
     </div>
     <div class="code-region">
-      <codeEditor
-        @updateCode="_handleDebounce"
-        :value="code"
-        :language="choseLanguage"
-      ></codeEditor>
+      <codeEditor @updateCode="_handleDebounce" :value="code" :language="choseLanguage"></codeEditor>
     </div>
   </div>
 </template>
@@ -171,7 +159,7 @@ watch(
 )
 onMounted(() => {
   changeLanguageFun()
-  // code.value += '\n'
+
 })
 </script>
 <style lang="scss" scoped>
@@ -181,6 +169,7 @@ onMounted(() => {
   z-index: -1;
   overflow: hidden;
 }
+
 .item {
   padding-left: 5px;
   position: relative;
@@ -189,6 +178,7 @@ onMounted(() => {
   background-color: #ffffff;
   border-radius: 10px;
   overflow: visible;
+
   // overflow-y: hidden;
   .top {
     position: relative;
@@ -200,6 +190,7 @@ onMounted(() => {
     gap: 5px;
     align-items: center;
     justify-content: space-between;
+
     .top-item {
       position: relative;
       // top: 5px;
@@ -211,10 +202,12 @@ onMounted(() => {
       padding-right: 5px;
       height: 80%;
     }
+
     .top-item:hover {
       background-color: #e6e6e6;
     }
   }
+
   .middle {
     width: 100%;
     height: 30px;
@@ -225,6 +218,7 @@ onMounted(() => {
     border-bottom: 1px solid rgb(236, 232, 232);
     gap: 5px;
     padding-bottom: 5px;
+
     .middle-left {
       display: flex;
       align-items: center;
@@ -242,11 +236,13 @@ onMounted(() => {
         display: flex;
         justify-content: center;
       }
+
       .middle-item:hover {
         background-color: #e6e6e6;
       }
     }
   }
+
   .code-region {
     z-index: -1;
     width: 100%;

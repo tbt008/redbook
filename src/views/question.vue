@@ -138,10 +138,6 @@ const goToSubmissionDetail = (row) => {
                 <div style="position: relative; font-size: 25px; font-weight: bold">
                   {{ rep.id + '. ' + rep.title }}
                 </div>
-                <div v-if="rep.status === true"
-                  style="position: relative; top: 8px; display: flex; align-items: center; gap: 5px">
-                  <div style="color: #737373">已解答</div>
-                </div>
               </div>
               <div style="display: flex; gap: 5px">
                 <div style="
@@ -270,12 +266,7 @@ const goToSubmissionDetail = (row) => {
   display: flex;
   flex-direction: column;
 
-  // padding-left: 10px;
   .top {
-    // position: relative;
-    // left: 10px;
-    // width: 99%;
-    // height: 50px;
     min-height: 30px;
     max-height: 30px;
     border-radius: 10px 10px 0px 0px;
@@ -298,7 +289,6 @@ const goToSubmissionDetail = (row) => {
   }
 
   .content {
-    // position: relative;
     display: flex;
     width: 100%;
     height: 100%;

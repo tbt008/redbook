@@ -272,9 +272,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                 我的排名: 第 {{ selfRank.value }} 名
               </span>
               <span style="font-size: 12px; margin: 10px; color:rgb(100,100,100)">默认每分钟刷新</span>
-              <el-button @click="refreshRank" type="primary" :icon="Refresh" circle><el-icon>
-                  <Refresh />
-                </el-icon></el-button>
+              <el-button @click="refreshRank" type="primary" :icon="Refresh" circle></el-button>
             </div>
           </div>
           <el-table :data="rankinglist" style="width: 100%">

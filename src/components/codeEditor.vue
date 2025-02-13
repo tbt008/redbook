@@ -1,13 +1,10 @@
 <script>
 import { getCurrentInstance, onMounted, watch } from 'vue'
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.main.js'
-// import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
+// import * as monaco from 'monaco-editor/esm/vs/editor/editor.main.js'
+// import * as monaco from 'monaco-editor/esm/vs/editor/editor.api'
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
+
 import { debounce } from '@/utils/optimizeUtils'
-// 解决vite Monaco提示错误
-// self.MonacoEnvironment = {
-//   getWorker() {
-//     return new JsonWorker()
-//   }
 // }
 export default {
   props: {
@@ -28,19 +25,15 @@ export default {
         }
       }
     )
-    watch(
-      () => props.language,
-      (value) => {
-        console.log(value)
-      }
-    )
+
     const changeSize = (entries) => {
+
       // 获取编辑器容器的大小
       var objSz = entries[0]
       monacoEditor.layout({ height: objSz.contentRect.height, width: objSz.contentRect.width - 10 })
     }
     // 节流操作
-    const _fn = debounce(changeSize, 10)
+    const _fn = debounce(changeSize, 100)
     onMounted(() => {
       monacoEditor = monaco.editor.create(proxy.$refs.editContainer, {
         value: props.value,

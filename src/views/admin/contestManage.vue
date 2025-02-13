@@ -183,6 +183,7 @@ const onDelete = (row) => {
     .then((res) => {
       if (res.code === 200) {
         ElMessage.success('删除成功')
+        getContestList()
       } else {
         ElMessage.error('删除失败: ' + res.msg)
       }
