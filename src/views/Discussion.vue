@@ -67,6 +67,13 @@
                       {{ getArticleTypeLabel(item.articleType) }}
                     </el-tag>
                     <h3 class="article-title">{{ item.title }}</h3>
+                    <el-link v-if="item.articleType === 1 && item.sourceId" :href="`/question?id=${item.sourceId}`"
+                      type="primary" class="problem-link">
+                      <el-icon>
+                        <Link />
+                      </el-icon>
+                      查看题目 <!-- {{ item.sourceId }} -->
+                    </el-link>
                   </div>
                   <div class="article-brief" v-html="renderMarkdown(item.content.substring(0, 150))"></div>
                 </div>
@@ -174,6 +181,14 @@
               <el-option v-for="type in articleTypes" :key="type.value" :label="type.label" :value="type.value" />
             </el-select>
           </el-form-item>
+          <!-- 题解文章类型时，显示关联题目 -->
+          <el-form-item v-if="newArticle.articleType === 1" label="关联题目" prop="sourceId">
+            <el-select v-model="newArticle.sourceId" placeholder="请输入题目名称选择关联的题目" filterable remote
+              :remote-method="searchProblems" :loading="problemsLoading" style="width: 100%">
+              <el-option v-for="item in problemOptions" :key="item.questionId"
+                :label="`${item.questionId}. ${item.title}`" :value="item.questionId" />
+            </el-select>
+          </el-form-item>
 
           <el-form-item label="内容" prop="content">
             <div class="editor-container">
@@ -196,7 +211,7 @@ import { ref, reactive, onMounted, computed, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
-import { View, Star, Pointer, Plus, Close, ChatDotRound, Clock, Sunrise, Loading } from '@element-plus/icons-vue'
+import { View, Star, Pointer, Plus, Close, ChatDotRound, Clock, Sunrise, Loading, Link } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
 import type { FormInstance } from 'element-plus'
 import { marked } from 'marked'
@@ -251,7 +266,7 @@ const newArticle = reactive({
   likeNum: 0,
   favourNum: 0,
   articleReads: 0,
-  sourceId: 0
+  sourceId: null
 })
 
 // 表单验证规则
@@ -265,7 +280,7 @@ const rules = {
   ],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
-    { min: 5, message: '内容不能少于 5 个字符', trigger: 'blur' }
+    { min: 3, message: '内容不能少于 3 个字符', trigger: 'blur' }
   ]
 }
 
@@ -462,6 +477,46 @@ const handleCurrentChange = (val: number) => {
   getArticles()
 }
 
+// 添加状态
+interface Problem {
+  questionId: number
+  title: string
+}
+
+const problemOptions = ref<Problem[]>([])
+const problemsLoading = ref(false)
+
+// 搜索题目方法
+const searchProblems = async (query: string) => {
+  if (query) {
+    problemsLoading.value = true
+    try {
+      const response = await request.post('question/list',
+        {
+          pageStart: 1,
+          pageSize: 10,
+          title: query,
+        }) as any
+
+      if (response.code === 200) {
+        problemOptions.value = response.data.list
+      }
+    } catch (error) {
+      console.error('搜索题目失败:', error)
+    } finally {
+      problemsLoading.value = false
+    }
+  } else {
+    problemOptions.value = []
+  }
+}
+
+// 监听文章类型变化，重置 sourceId
+watch(() => newArticle.articleType, (newType) => {
+  if (newType !== 1) {
+    newArticle.sourceId = null
+  }
+})
 
 onMounted(() => {
   getArticles()
@@ -662,6 +717,7 @@ watch(filterType, () => {
   align-items: center;
   gap: 0.8rem;
   margin-bottom: 0.8rem;
+  flex-wrap: wrap;
 }
 
 .article-type-tag {
@@ -1045,5 +1101,13 @@ watch(filterType, () => {
 :deep(.v-note-wrapper .v-note-panel .v-note-show .v-show-content) {
   height: calc(100% - 40px) !important;
   overflow-y: auto !important;
+}
+
+.problem-link {
+  margin-left: auto;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 </style>

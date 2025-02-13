@@ -300,7 +300,7 @@ const rules = {
   ],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
-    { min: 5, message: '内容不能少于 5 个字符', trigger: 'blur' }
+    { min: 3, message: '内容不能少于 3 个字符', trigger: 'blur' }
   ]
 }
 
