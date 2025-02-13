@@ -63,8 +63,8 @@
         <el-form-item>
           <el-button @click="primary" type="primary">创建</el-button>
           <el-button v-if="props.id !== undefined" @click="() => {
-              active++
-            }
+            active++
+          }
             " type="cancel">跳过</el-button>
           <el-button @click="cancel" type="cancel">取消</el-button>
         </el-form-item>
@@ -73,14 +73,14 @@
     <div v-if="active == 1">
       <QuestionSelect @selectedQuestion="selectedQuestion" :contestId="contestId"></QuestionSelect>
       <el-button @click="() => {
-          active--
-        }
+        active--
+      }
         " type="primary">上一步</el-button>
       <el-button @click="saveQuestion" type="cancel">保存</el-button>
       <el-button @click="() => {
-          active++
-          getSelectedQuestion()
-        }
+        active++
+        getSelectedQuestion()
+      }
         " type="cancel">跳过</el-button>
     </div>
     <div v-if="active == 2">
@@ -100,16 +100,16 @@
         </el-table-column>
       </el-table>
       <el-button @click="() => {
-          active--
-        }
+        active--
+      }
         " type="primary">上一步</el-button>
       <el-button @click="saveOrder" type="cancel">保存</el-button>
       <el-button @click="next" type="cancel">完成</el-button>
     </div>
     <div v-if="active == 3">
       <el-button @click="() => {
-          active--
-        }
+        active--
+      }
         " type="primary">上一步</el-button>
       <el-button @click="next" type="cancel">完成</el-button>
     </div>
@@ -257,7 +257,7 @@ const getQuestionByIds = async () => {
 }
 const getSelectedQuestion = async () => {
   try {
-    const response = await request.get(`/root/contest/problem/${props.id}`)
+    const response = await request.get(`/root/contest/problem/${contestId.value}`)
     if (response.code === 200) {
       selectedQuestion.value = response.data
       getQuestionByIds()
