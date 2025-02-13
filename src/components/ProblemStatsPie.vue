@@ -29,19 +29,17 @@ const props = defineProps<{
 const pieChart = ref<HTMLElement | null>(null)
 let chart: echarts.ECharts | null = null
 
-const shouldShowStats = computed(() => 
+const shouldShowStats = computed(() =>
   props.title !== undefined && props.title !== null
 )
 
-const waPerson = computed(() => 
-  props.tryPerson && props.passPerson 
-    ? props.tryPerson - props.passPerson 
-    : 0
+const waPerson = computed(() =>
+  (props.tryPerson ?? 0) - (props.passPerson ?? 0)
 )
 
 const initChart = () => {
   if (!pieChart.value) return
-  
+
   chart = echarts.init(pieChart.value)
   updateChart()
 }
@@ -51,10 +49,10 @@ const updateChart = () => {
 
   const chartData = []
   if (props.passPerson && props.passPerson > 0) {
-    chartData.push({ 
-      value: props.passPerson, 
+    chartData.push({
+      value: props.passPerson,
       name: 'AC',
-      itemStyle: { 
+      itemStyle: {
         color: {
           type: 'linear',
           x: 0,
@@ -62,7 +60,7 @@ const updateChart = () => {
           x2: 0,
           y2: 1,
           colorStops: [{
-            offset: 0, color: '#95eb75' 
+            offset: 0, color: '#95eb75'
           }, {
             offset: 1, color: '#67C23A'
           }]
@@ -70,12 +68,12 @@ const updateChart = () => {
       }
     })
   }
-  
+
   if (waPerson.value > 0) {
-    chartData.push({ 
-      value: waPerson.value, 
+    chartData.push({
+      value: waPerson.value,
       name: 'WA',
-      itemStyle: { 
+      itemStyle: {
         color: {
           type: 'linear',
           x: 0,
@@ -107,9 +105,9 @@ const updateChart = () => {
         length: 8,
         length2: 8,
         smooth: true
-        
+
       },
-      label: { 
+      label: {
         show: true,
         position: 'outside',
         fontSize: 10,
@@ -130,9 +128,9 @@ const updateChart = () => {
         }
       },
       data: chartData.length > 0 ? chartData : [
-        { 
-          value: 1, 
-          itemStyle: { 
+        {
+          value: 1,
+          itemStyle: {
             color: {
               type: 'linear',
               x: 0,
@@ -150,7 +148,7 @@ const updateChart = () => {
       ]
     }]
   }
-  
+
   chart.setOption(option)
 }
 
@@ -190,15 +188,17 @@ onMounted(() => {
   height: 220px;
   margin: 0 auto;
 }
+
 .stats-numbers {
   display: flex;
   gap: 20px;
   margin-top: 10px;
   text-align: center;
-  height: 20px; 
+  height: 20px;
 }
 
-.ac-stats, .wa-stats {
+.ac-stats,
+.wa-stats {
   display: flex;
   gap: 5px;
 }
@@ -221,6 +221,4 @@ onMounted(() => {
 .wa-stats .value {
   color: #F56C6C;
 }
-
- 
-</style> 
+</style>
