@@ -108,11 +108,7 @@ const router = createRouter({
           name: 'noticeManage',
           component: () => import('@/views/admin/noticeManage.vue')
         },
-        // {
-        //   path: 'solution',
-        //   name: 'solutionManage',
-        //   component: () => import('@/views/admin/solutionManage.vue')
-        // }
+
       ]
     },
     {
