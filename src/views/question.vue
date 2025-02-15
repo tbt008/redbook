@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import request from '@/util/request'
 import { useRouter } from 'vue-router'
+import questionSolve from '@/components/questionSolve.vue'
 const currentTab = ref(0)
 const clickToLike = ref(false)
 const router = useRouter()
@@ -209,7 +210,7 @@ const goToSubmissionDetail = (row) => {
       </el-skeleton>
     </div>
     <div class="content" v-show="currentTab === 1">
-      <!-- <questionSolve></questionSolve> -->
+      <questionSolve :qid="rep.id"></questionSolve>
     </div>
     <div class="content" v-show="currentTab === 2" style="height: 701px">
       <el-table :data="codeRecords" style="width: 100%" @row-click="goToSubmissionDetail">

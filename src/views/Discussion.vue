@@ -267,7 +267,7 @@ const newArticle = reactive({
   likeNum: 0,
   favourNum: 0,
   articleReads: 0,
-  sourceId: null
+  sourceId: null as number | null
 })
 
 // 表单验证规则
@@ -540,7 +540,38 @@ watch(() => newArticle.articleType, (newType) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
+  // 获取路由参数 得到文章类型和关联题目就触发dialogVisible
+  const route = router.currentRoute.value
+  if (route.query.type) {
+    // 设置文章类型
+    newArticle.articleTypeName = String(articleTypes.find(t => t.value === Number(route.query.type))?.label)
+    newArticle.articleType = Number(route.query.type)
+  }
+
+  if (route.query.qid) {
+    // 设置关联题目
+    const qid = Number(route.query.qid)
+    newArticle.sourceId = qid
+
+    // 获取题目信息并自动打开发布对话框
+    try {
+      const response = await request.post('/question/info', {
+        questionId: qid
+      }) as any
+
+      if (response.code === 200) {
+        problemOptions.value = [{
+          questionId: qid,
+          title: response.data.title
+        }]
+        dialogVisible.value = true
+      }
+    } catch (error) {
+      console.error('获取题目信息失败:', error)
+    }
+  }
+
   getArticles()
 })
 

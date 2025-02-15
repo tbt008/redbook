@@ -612,6 +612,7 @@ const formatDate = (dateArray) => {
       gap: 15px;
 
       .bottom-left {
+        background-color: #0a84ff;
         width: 300px;
         display: flex;
         flex-direction: column;
