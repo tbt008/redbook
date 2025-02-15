@@ -72,7 +72,7 @@
                       <el-icon>
                         <Link />
                       </el-icon>
-                      题目 {{ item.sourceId }}.{{ questionIdToTitle[item.sourceId] }}
+                      题目 {{ item.sourceId }}.{{ item.sourceName }}
                     </el-link>
                   </div>
                   <div class="article-brief" v-html="renderMarkdown(item.content.substring(0, 150))"></div>
@@ -332,21 +332,21 @@ const renderMarkdown = (content: string) => {
 }
 
 // 获取题目信息
-const getQuestionInfo = async (questionId: number) => {
-  try {
-    const response = await request.post('/question/info', {
-      questionId: questionId
-    }) as any
+// const getQuestionInfo = async (questionId: number) => {
+//   try {
+//     const response = await request.post('/question/info', {
+//       questionId: questionId
+//     }) as any
 
-    if (response.code === 200) {
-      return response.data.title
-    }
-    return null
-  } catch (error) {
-    console.error('获取题目信息失败:', error)
-    return null
-  }
-}
+//     if (response.code === 200) {
+//       return response.data.title
+//     }
+//     return null
+//   } catch (error) {
+//     console.error('获取题目信息失败:', error)
+//     return null
+//   }
+// }
 
 
 const getArticles = async () => {
@@ -373,18 +373,7 @@ const getArticles = async () => {
       // 获取文章列表
       const articleList = response.data.list
 
-      // 对于题解文章，获取题目信息
-      for (let article of articleList) {
-        if (article.articleType === 1 && article.sourceId) {
-          const questionInfo = await getQuestionInfo(article.sourceId)
-          if (questionInfo) {
-            article.questionTitle = questionInfo.title
-          }
-          //设置一个哈希将题目id跟题目名称对应
-          //记得需要是value，因为是一个ref，需要通过value来访问
-          questionIdToTitle.value[article.sourceId] = questionInfo
-        }
-      }
+
 
       articles.value = articleList
       total.value = response.data.total

@@ -29,4 +29,5 @@ export interface Article {
   comments: Comment[]
   isLiked: boolean
   isFavorited: boolean
+  sourceName: string
 }
