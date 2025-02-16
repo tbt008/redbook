@@ -50,9 +50,9 @@ onMounted(() => {
 
       <div class="left-bottommore">
         <el-skeleton :loading="loading" animated>
-          <template #template>
+          <!-- <template #template>
             <el-skeleton :rows="7"></el-skeleton>
-          </template>
+          </template> -->
 
           <template #default>
             <div style="margin-top: 10px; display: flex; position: relative; gap: 20px; size: 24px; color: aqua">
@@ -130,6 +130,7 @@ onMounted(() => {
         </template> -->
       <!-- </el-skeleton> -->
     </div>
+
   </div>
 </template>
 
@@ -161,7 +162,7 @@ onMounted(() => {
     }
   }
 
-  border-bottom: 2px solid gainsboro;
+  // border-bottom: 2px solid gainsboro;
 }
 
 .item-2-middle {
