@@ -11,16 +11,14 @@
           <el-option v-for="role in roleList" :key="role.roleId" :label="role.roleName" :value="role.roleId" />
         </el-select>
 
-        <!-- <el-input
-        v-model="searchKeyword"
-        placeholder="请输入用户姓名或用户账号"
-        class="search-input"
-        clearable
-      >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-</el-input> -->
+        <el-input v-model="searchKeyword" placeholder="请输入用户名或学号" class="search-input" @keyup.enter="getUserList"
+          clearable>
+          <template #prefix>
+            <el-icon>
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
 
         <el-button type="primary" @click="handleAddUser">
           <el-icon>
@@ -235,11 +233,12 @@ const getUserList = async () => {
     } else {
       roleId = filterType.value
     }
-
+    console.log(searchKeyword.value)
     const response = (await request.post('/user/admin/list', {
       pageStart: currentPage.value,
       pageSize: pageSize.value,
-      roleId: roleId
+      roleId: roleId,
+      key: searchKeyword.value
       // sortField: sortField.value,
       // sortOrder: sortOrder.value,
       // key:"string"
@@ -494,7 +493,8 @@ onMounted(() => {
 }
 
 .search-input {
-  width: 300px;
+  margin-bottom: 16px;
+  width: 200px;
 }
 
 .user-table {
