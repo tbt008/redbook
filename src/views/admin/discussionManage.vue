@@ -41,6 +41,9 @@
         <el-table-column prop="favourNum" label="收藏数" align="center"></el-table-column>
         <el-table-column label="操作" width="220" align="center">
           <template #default="{ row }">
+            <el-button type="primary" link @click="handleTop(row)">
+              {{ row.isTop ? '取消置顶' : '置顶' }}
+            </el-button>
             <el-button type="primary" link @click="handleView(row)">查看</el-button>
             <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
@@ -82,6 +85,30 @@ const articleTypes = [
   { value: 4, label: '竞赛' },
   { value: 5, label: '算法模板' },
 ]
+// 置顶文章
+const handleTop = async (row: any) => {
+  try {
+    const actionText = row.isTop ? '取消置顶' : '置顶'
+    await ElMessageBox.confirm(`确定要${actionText}该文章吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const response = await request.put(`/article/top/${row.id}`) as any
+    if (response.code === 200) {
+      ElMessage.success(`${actionText}成功`)
+      getArticleList()
+    } else {
+      ElMessage.error(response.msg || `${actionText}失败`)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error(`${row.isTop ? '取消置顶' : '置顶'}文章失败:`, error)
+      ElMessage.error(`${row.isTop ? '取消置顶' : '置顶'}文章失败`)
+    }
+  }
+}
 
 // 获取文章类型标签样式
 const getArticleTypeTag = (type: number) => {

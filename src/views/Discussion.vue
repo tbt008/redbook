@@ -60,13 +60,17 @@
 
             <!-- 文章列表 -->
             <template v-else>
-              <el-card v-for="item in articles" :key="item.id" class="discussion-item">
+              <el-card v-for="item in articles" :key="item.id" class="discussion-item"
+                :class="{ 'is-top': item.isTop }">
                 <div class="article-main" @click="goToDetail(item.id)">
                   <div class="article-meta">
                     <el-tag :type="getArticleTypeTag(item.articleType)" class="article-type-tag" effect="light">
                       {{ getArticleTypeLabel(item.articleType) }}
                     </el-tag>
-                    <h3 class="article-title">{{ item.title }}</h3>
+                    <h3 class="article-title">
+                      <el-tag v-if="item.isTop" type="info" size="small" class="top-tag" effect="plain">置顶</el-tag>
+                      {{ item.title }}
+                    </h3>
                     <el-link v-if="item.articleType === 1 && item.sourceId" :href="`/question?id=${item.sourceId}`"
                       type="primary" class="problem-link">
                       <el-icon>
@@ -103,7 +107,7 @@
                     </span>
                   </div>
                   <div class="article-info">
-                    <span class="author">作者: {{ item.userId }} </span>
+                    <span class="author">作者: {{ item.nickName }} </span>
                     <span class="time"> 发布于 {{ formatDate(item.createTime) }}</span>
                   </div>
                 </div>
@@ -733,6 +737,10 @@ watch(filterType, () => {
   transform: rotate(90deg);
 }
 
+.time {
+  margin-left: 10px;
+}
+
 /* 文章列表 */
 .discussion-list {
   margin-top: 2rem;
@@ -1162,5 +1170,27 @@ watch(filterType, () => {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.discussion-item.is-top {
+  background: #f8f9fa;
+  /* 背景颜色 */
+  border-left: 4px solid #909399;
+  /* 左侧边框颜色 */
+}
+
+.top-tag {
+  margin-right: 8px;
+  /* 右侧间距 */
+  font-size: 12px;
+  /* 字体大小 */
+  padding: 0 6px;
+  /* 内边距 */
+  height: 20px;
+  /* 固定高度 */
+  line-height: 18px;
+  /* 行高 */
+  border-radius: 4px;
+  /* 圆角边框 */
 }
 </style>

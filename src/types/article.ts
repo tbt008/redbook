@@ -30,4 +30,5 @@ export interface Article {
   isLiked: boolean
   isFavorited: boolean
   sourceName: string
+  isTop: boolean
 }

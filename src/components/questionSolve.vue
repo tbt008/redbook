@@ -101,6 +101,7 @@ const showSolutionDetail = (solutionId) => {
 }
 
 const goToPublish = () => {
+    //当前页面打开
     router.push({
         path: '/discuss',
         query: {
@@ -108,6 +109,9 @@ const goToPublish = () => {
             qid: props.qid
         }
     })
+    //新页面
+    //const url = `/discuss?type=1&qid=${props.qid}`
+    //window.open(url, '_blank') // '_blank' 参数会在新标签页中打开链接
 }
 
 onMounted(() => {
