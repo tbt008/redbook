@@ -241,7 +241,8 @@ const handleModifyPassword = async (formEl) => {
 const handleCommand = (command) => {
   showMenu.value = false
   if (command === 'space') {
-    router.push('/user')
+    const id = localStorage.getItem('uid');
+    router.push(`/user/${id}`)
   } else if (command === 'logout') {
     request.post('/user/logout').then((res) => {
       if (res.code === 200) {

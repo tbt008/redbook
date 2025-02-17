@@ -1,9 +1,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import request from '@/util/request'
 import userSolveProcess from '@/components/userSolveProcess.vue'
 import medalShow from '@/components/medalShow.vue'
-
+const route = useRoute()
 const loading = ref(true)
 const userStats = ref({
   articles: 0,
@@ -15,7 +16,11 @@ const userStats = ref({
 // 获取用户文章统计数据
 const getUserStats = async () => {
   try {
-    const uid = localStorage.getItem('uid')
+
+
+    const uid = route.params.id
+
+
     const response = await request.get(`/article/user/list/${uid}`)
 
     if (response.code === 200) {

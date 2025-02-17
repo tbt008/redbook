@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { RouterView, useRouter } from 'vue-router'
+import { RouterView, useRouter, useRoute } from 'vue-router'
 import request from '@/util/request'
 import personMiddle from './personMiddle.vue'
 import userProfileSubmitRecord from './userProfileSubmitRecord.vue'
@@ -10,8 +10,10 @@ const router = useRouter()
 const loading = ref(true)
 const nowTheme = ref(false)
 const editInfo = ref(false)
-
+const uid = ref(null)
+const userId = localStorage.getItem('uid')
 import { Plus } from '@element-plus/icons-vue'
+const route = useRoute()
 const onSubmit = () => {
   request
     .post('/user/update', {
@@ -93,6 +95,12 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const getCodeRecord = () => {
+  // 判断是否为当前登录用户
+  const loginUserId = localStorage.getItem('uid')
+  if (loginUserId !== uid.value) {
+    return
+  }
+
   request
     .post('/record/get/all', {
       pageStart: currentPage.value,
@@ -108,7 +116,7 @@ const getCodeRecord = () => {
     })
 }
 const getUserInfo = () => {
-  request.get('/user/get/user').then((res) => {
+  request.get(`/user/get/${uid.value}`).then((res) => {
     if (res.code == 200) {
       userInfo.value = res.data
       form.nickName = res.data.nickName
@@ -133,6 +141,12 @@ const getUserInfo = () => {
 const starArticles = ref([])
 
 const getStarArticles = () => {
+  // 判断是否为当前登录用户
+  const loginUserId = localStorage.getItem('uid')
+  if (loginUserId !== uid.value) {
+    return
+  }
+
   request.get('/article/user/stars').then((res) => {
     if (res.code === 200) {
       starArticles.value = res.data
@@ -141,8 +155,25 @@ const getStarArticles = () => {
     }
   })
 }
-
+//添加路由参数变化的监听
+watch(
+  () => route.params.id,
+  (newId) => {
+    if (newId) {
+      uid.value = newId
+      // 重新获取数据
+      getUserInfo()
+      getCodeRecord()
+      getStarArticles()
+    }
+  }
+)
 onMounted(async () => {
+
+  if (route.params.id) {
+    uid.value = route.params.id
+  }
+  // console.log(uid.value)
   getUserInfo()
   getCodeRecord()
   getStarArticles()
@@ -344,8 +375,8 @@ const formatDate = (dateArray) => {
           <div style="font-weight: bold; margin-left: 15px ; margin-bottom:-15px">收藏的文章</div>
           <div class="languageset">
             <div style="padding: 20px">
-
-              <el-empty v-if="starArticles.length === 0" description="暂无收藏文章" />
+              <el-empty v-if="userId !== uid" description="无权查看" />
+              <el-empty v-else-if="starArticles.length === 0" description="暂无收藏文章" />
               <div v-else class="article-list-container">
                 <div v-for="article in starArticles" :key="article.id" class="article-item"
                   @click="router.push(`/discuss/${article.id}`)">
@@ -410,44 +441,47 @@ const formatDate = (dateArray) => {
             <userProfileSubmitRecord></userProfileSubmitRecord>
           </div>
           <div class="t4">
-            <el-table :data="codeRecord" style="width: 100%" @row-click="goToSubmissionDetail" class="el-codeRecord">
-              <el-table-column label="序号" prop="submitId"> </el-table-column>
-              <el-table-column label="运行状态" prop="runResult">
-                <template #default="{ row }">
-                  <el-tag v-if="row.runResult == '答案正确'" type="success">答案正确</el-tag>
-                  <el-tag v-else-if="row.runResult == '部分正确'" type="primary">部分正确</el-tag>
-                  <el-tag v-else-if="row.runResult == '答案错误'" type="danger">答案错误</el-tag>
-                  <el-tag v-else-if="row.runResult == '等待判题'" type="danger">等待判题</el-tag>
-                  <el-tag v-else-if="row.runResult == '编译错误'" type="warning">编译错误</el-tag>
-                  <el-tag v-else type="danger">{{ row.runResult }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="题目" prop="questionName">
-                <!-- <template #default="{ row }">
+            <el-empty v-if="userid !== uid" description="无权查看" />
+            <template v-else>
+              <el-table :data="codeRecord" style="width: 100%" @row-click="goToSubmissionDetail" class="el-codeRecord">
+                <el-table-column label="序号" prop="submitId"> </el-table-column>
+                <el-table-column label="运行状态" prop="runResult">
+                  <template #default="{ row }">
+                    <el-tag v-if="row.runResult == '答案正确'" type="success">答案正确</el-tag>
+                    <el-tag v-else-if="row.runResult == '部分正确'" type="primary">部分正确</el-tag>
+                    <el-tag v-else-if="row.runResult == '答案错误'" type="danger">答案错误</el-tag>
+                    <el-tag v-else-if="row.runResult == '等待判题'" type="danger">等待判题</el-tag>
+                    <el-tag v-else-if="row.runResult == '编译错误'" type="warning">编译错误</el-tag>
+                    <el-tag v-else type="danger">{{ row.runResult }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="题目" prop="questionName">
+                  <!-- <template #default="{ row }">
                   <a :href="`/question?id=${row.questionId}`" class="problem-title">
                     {{ row.questionName }}
                   </a>
                 </template> -->
-              </el-table-column>
-              <el-table-column label="语言" prop="language">
-                <template #default="{ row }">
-                  <div v-if="row.language == 1">C</div>
-                  <div v-if="row.language == 2">C++</div>
-                  <div v-if="row.language == 3">Java</div>
-                  <div v-if="row.language == 4">Python</div>
+                </el-table-column>
+                <el-table-column label="语言" prop="language">
+                  <template #default="{ row }">
+                    <div v-if="row.language == 1">C</div>
+                    <div v-if="row.language == 2">C++</div>
+                    <div v-if="row.language == 3">Java</div>
+                    <div v-if="row.language == 4">Python</div>
+                  </template>
+                </el-table-column>
+                <el-table-column label="提交时间" prop="createTime"> </el-table-column>
+                <template #empty>
+                  <el-empty description="没有数据" />
                 </template>
-              </el-table-column>
-              <el-table-column label="提交时间" prop="createTime"> </el-table-column>
-              <template #empty>
-                <el-empty description="没有数据" />
-              </template>
-            </el-table>
-            <!-- elementplus el-pagination: 分页器 -->
-            <div class="pagination-container">
-              <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
-                :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
-                @current-change="handleCurrentChange" />
-            </div>
+              </el-table>
+              <!-- elementplus el-pagination: 分页器 -->
+              <div class="pagination-container">
+                <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
+                  :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
+                  @current-change="handleCurrentChange" />
+              </div>
+            </template>
           </div>
         </div>
       </div>

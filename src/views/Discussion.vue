@@ -212,7 +212,7 @@
 </template>
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
 import { View, Star, Pointer, Plus, Close, ChatDotRound, Clock, Sunrise, Loading, Link } from '@element-plus/icons-vue'
@@ -546,7 +546,9 @@ watch(() => newArticle.articleType, (newType) => {
 
 onMounted(async () => {
   // 获取路由参数 得到文章类型和关联题目就触发dialogVisible
-  const route = router.currentRoute.value
+  // const route = router.currentRoute.value
+  // currentRoute 是一个响应式的路由对象，包含了当前路由的完整信息
+  const route = useRoute() // 等价于 router.currentRoute.value (vue3组合式写法)
   if (route.query.type) {
     // 设置文章类型
     newArticle.articleTypeName = String(articleTypes.find(t => t.value === Number(route.query.type))?.label)
