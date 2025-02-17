@@ -341,9 +341,10 @@ const formatDate = (dateArray) => {
           <!-- <div class="leidaChart"> -->
           <!-- <radarChart></radarChart> -->
           <!-- </div> -->
+          <div style="font-weight: bold; margin-left: 15px ; margin-bottom:-15px">收藏的文章</div>
           <div class="languageset">
             <div style="padding: 20px">
-              <div style="font-weight: bold; margin-bottom: 15px">收藏的文章</div>
+
               <el-empty v-if="starArticles.length === 0" description="暂无收藏文章" />
               <div v-else class="article-list-container">
                 <div v-for="article in starArticles" :key="article.id" class="article-item"
@@ -409,7 +410,7 @@ const formatDate = (dateArray) => {
             <userProfileSubmitRecord></userProfileSubmitRecord>
           </div>
           <div class="t4">
-            <el-table :data="codeRecord" style="width: 100%" @row-click="goToSubmissionDetail">
+            <el-table :data="codeRecord" style="width: 100%" @row-click="goToSubmissionDetail" class="el-codeRecord">
               <el-table-column label="序号" prop="submitId"> </el-table-column>
               <el-table-column label="运行状态" prop="runResult">
                 <template #default="{ row }">
@@ -520,6 +521,8 @@ const formatDate = (dateArray) => {
   flex-direction: column;
   // background-color: ;
   background-color: v-bind(bgStyle);
+  // background-color: #0a84ff;
+  // height: 1800px;
 
   // background-color: ;
   // background-image: linear-gradient(to right, #C9D6FF, #E2E2E2);
@@ -557,7 +560,7 @@ const formatDate = (dateArray) => {
     position: relative;
 
     top: 50px;
-    height: 1900px;
+    height: 1400px;
     width: 1200px;
     display: flex;
     flex-direction: column;
@@ -784,7 +787,7 @@ const formatDate = (dateArray) => {
           width: 800px;
           // top: 20px;
           justify-content: center;
-          // min-height: 225px;
+          // max-height: 125px;
           position: relative;
           padding-top: 20px;
           padding-bottom: 20px;
@@ -793,6 +796,12 @@ const formatDate = (dateArray) => {
           // height: 225px;
           border-radius: 15px;
           background-color: white;
+
+          .el-codeRecord {
+            width: 100%;
+            max-height: 668px;
+            overflow-y: auto;
+          }
         }
       }
     }
