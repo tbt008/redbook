@@ -436,12 +436,13 @@ const formatDate = (dateArray) => {
           <div class="t2">
             <personMiddle></personMiddle>
           </div>
+          <div class="t3" v-if="userId == uid">
 
-          <div class="t3">
             <userProfileSubmitRecord></userProfileSubmitRecord>
           </div>
+
           <div class="t4">
-            <el-empty v-if="userid !== uid" description="无权查看" />
+            <el-empty v-if="userId !== uid" description="无权查看" />
             <template v-else>
               <el-table :data="codeRecord" style="width: 100%" @row-click="goToSubmissionDetail" class="el-codeRecord">
                 <el-table-column label="序号" prop="submitId"> </el-table-column>
