@@ -696,32 +696,36 @@ const formatDate = (dateArray) => {
           gap: 15px;
           flex-direction: column;
 
+          max-height: 800px;
+          overflow-y: auto;
+
           //最大高度和滚动
-          .article-list-container {
-            max-height: 800px; // 设置最大高度
-            overflow-y: auto; // 添加垂直滚动
-            padding-right: 5px; // 为滚动条预留空间
-            // background-color: #0a84ff;
+          // .article-list-container {
+          //max-height: 800px; // 设置最大高度
+          //overflow-y: auto; // 添加垂直滚动
+          //padding-right: 5px; // 为滚动条预留空间
+          // background-color: #0a84ff;
 
-            // 滚动条样式
-            &::-webkit-scrollbar {
-              width: 6px;
-            }
-
-            &::-webkit-scrollbar-track {
-              background: #f1f1f1;
-              border-radius: 3px;
-            }
-
-            &::-webkit-scrollbar-thumb {
-              background: #888;
-              border-radius: 3px;
-            }
-
-            &::-webkit-scrollbar-thumb:hover {
-              background: #555;
-            }
+          // 滚动条样式
+          &::-webkit-scrollbar {
+            width: 6px;
           }
+
+          &::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+          }
+
+          &::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+          }
+
+          &::-webkit-scrollbar-thumb:hover {
+            background: #555;
+          }
+
+          // }
         }
 
         .leidaChart {
