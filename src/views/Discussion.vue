@@ -107,7 +107,7 @@
                     </span>
                   </div>
                   <div class="article-info">
-                    <span class="author">作者: {{ item.nickName }} </span>
+                    <span class="author" @click="goUser(item.userId)">作者: {{ item.nickName }} </span>
                     <span class="time"> 发布于 {{ formatDate(item.createTime) }}</span>
                   </div>
                 </div>
@@ -288,7 +288,9 @@ const rules = {
     { min: 3, message: '内容不能少于 3 个字符', trigger: 'blur' }
   ]
 }
-
+const goUser = (userId: string) => {
+  router.push(`/user/${userId}`)
+}
 // 工具函数
 const getArticleTypeTag = (type: number) => {
   const types: Record<number, string> = {
@@ -737,6 +739,11 @@ watch(filterType, () => {
 
 .publish-button:hover .publish-icon {
   transform: rotate(90deg);
+}
+
+.author {
+  /* 鼠标悬停时显示手型 */
+  cursor: pointer;
 }
 
 .time {
