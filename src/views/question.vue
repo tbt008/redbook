@@ -1,14 +1,16 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import request from '@/util/request'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import questionSolve from '@/components/questionSolve.vue'
 const currentTab = ref(0)
 const clickToLike = ref(false)
 const router = useRouter()
+const route = useRoute()
 const clickToFavour = ref(false)
 const article = ref({})
 const codeRecords = ref([])
+const cid = ref(null)
 const props = defineProps({
   rep: {
     type: Object,
@@ -18,6 +20,7 @@ const props = defineProps({
     type: Number
   }
 })
+
 const loading = ref(true)
 const clickTitleTab = (index) => {
   currentTab.value = index
@@ -78,7 +81,19 @@ watch(
   () => props.rep,
   () => initFun()
 )
-onMounted(() => { })
+watch(
+  () => route.query.contest,
+  (newVal) => {
+    cid.value = newVal || null;
+  },
+  { immediate: true }
+);
+onMounted(() => {
+
+  if (route.query.contest) {
+    cid.value = route.query.contest
+  }
+})
 
 const goToSubmissionDetail = (row) => {
   if (props.contestId != null) {
@@ -98,8 +113,9 @@ const goToSubmissionDetail = (row) => {
         题目描述
       </div>
       <!-- //题解-->
-      <span style="position: relative; left: 8px; color: #e0e0e0"> | </span>
-      <div class="title" @click="clickTitleTab(1)" :style="currentTab === 1 ? 'color: black' : 'color:gray'">
+      <span style="position: relative; left: 8px; color: #e0e0e0" v-if="cid == null"> | </span>
+      <div class="title" @click="clickTitleTab(1)" :style="currentTab === 1 ? 'color: black' : 'color:gray'"
+        v-if="cid == null">
         题解
       </div>
       <!-- //提交记录-->
