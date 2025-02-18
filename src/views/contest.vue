@@ -167,6 +167,8 @@
       </div>
     </div>
   </div>
+  <!-- AI助手按钮 -->
+  <GoAi />
 </template>
 
 <style>
@@ -416,7 +418,7 @@
 import { ref, onMounted, watch } from 'vue'
 import request from '@/util/request.ts'
 import { useRouter } from 'vue-router'
-
+import GoAi from '@/components/goAi.vue'
 const router = useRouter()
 const constestList = ref([])
 const oldConstestList = ref([])
