@@ -308,7 +308,7 @@ const formatDate = (dateArray) => {
                   </svg>
                   <span>{{ '莆田学院🏟️' }}</span>
                 </div>
-                <el-button type="primary" @click="editInfo = !editInfo" plain>编辑信息</el-button>
+                <el-button type="primary" @click="editInfo = !editInfo" plain v-if="userId === uid">编辑信息</el-button>
               </template>
             </el-skeleton>
           </div>
