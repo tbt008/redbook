@@ -135,7 +135,7 @@ const init = () => {
   }
   //处理完的数据
   allDateData.value = dateData
-  console.log(dateData)
+  // console.log(dateData)
 }
 
 const getColor = (number) => {

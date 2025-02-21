@@ -1,7 +1,11 @@
 <script setup>
 // 计算公式还没有搞明白
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import request from '@/util/request'
+import { RouterView, useRouter, useRoute } from 'vue-router'
+const route = useRoute()
+const uid = ref(null)
+const userId = localStorage.getItem('uid')
 const loading = ref(false)
 const acInfo = ref({
   submitNumberTotal: 0,
@@ -20,7 +24,27 @@ const acInfo = ref({
   passRate: 0
 })
 const format = (percentage) => (percentage === 100 ? '' : ``)
+const noPermission = ref(false)
+watch(
+  () => route.params.id,
+  (newId) => {
+    if (newId) {
+      uid.value = newId
+      // 重新获取数据
+      request.get('/user/ac/info').then((res) => {
+        if (res.code == 200) {
+          acInfo.value = res.data
+        } else {
+          ElMessage.error('用户做题信息异常！')
+        }
+      })
+    }
+  }
+)
 onMounted(async () => {
+  if (route.params.id) {
+    uid.value = route.params.id
+  }
   request.get('/user/ac/info').then((res) => {
     if (res.code == 200) {
       acInfo.value = res.data
@@ -32,13 +56,13 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="item">
+  <div v-if="userId === uid" class="item">
     <!-- 左边 -->
     <div class="item-processor">
       <el-skeleton :loading="loading" animated>
-        <template #template>
+        <!-- <template #template>
           <el-skeleton-item variant="image" style="width: 120px; height: 120px; border-radius: 1000px" />
-        </template>
+        </template> -->
         <template #default>
           <div style="
               width: 100%;
@@ -125,6 +149,11 @@ onMounted(async () => {
       </el-skeleton>
     </div>
   </div>
+  <el-empty class="item2" v-else>
+    <template #description>
+      <div class="empty-text">无权查看</div>
+    </template>
+  </el-empty>
 </template>
 
 <style scoped>
@@ -150,6 +179,17 @@ onMounted(async () => {
 .item {
   display: flex;
   width: 100%;
+}
+
+.item2 {
+  width: 100%;
+  height: 100%;
+
+}
+
+.empty-text {
+  margin-top: -20px;
+  color: rgb(171, 175, 168);
 }
 
 .percentage-value {

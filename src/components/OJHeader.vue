@@ -60,7 +60,7 @@ import request from '@/util/request'
 import { onMounted, ref, watch, onUnmounted } from 'vue'
 // import store from '@/views/var.js'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage, ElNotification, ElLoading } from 'element-plus'
 import { Bell } from '@element-plus/icons-vue'
 const router = useRouter()
 const links = ref([
@@ -177,21 +177,32 @@ router.afterEach(() => {
     }
   })
 })
+// loading服务
+const showLoading = () => {
+  const loading = ElLoading.service({
+    lock: true,
+    text: '页面加载中...',
+    background: 'rgba(255, 255, 255, 0.7)'
+  })
+  return loading
+}
 const handleClick = (index) => {
+  const loading = showLoading()
   skip(index)
-  router.push(links.value[index])
-
-  // this.$router.push(links.value[index])
+  router.push(links.value[index].path).finally(() => {
+    loading.close()
+  })
 }
 const handleUser = () => {
+  const loading = showLoading()
   if (userImg.value != null) {
-    // 跳转个人中心
-    router.push('/user')
-    // this.$router.push('/user')
+    router.push('/user').finally(() => {
+      loading.close()
+    })
   } else {
-    // 跳转登录页
-    router.push('/login')
-    // this.$router.push('/login')
+    router.push('/login').finally(() => {
+      loading.close()
+    })
   }
 }
 //监听loginUpdate
@@ -240,23 +251,34 @@ const handleModifyPassword = async (formEl) => {
 }
 const handleCommand = (command) => {
   showMenu.value = false
+  const loading = showLoading()
+
   if (command === 'space') {
-    router.push('/user')
+    const id = localStorage.getItem('uid')
+    router.push(`/user/${id}`).finally(() => {
+      loading.close()
+    })
   } else if (command === 'logout') {
     request.post('/user/logout').then((res) => {
       if (res.code === 200) {
-        // console.log(res)
         localStorage.removeItem('authToken')
         localStorage.removeItem('avatar')
         userImg.value = null
         ElMessage.success('退出成功')
-        router.push('/login')
+        router.push('/login').finally(() => {
+          loading.close()
+        })
       }
+    }).catch(() => {
+      loading.close()
     })
   } else if (command === 'password') {
     dialogVisible.value = true
+    loading.close()
   } else if (command === 'admin') {
-    router.push('/admin/problem')
+    router.push('/admin/problem').finally(() => {
+      loading.close()
+    })
   }
 }
 
@@ -297,7 +319,10 @@ const getUnreadCount = async () => {
 
 // 处理消息点击
 const handleMessage = () => {
-  router.push('/message')
+  const loading = showLoading()
+  router.push('/message').finally(() => {
+    loading.close()
+  })
 }
 
 // 开始轮询

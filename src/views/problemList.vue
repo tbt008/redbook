@@ -42,7 +42,7 @@
           <!-- elementplus el-tag: 已选标签展示 -->
           <el-tag v-for="tagId in selectedTagIds" :key="tagId" closable type="primary" class="selected-tag"
             @close="handleTagChange(false, tagId)">
-            {{ allTags.find(tag => tag.id === tagId)?.name }}
+            {{allTags.find(tag => tag.id === tagId)?.name}}
           </el-tag>
         </div>
 
@@ -275,7 +275,7 @@
             <!-- elementplus el-check-tag: 可选择的标签 -->
             <el-check-tag v-for="tagId in selectedTagIds" :key="tagId" :checked="true" class="tag-item"
               @change="() => handleTagChange(false, tagId)">
-              {{ allTags.find((tag) => tag.id === tagId)?.name }}
+              {{allTags.find((tag) => tag.id === tagId)?.name}}
             </el-check-tag>
           </template>
           <div v-else class="no-tags-selected">暂未选择标签</div>
@@ -304,6 +304,7 @@
       </span>
     </template>
   </el-dialog>
+  <GoAi />
 </template>
 
 <script lang="ts" setup>
@@ -318,6 +319,7 @@ import request from '@/util/request'
 import { type Problem } from '@/types/problem'
 import { type Tag, type TagGroup } from '@/types/tag'
 import ProblemStatsPie from '@/components/ProblemStatsPie.vue'
+import GoAi from '@/components/goAi.vue'
 import dayjs from 'dayjs' // 确保项目中安装了 dayjs
 import { useRouter } from 'vue-router'
 const router = useRouter()

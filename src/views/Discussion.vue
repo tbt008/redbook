@@ -107,7 +107,7 @@
                     </span>
                   </div>
                   <div class="article-info">
-                    <span class="author">作者: {{ item.nickName }} </span>
+                    <span class="author" @click="goUser(item.userId)">作者: {{ item.nickName }} </span>
                     <span class="time"> 发布于 {{ formatDate(item.createTime) }}</span>
                   </div>
                 </div>
@@ -212,7 +212,7 @@
 </template>
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
 import { View, Star, Pointer, Plus, Close, ChatDotRound, Clock, Sunrise, Loading, Link } from '@element-plus/icons-vue'
@@ -288,7 +288,9 @@ const rules = {
     { min: 3, message: '内容不能少于 3 个字符', trigger: 'blur' }
   ]
 }
-
+const goUser = (userId: string) => {
+  router.push(`/user/${userId}`)
+}
 // 工具函数
 const getArticleTypeTag = (type: number) => {
   const types: Record<number, string> = {
@@ -546,7 +548,9 @@ watch(() => newArticle.articleType, (newType) => {
 
 onMounted(async () => {
   // 获取路由参数 得到文章类型和关联题目就触发dialogVisible
-  const route = router.currentRoute.value
+  // const route = router.currentRoute.value
+  // currentRoute 是一个响应式的路由对象，包含了当前路由的完整信息
+  const route = useRoute() // 等价于 router.currentRoute.value (vue3组合式写法)
   if (route.query.type) {
     // 设置文章类型
     newArticle.articleTypeName = String(articleTypes.find(t => t.value === Number(route.query.type))?.label)
@@ -735,6 +739,11 @@ watch(filterType, () => {
 
 .publish-button:hover .publish-icon {
   transform: rotate(90deg);
+}
+
+.author {
+  /* 鼠标悬停时显示手型 */
+  cursor: pointer;
 }
 
 .time {
