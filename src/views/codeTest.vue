@@ -33,10 +33,10 @@ const input = ref()
 const emit = defineEmits(['showACImgfun'])
 const submitStatus = ref('运行中')
 const djTime = ref()
+const currentClickCase = ref(-1)
 const choseTestcase = (type) => {
   input.value = props.rep.examples[type].input
-  document.getElementsByClassName('atag')[beforeValue].style.backgroundColor = '#ffffff'
-  document.getElementsByClassName('atag')[currentClick.value].style.background = '#F2F3F4'
+  currentClickCase.value = (type)
 }
 const submitCode = async () => {
   submitStatus.value = '运行中'
@@ -205,9 +205,10 @@ const whileGetResult = async (recordId) => {
   }, 1000)
 }
 
-const questionInfo = ref({})
+
 onMounted(() => {
-  questionInfo.value = props.rep
+
+
 })
 </script>
 
@@ -281,7 +282,8 @@ onMounted(() => {
     </div>
     <div class="item-content" v-show="currentTab === 0">
       <div style="padding: 20px 30px; display: flex">
-        <div @click="choseTestcase(index)" class="atag" v-for="(item, index) in props.rep.examples" :key="index"
+        <div @click="choseTestcase(index)" class="atag" :class="{ isChick: currentClickCase == index }"
+          v-for="(item, index) in props.rep.examples" :key="index"
           style="font-size: 13px; font-weight: bold; border-radius: 10px" closable>
           {{ 'Case ' + index }}
         </div>
@@ -292,6 +294,7 @@ onMounted(() => {
       </div>
       <div style="padding: 5px 30px">
         <el-input v-model="input" style="min-width: 240px" autosize type="textarea" placeholder="请输入测试样例" />
+
       </div>
     </div>
     <div class="item-content" v-show="currentTab === 1">
@@ -300,20 +303,30 @@ onMounted(() => {
           <h2 style="color: #8a8a98; font-weight: 400; padding: 15px 25px">您还未提交</h2>
         </div>
         <div v-else-if="result.error == 0">
+          <div style="background-color: rgb(240, 249, 235); padding: 20px;margin: 15px;border-radius: 15px;">
+            <div style="color:rgb(111, 196, 68);font-size: 20px;">运行成功</div>
+            <div style="color: rgb(179, 181, 177);font-size: 14px;">运行时间: <span style="color:rgb(111, 196, 68);">{{
+              result.cpu_time }}ms</span> 运行内存: <span style="color:rgb(111, 196, 68);">{{ result.memory
+                  / 1024 }}kb</span>
+            </div>
+          </div>
           <div style="margin-top: 30px; padding: 0px 30px">
             <div style="display: flex; font-size: 15px; color: #8a8a98; font-weight: bold">
               output=
             </div>
           </div>
           <div style="padding: 5px 30px">
+
             <el-input v-model="result.output" style="min-width: 240px" autosize type="textarea" placeholder="请输入测试样例" />
           </div>
         </div>
         <div v-else>
-          <h2 style="color: red; font-weight: 400; padding: 15px 25px">编译错误</h2>
-          <div style="padding: 0px 25px">
-            <a-alert title="error" type="error" style="border-radius: 15px; width: 860px">you answer issue
-              mistake</a-alert>
+          <div style="background-color: rgb(250, 219, 216); padding: 20px;margin: 15px;border-radius: 15px;">
+            <div style="color:rgb(231, 76, 60);font-size: 20px;">运行错误</div>
+            <!-- <div style="color: rgb(255,255,255);font-size: 14px;">运行时间: <span style="color:rgb(111, 196, 68);">{{
+              result.cpu_time }}ms</span> 运行内存: <span style="color:rgb(111, 196, 68);">{{ result.memory
+                  / 1024 }}kb</span>
+            </div> -->
           </div>
         </div>
       </div>
@@ -375,6 +388,10 @@ onMounted(() => {
     padding: 15px 10px;
     background-color: white;
     cursor: pointer;
+  }
+
+  .isChick {
+    background-color: #f2f3f4;
   }
 
   .atag:hover {
