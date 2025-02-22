@@ -1,6 +1,6 @@
 <script setup>
 import request from '@/util/request'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import testCase from '@/components/testCase.vue'
 const currentTab = ref(0)
@@ -33,7 +33,7 @@ const input = ref()
 const emit = defineEmits(['showACImgfun'])
 const submitStatus = ref('运行中')
 const djTime = ref()
-const currentClickCase = ref(-1)
+const currentClickCase = ref(0)
 const choseTestcase = (type) => {
   input.value = props.rep.examples[type].input
   currentClickCase.value = (type)
@@ -204,7 +204,16 @@ const whileGetResult = async (recordId) => {
     }
   }, 1000)
 }
+watch(
+  () => props.rep,
+  () => {
+    if (props.rep.examples != null) {
+      input.value = props.rep.examples[0].input
+    }
 
+  }
+
+)
 
 onMounted(() => {
 
@@ -317,7 +326,7 @@ onMounted(() => {
           </div>
           <div style="padding: 5px 30px">
 
-            <el-input v-model="result.output" style="min-width: 240px" autosize type="textarea" placeholder="请输入测试样例" />
+            <el-input v-model="result.output" style="min-width: 240px" autosize type="textarea" placeholder="无输出结果" />
           </div>
         </div>
         <div v-else>
@@ -385,6 +394,7 @@ onMounted(() => {
 
   .atag {
     display: flex;
+    user-select: none;
     padding: 15px 10px;
     background-color: white;
     cursor: pointer;
