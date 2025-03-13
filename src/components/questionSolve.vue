@@ -113,7 +113,23 @@ const goToPublish = () => {
     const url = `/discuss?type=1&qid=${props.qid}`
     window.open(url, '_blank') // '_blank' 参数会在新标签页中打开链接
 }
+const likeSolution = async (solutionId) => {
+    console.log(solutionId)
+    //TODO
+    // try {
+    //     const response = await request.put(`/article/like/${solutionId}`, {
+    //     })
 
+    //     if (response.code === 200) {
+
+    //     } else {
+    //         ElMessage.error(response.msg || '操作失败')
+    //     }
+    // } catch (error) {
+    //     console.error('点赞操作失败:', error)
+    //     ElMessage.error('点赞操作失败')
+    // }
+}
 onMounted(() => {
     // console.log(props.qid)
     // getSolutions()
