@@ -79,7 +79,7 @@
       <el-dialog v-model="dialogEditVisible" title="编辑用户" width="500px" @close="resetForm">
         <el-form ref="formRef" :model="userFormEdit" :rules="rules" label-width="80px">
           <el-form-item label="用户姓名" prop="name">
-            <el-input v-model="userFormEdit.name" />
+            <el-input v-model="userFormEdit.userName" />
           </el-form-item>
           <el-form-item label="班级" prop="className">
             <el-select v-model="userFormEdit.classic" style="width: 150px">
@@ -104,7 +104,7 @@
             <el-input v-model="userForm.uid" />
           </el-form-item>
           <el-form-item label="用户姓名" prop="name">
-            <el-input v-model="userForm.name" />
+            <el-input v-model="userForm.userName" />
           </el-form-item>
           <!-- <el-form-item label="用户角色" prop="roleId">
           <el-select v-model="userForm.roleId" style="width: 150px;">
@@ -199,14 +199,14 @@ const dialogTitle = ref('')
 const formRef = ref()
 const userForm = ref({
   uid: '',
-  name: '',
+  userName: '',
   isDelete: 0,
   classic: 4001,
   className: ''
 })
 const userFormEdit = ref({
   uid: '',
-  name: '',
+  userName: '',
   roleId: 10003,
   classic: 0,
   className: ''
@@ -217,7 +217,7 @@ const rules = {
     { required: true, message: '请输入用户账号', trigger: 'blur' },
     { min: 12, message: '账号长度至少为12位', trigger: 'blur' }
   ],
-  name: [{ required: true, message: '请输入用户姓名', trigger: 'blur' }],
+  userName: [{ required: true, message: '请输入用户姓名', trigger: 'blur' }],
   password: [{ required: false, min: 6, message: '密码长度至少为6位', trigger: 'blur' }],
   roleId: [{ required: true, message: '请选择用户角色', trigger: 'change' }],
   classic: [{ required: true, message: '请选择班级', trigger: 'change' }]
@@ -282,7 +282,7 @@ const handleResetPassword = async (row: any) => {
 const handleEdit = async (row: any) => {
   userFormEdit.value = {
     uid: row.uid,
-    name: row.userName,
+    userName: row.userName,
     roleId: row.roleId,
     className: row.className,
     classic: row.classic
@@ -312,7 +312,7 @@ const submitEditForm = async () => {
       try {
         const response = (await request.post('/user/admin/update', {
           uid: userFormEdit.value.uid,
-          userName: userFormEdit.value.name,
+          userName: userFormEdit.value.userName,
           roleId: userFormEdit.value.roleId,
           classic: userFormEdit.value.classic
         })) as any
@@ -335,7 +335,7 @@ const submitEditForm = async () => {
 const handleAddUser = () => {
   userForm.value = {
     uid: '',
-    name: '',
+    userName: '',
     isDelete: 0,
     className: '',
     classic: 4001
@@ -373,14 +373,14 @@ const resetForm = () => {
   }
   userForm.value = {
     uid: '',
-    name: '',
+    userName: '',
     isDelete: 0,
     className: '',
     classic: 4001
   }
   userFormEdit.value = {
     uid: '',
-    name: '',
+    userName: '',
     roleId: 10003,
     className: '',
     classic: 0
