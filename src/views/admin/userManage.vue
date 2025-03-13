@@ -220,7 +220,7 @@ const rules = {
   name: [{ required: true, message: '请输入用户姓名', trigger: 'blur' }],
   password: [{ required: false, min: 6, message: '密码长度至少为6位', trigger: 'blur' }],
   roleId: [{ required: true, message: '请选择用户角色', trigger: 'change' }],
-  className: [{ required: true, message: '请输入班级', trigger: 'blur' }]
+  classic: [{ required: true, message: '请选择班级', trigger: 'change' }]
 }
 
 // 获取用户列表
