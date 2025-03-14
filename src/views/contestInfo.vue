@@ -116,19 +116,20 @@
                 <el-input v-model="inputPassword" style="width: 240px" placeholder="请输入比赛密码" />
                 <el-button type="primary" @click="submitPassword()">提交</el-button>
               </div>
-              <div style="
-             
-border-radius: 20px;
-box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
-                background-color: beige;
-                min-height: 300px;
+
+
+              <mavon-editor style=" border-radius: 20px;
+box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1); 
+ min-height: 300px;
+ /* background-color: #ffffff; */
                 height: auto;
                 width: 80%;
                 margin: auto;
-                padding: 30px;
-              ">
-                {{ constestInfo.description }}
-              </div>
+                padding: 30px;" v-model="constestInfo.description" :subfield="false" :boxShadow="false"
+                previewBackground="#ffffff" :defaultOpen="'preview'" :toolbarsFlag="false" :editable="false"
+                :scrollStyle="true" :ishljs="true" />
+
+
             </template>
           </el-skeleton>
         </el-tab-pane>
@@ -292,7 +293,10 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                 {{ getClassName(row.classic) }}
               </template>
             </el-table-column>
-            <el-table-column label="通过" prop="totalNum" width="80"> </el-table-column>
+            <el-table-column label="通过" prop="totalNum" width="80">
+              <template #default="{ row }">
+                {{ row.totalNum }}
+              </template> </el-table-column>
             <el-table-column label="罚时" width="100">
               <template #default="{ row }">
                 <div>{{ penalty(row) }}</div>
@@ -681,6 +685,8 @@ const refreshRank = () => {
 
         res.data.list[0].questionInfo.forEach((item, index) => {
           item.letter = letters[index]
+
+
           var r = { text: `${letters[index]}`, value: `${letters[index]}` }
           r.checked = false
           questionNumber.value.push(r)

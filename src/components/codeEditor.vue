@@ -1,8 +1,8 @@
 <script>
 import { getCurrentInstance, onMounted, watch } from 'vue'
-// import * as monaco from 'monaco-editor/esm/vs/editor/editor.main.js'
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
-import 'monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution'
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.main.js'
+// import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
+// import 'monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution'
 import { debounce } from '@/utils/optimizeUtils'
 // }
 export default {

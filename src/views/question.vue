@@ -121,6 +121,7 @@ const goToSubmissionDetail = (row) => {
       <!-- //提交记录-->
       <span style="position: relative; left: 8px; color: #e0e0e0"> | </span>
       <div @click="clickTitleTab(2)" class="title" :style="currentTab === 2 ? 'color: black' : 'color:gray'">
+
         提交记录
       </div>
     </div>
