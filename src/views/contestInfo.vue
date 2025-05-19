@@ -295,7 +295,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
             </el-table-column>
             <el-table-column label="通过" prop="totalNum" width="80">
               <template #default="{ row }">
-                {{ row.totalNum }}
+                {{ Number(row.totalNum).toFixed(2) }}
               </template> </el-table-column>
             <el-table-column label="罚时" width="100">
               <template #default="{ row }">
@@ -310,7 +310,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                   <div v-if="row.questionInfo[index].score == 100" class="rank-css" style="color: #67c23a">
                     <div>
                       <div>
-                        {{ row.questionInfo[index].score }}
+                        {{ formatScore(row.questionInfo[index].score) }}
 
                         (-{{ row.questionInfo[index].count }})
                       </div>
@@ -323,7 +323,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                   <div v-else-if="row.questionInfo[index].submitTime != null" class="rank-css" style="color: red">
                     <div>
                       <div>
-                        {{ row.questionInfo[index].score }}
+                        {{ formatScore(row.questionInfo[index].score) }}
 
                         (-{{ row.questionInfo[index].count }})
                       </div>
@@ -341,7 +341,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                   <div v-if="row.questionInfo[index].score == 100" class="rank-css" style="color: #67c23a">
                     <div>
                       <div>
-                        {{ row.questionInfo[index].score }}
+                        {{ formatScore(row.questionInfo[index].score) }}
                       </div>
 
                       <div style="color: rgb(96, 96, 96); font-size: 13px">
@@ -355,7 +355,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                   " class="rank-css" style="color: rgb(230, 162, 60)">
                     <div>
                       <div>
-                        {{ row.questionInfo[index].score }}
+                        {{ formatScore(row.questionInfo[index].score) }}
                       </div>
 
                       <div style="color: rgb(96, 96, 96); font-size: 13px">
@@ -369,7 +369,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                   " class="rank-css" style="color: red">
                     <div>
                       <div>
-                        {{ row.questionInfo[index].score }}
+                        {{ formatScore(row.questionInfo[index].score) }}
                       </div>
 
                       <div style="color: rgb(96, 96, 96); font-size: 13px">
@@ -844,6 +844,10 @@ const getClassList = async () => {
 // 新增：根据班级ID获取班级名称的函数
 const getClassName = (classicId) => {
   return classMap.value.get(classicId) || '未知班级'
+}
+
+const formatScore = (score) => {
+  return Number(score).toFixed(2)
 }
 </script>
 <style>
