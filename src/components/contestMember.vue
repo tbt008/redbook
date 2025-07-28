@@ -4,25 +4,15 @@
       <el-radio-button label="已参赛" value="1" />
       <el-radio-button label="未参赛" value="2" />
     </el-radio-group>
-    <el-button
-      type="primary"
-      style="position: absolute; top: 40px; right: 40px"
-      v-show="selectType == 2"
-      @click="updateMember()"
-      >邀请用户</el-button
-    >
-    <el-button
-      type="danger"
-      style="position: absolute; top: 40px; right: 40px"
-      v-show="selectType == 1"
-      @click="removeMember()"
-      >移除用户</el-button
-    >
+    <el-button type="primary" style="position: absolute; top: 40px; right: 40px" v-show="selectType == 2"
+      @click="updateMember()">邀请用户</el-button>
+    <el-button type="danger" style="position: absolute; top: 40px; right: 40px" v-show="selectType == 1"
+      @click="removeMember()">移除用户</el-button>
   </div>
   <el-table v-if="selectType == 1" :data="InviteUser" style="width: 100%">
     <el-table-column width="55">
       <template #default="row">
-        <el-checkbox v-model="row.row.checked" size="large" />
+        <el-checkbox v-model="row.row.checked" size="large" @change="handleCheckChange(row.row)" />
       </template>
     </el-table-column>
 
@@ -30,28 +20,22 @@
     <el-table-column label="学号" width="150" prop="uid" />
 
   </el-table>
-  
+
   <el-table v-else :data="unInviteUser" style="width: 100%">
     <el-table-column width="55">
       <template #default="row">
-        <el-checkbox v-model="row.row.checked" size="large" />
+        <el-checkbox v-model="row.row.checked" size="large" @change="handleCheckChange(row.row)" />
       </template>
     </el-table-column>
     <el-table-column label="姓名" width="120" prop="userName"> </el-table-column>
     <el-table-column label="学号" width="150" prop="uid" />
   </el-table>
-    <!-- elementplus el-pagination: 分页器 -->
-    <div class="pagination-container">
-              <el-pagination
-                v-model:current-page="currentPage"
-                v-model:page-size="pageSize"
-                :total="total"
-                :page-sizes="[10, 20, 50]"
-                layout="total, sizes, prev, pager, next"
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange"
-              />
-            </div>
+  <!-- elementplus el-pagination: 分页器 -->
+  <div class="pagination-container">
+    <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
+      :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
+      @current-change="handleCurrentChange" />
+  </div>
 </template>
 
 <script lang="js" setup>
@@ -67,9 +51,12 @@ const props = defineProps({
   }
 })
 const selectType = ref(1)
-const currentPage=ref(1)
-const pageSize=ref(10)
-const total=ref(0)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+// 全局选中状态管理
+const selectedUsers = ref(new Set()) // 存储所有选中用户的uid
+
 const getContestMember = () => {
   request
     .post('/contest/user/get', {
@@ -82,14 +69,15 @@ const getContestMember = () => {
       if (res.code == 200) {
         if (selectType.value == 1) {
           InviteUser.value = res.data.list
-        
+          // 恢复选中状态
           InviteUser.value.forEach((item) => {
-            item.checked = false
+            item.checked = selectedUsers.value.has(item.uid)
           })
         } else {
           unInviteUser.value = res.data.list
+          // 恢复选中状态
           unInviteUser.value.forEach((item) => {
-            item.checked = false
+            item.checked = selectedUsers.value.has(item.uid)
           })
         }
         total.value = res.data.total
@@ -101,18 +89,24 @@ const getContestMember = () => {
       ElMessage.error(err.msg)
     })
 }
+
+// 添加选中状态变化监听
+const handleCheckChange = (user) => {
+  if (user.checked) {
+    selectedUsers.value.add(user.uid)
+  } else {
+    selectedUsers.value.delete(user.uid)
+  }
+}
+
 const updateMember = () => {
   ElMessageBox.confirm('确定真的添加？', '警告', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    var addUidList = []
-    unInviteUser.value.forEach((item) => {
-      if (item.checked == true) {
-        addUidList.push(item.uid)
-      }
-    })
+    // 使用全局选中状态
+    var addUidList = Array.from(selectedUsers.value)
     request
       .post('/contest/user/importParticipate', {
         contestId: props.id,
@@ -121,6 +115,8 @@ const updateMember = () => {
       .then((res) => {
         if (res.code == 200) {
           ElMessage.success('添加成功')
+          // 清空选中状态
+          selectedUsers.value.clear()
         } else {
           ElMessage.error('添加失败: ' + res.msg)
         }
@@ -131,18 +127,15 @@ const updateMember = () => {
       })
   })
 }
+
 const removeMember = () => {
   ElMessageBox.confirm('确定真的删除？', '警告', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    var rmUidList = []
-    InviteUser.value.forEach((item) => {
-      if (item.checked == true) {
-        rmUidList.push(item.uid)
-      }
-    })
+    // 使用全局选中状态
+    var rmUidList = Array.from(selectedUsers.value)
     request
       .post('/contest/user/removeParticipate', {
         contestId: props.id,
@@ -151,6 +144,8 @@ const removeMember = () => {
       .then((res) => {
         if (res.code == 200) {
           ElMessage.success('移除成功')
+          // 清空选中状态
+          selectedUsers.value.clear()
         } else {
           ElMessage.error('移除失败: ' + res.msg)
         }
@@ -190,6 +185,7 @@ watch(
 watch(
   [selectType],
   async () => {
+    selectedUsers.value.clear() // 切换类型时清空选中状态
     getContestMember()
   },
   { deep: true }
