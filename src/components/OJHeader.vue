@@ -373,11 +373,18 @@ onUnmounted(() => {
 }
 
 .head-nav {
-  height: 6vh;
+  /* height: 6vh; */
   /* 优先级 */
+  /* border-bottom: 1px solid var(--el-border-color);
+  z-index: 99;
+  display: flex; */
+  height: 60px;
+  /* 改为固定像素值，确保足够高度 */
   border-bottom: 1px solid var(--el-border-color);
   z-index: 99;
   display: flex;
+  align-items: center;
+  /* 添加垂直居中对齐 */
 }
 
 #nav {
@@ -389,7 +396,8 @@ onUnmounted(() => {
   border-radius: 10em;
   display: flex;
   list-style: none;
-
+  align-items: center;
+  /* 确保导航项垂直居中 */
   /* padding: 10px; */
 }
 
