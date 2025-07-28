@@ -973,4 +973,11 @@ const formatScore = (score) => {
   left: 60px !important;
   z-index: 10 !important;
 }
+
+
+.contest-tabs .el-tab-pane {
+  margin-bottom: 40px;
+}
+
+ 
 </style>
