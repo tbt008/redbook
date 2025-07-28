@@ -1,9 +1,12 @@
 <script setup>
 import request from '@/util/request'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import testCase from '@/components/testCase.vue'
 const currentTab = ref(0)
-
+import { useRouter } from 'vue-router'
+import { tr } from 'element-plus/es/locale/index.mjs'
+const router = useRouter()
 const currentClick = ref(0)
 const judgeQuestionLoading = ref(false)
 const props = defineProps({
@@ -24,19 +27,16 @@ const props = defineProps({
   }
 })
 
-const result = ref({})
-// testList.value[0].input
+const result = ref(null)
+
 const input = ref()
 const emit = defineEmits(['showACImgfun'])
 const submitStatus = ref('运行中')
 const djTime = ref()
+const currentClickCase = ref(0)
 const choseTestcase = (type) => {
-  let beforeValue = currentClick.value
-  document.getElementsByClassName('atag')[beforeValue].style.backgroundColor = '#ffffff'
-  currentClick.value = type
-  document.getElementsByClassName('atag')[currentClick.value].style.background = '#F2F3F4'
-
-  // input.value = rep.value[type].input
+  input.value = props.rep.examples[type].input
+  currentClickCase.value = (type)
 }
 const submitCode = async () => {
   submitStatus.value = '运行中'
@@ -55,16 +55,17 @@ const submitCode = async () => {
       .then((res) => {
         if (res.code != 200) {
           ElMessage.error(res.msg)
+          judgeQuestionLoading.value = false
+
         } else {
           codeRecordId = res.data
           submitStatus.value = '判题中'
-          setTimeout(() => {
-            judgeQuestionLoading.value = false
-          }, 10000)
+
           whileGetResult(codeRecordId)
         }
       })
       .catch((error) => {
+        judgeQuestionLoading.value = false
         ElMessage.error(error)
       })
   } else {
@@ -85,23 +86,23 @@ const submitCode = async () => {
         } else {
           codeRecordId = res.data
           submitStatus.value = '判题中'
-          setTimeout(() => {
-            judgeQuestionLoading.value = false
-          }, 10000)
           whileGetResult(codeRecordId)
         }
       })
       .catch((error) => {
+        judgeQuestionLoading.value = false
         ElMessage.error(error)
       })
   }
 }
+const isSubmit = ref(false)
 const runCode = () => {
   const currentTime = new Date().getTime()
   if (undefined != djTime.value && null != djTime.value && currentTime - djTime.value < 4000) {
     ElMessage.error('您运行的太快了,过几秒后试试')
     return false
   }
+  isSubmit.value = false
   djTime.value = currentTime
   console.log(djTime.value)
   submitStatus.value = '运行中'
@@ -111,7 +112,6 @@ const runCode = () => {
     code: props.code,
     language: props.language
   }
-
   request
     .post(`/question/test`, obj)
     .then((res) => {
@@ -138,44 +138,86 @@ const whileGetResult = async (recordId) => {
   const intervalId = setInterval(() => {
     if (count < maxRequests) {
       if (!props.contestId) {
-        request.get(`/record/get/one/${recordId}`).then((res) => {
-          // 获取结果  成功后
-          if (res.data.status != 1 && res.data.status != 0) {
-            clearInterval(intervalId)
-            if (res.data.result == 100) {
-              emit('showACImgfun')
-            }
+        // 普通提交
+        request
+          .get(`/record/get/one/${recordId}`)
+          .then((res) => {
+            // 获取结果  成功后
+            if (res.data.result != -1 && res.data.runResult != '等待判题') {
+              clearInterval(intervalId)
+              if (res.data.result == 100) {
+                emit('showACImgfun')
 
+                if (router.currentRoute.value.query.daily) {
+                  request
+                    .post('/userDailyQuestion/updateDailyQuestion', {
+                      dailyQuestionId: router.currentRoute.value.query.daily
+                    })
+                    .then((res) => {
+                      if (res.data.result == 200) {
+                        console.log('每日一题更新成功')
+                      } else {
+                        console.log('每日一题更新错误')
+                      }
+                    })
+                }
+              }
+              result.value = res.data.test
+              isSubmit.value = true
+              currentTab.value = 1
+              judgeQuestionLoading.value = false
+            }
+          })
+          .catch((error) => {
             judgeQuestionLoading.value = false
-          }
-        })
+            ElMessage.error(error)
+          })
       } else {
-        request.get(`/contest/record/get/one/${recordId}`).then((res) => {
-          // 获取结果  成功后
-          if (res.data.status != 1 && res.data.status != 0) {
-            clearInterval(intervalId)
-            if (res.data.result == 100) {
-              emit('showACImgfun')
+        request
+          .get(`/contest/record/get/one/${recordId}`)
+          .then((res) => {
+            // 获取结果  成功后
+            if (res.data.result != -1 && res.data.runResult != '等待判题') {
+              clearInterval(intervalId)
+              if (res.data.result == 100) {
+                emit('showACImgfun')
+              }
+              result.value = res.data.test
+              isSubmit.value = true
+              currentTab.value = 1
+              judgeQuestionLoading.value = false
             }
-
+          })
+          .catch((error) => {
             judgeQuestionLoading.value = false
-          }
-        })
+            ElMessage.error(error)
+          })
       }
       count++
     } else {
       // 取消定时器
       clearInterval(intervalId)
+      if (judgeQuestionLoading.value == true) {
+        ElMessage.success('判题超时，请到提交记录查看结果')
+        judgeQuestionLoading.value == false
+      }
     }
   }, 1000)
-
-  //  recordId
 }
-const testList = ref([])
-const rep = ref({})
+watch(
+  () => props.rep,
+  () => {
+    if (props.rep.examples != null) {
+      input.value = props.rep.examples[0].input
+    }
+
+  }
+
+)
+
 onMounted(() => {
-  rep.value = props.rep
-  // testList.value = rep.value
+
+
 })
 </script>
 
@@ -184,83 +226,53 @@ onMounted(() => {
     <div class="item">
       <div class="item-left">
         <div @click="currentTab = 0" class="item-left-item">
-          <svg
-            aria-hidden="true"
-            focusable="false"
-            data-prefix="far"
-            width="18"
-            height="18"
-            data-icon="square-check"
-            class="svg-inline--fa fa-square-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-            role="img"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 448 512"
-          >
-            <path
-              :fill="currentTab === 0 ? '#02B128' : '#98DDA7'"
-              d="M64 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16H384c8.8 0 16-7.2 16-16V96c0-8.8-7.2-16-16-16H64zM0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"
-            ></path>
-          </svg>
-          <span :style="currentTab === 0 ? 'color: black' : 'color:gray'"> 测试用例</span>
+          <div :style="currentTab === 0 ? 'color: black' : 'color:gray'">
+            <div style="display: flex; align-items: center; margin-left: 10px">
+              <svg t="1736855777789" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                xmlns="http://www.w3.org/2000/svg" p-id="4367" width="20" height="20">
+                <path
+                  d="M832 960H192c-38.4 0-64-25.6-64-64V128c0-38.4 25.6-64 64-64h640c38.4 0 64 25.6 64 64v768c0 38.4-25.6 64-64 64zM192 128v768h640V128H192z"
+                  fill="#52c41b" p-id="4368"></path>
+                <path
+                  d="M723.2 646.4H300.8c-19.2 0-28.8-12.8-28.8-28.8s12.8-28.8 28.8-28.8h419.2c19.2 0 28.8 12.8 28.8 28.8s-9.6 28.8-25.6 28.8zM723.2 796.8H300.8c-19.2 0-28.8-12.8-28.8-28.8s12.8-32 28.8-32h419.2c19.2 0 28.8 12.8 28.8 28.8s-9.6 32-25.6 32zM361.6 467.2c-9.6 0-16-3.2-22.4-9.6l-89.6-89.6c-12.8-12.8-12.8-28.8 0-41.6l89.6-89.6c12.8-12.8 32-12.8 44.8 0s12.8 28.8 0 41.6l-70.4 70.4L384 416c12.8 12.8 12.8 28.8 0 41.6-6.4 9.6-12.8 9.6-22.4 9.6zM662.4 467.2c-9.6 0-16-3.2-22.4-9.6-12.8-12.8-12.8-28.8 0-41.6l70.4-70.4L640 278.4c-12.8-12.8-12.8-28.8 0-41.6s28.8-12.8 41.6 0l89.6 89.6c12.8 12.8 12.8 28.8 0 41.6l-89.6 89.6c-3.2 9.6-9.6 9.6-19.2 9.6zM460.8 467.2c-6.4 0-9.6 0-16-3.2-16-9.6-19.2-25.6-12.8-41.6l102.4-179.2c9.6-16 28.8-19.2 44.8-12.8 16 9.6 19.2 25.6 12.8 41.6l-102.4 179.2c-6.4 12.8-19.2 16-28.8 16z"
+                  fill="#52c41b" p-id="4369"></path>
+              </svg>测试用例
+            </div>
+          </div>
         </div>
         <div @click="currentTab = 1" class="item-left-item">
-          <svg
-            aria-hidden="true"
-            focusable="false"
-            data-prefix="far"
-            width="18"
-            height="18"
-            data-icon="terminal"
-            class="svg-inline--fa fa-terminal absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-            role="img"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 576 512"
-          >
-            <path
-              :fill="currentTab === 1 ? '#02B128' : '#98DDA7'"
-              d="M6.3 72.2c-9-9.8-8.3-24.9 1.4-33.9s24.9-8.3 33.9 1.4l184 200c8.5 9.2 8.5 23.3 0 32.5l-184 200c-9 9.8-24.2 10.4-33.9 1.4s-10.4-24.2-1.4-33.9L175.4 256 6.3 72.2zM248 432H552c13.3 0 24 10.7 24 24s-10.7 24-24 24H248c-13.3 0-24-10.7-24-24s10.7-24 24-24z"
-            ></path>
-          </svg>
-          <span :style="currentTab === 1 ? 'color: black' : 'color:gray'"> 测试结果</span>
+          <div :style="currentTab === 1 ? 'color: black' : 'color:gray'">
+            <div style="display: flex; align-items: center; margin-left: 10px">
+              <svg t="1736855887810" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                xmlns="http://www.w3.org/2000/svg" p-id="6363" width="18" height="18">
+                <path
+                  d="M284.672 227.328v56.832H739.84V227.328H284.672z m0 171.008v56.832H512v-56.832h-227.328z m568.832 227.328h56.832v-56.832h-56.832v56.832zM113.664 910.336c0 31.232 25.6 56.832 56.832 56.832h398.336v-56.832H170.496V113.664h683.008v398.848h56.32V113.664c0-31.232-25.6-56.832-56.832-56.832H170.496c-31.232 0-56.832 25.6-56.832 56.832v796.672z"
+                  fill="#5661D7" p-id="6364"></path>
+                <path
+                  d="M863.744 880.128l-98.816-98.816a170.8032 170.8032 0 0 0 0-197.632c-54.784-76.8-161.28-94.72-238.08-40.448-76.8 54.784-94.72 161.28-40.448 238.08 54.784 76.8 161.28 94.72 238.08 40.448l98.816 98.816 0.512 0.512c11.264 10.752 29.184 10.752 40.448-0.512 11.264-11.264 10.752-29.184-0.512-40.448z m-238.08-83.456A113.408 113.408 0 0 1 512 683.008a113.408 113.408 0 0 1 113.664-113.664c62.976 0 113.664 51.2 113.664 113.664 0 62.464-50.688 113.664-113.664 113.664z"
+                  fill="#FAC858" p-id="6365"></path>
+              </svg>测试结果
+            </div>
+          </div>
         </div>
         <div class="top">
           <div class="runAndTest">
             <div class="runFor">
               <div class="run" @click="runCode()" v-show="!judgeQuestionLoading">
-                <svg
-                  aria-hidden="true"
-                  focusable="false"
-                  data-prefix="fas"
-                  data-icon="play"
-                  role="img"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 384 512"
-                >
-                  <path
-                    fill="gray"
-                    d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"
-                  ></path>
+                <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="play" role="img"
+                  xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 384 512">
+                  <path fill="gray"
+                    d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z">
+                  </path>
                 </svg>
                 运行
               </div>
               <div @click="submitCode()" class="submit" v-show="!judgeQuestionLoading">
-                <svg
-                  aria-hidden="true"
-                  focusable="false"
-                  data-prefix="far"
-                  data-icon="cloud-arrow-up"
-                  width="20"
-                  height="20"
-                  role="img"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 640 512"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M354.9 121.7c13.8 16 36.5 21.1 55.9 12.5c8.9-3.9 18.7-6.2 29.2-6.2c39.8 0 72 32.2 72 72c0 4-.3 7.9-.9 11.7c-3.5 21.6 8.1 42.9 28.1 51.7C570.4 276.9 592 308 592 344c0 46.8-36.6 85.2-82.8 87.8c-.6 0-1.3 .1-1.9 .2H504 144c-53 0-96-43-96-96c0-41.7 26.6-77.3 64-90.5c19.2-6.8 32-24.9 32-45.3l0-.2v0 0c0-66.3 53.7-120 120-120c36.3 0 68.8 16.1 90.9 41.7zM512 480v-.2c71.4-4.1 128-63.3 128-135.8c0-55.7-33.5-103.7-81.5-124.7c1-6.3 1.5-12.8 1.5-19.3c0-66.3-53.7-120-120-120c-17.4 0-33.8 3.7-48.7 10.3C360.4 54.6 314.9 32 264 32C171.2 32 96 107.2 96 200l0 .2C40.1 220 0 273.3 0 336c0 79.5 64.5 144 144 144H464h40 8zM223 255c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l39-39V384c0 13.3 10.7 24 24 24s24-10.7 24-24V249.9l39 39c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0l-80 80z"
-                  ></path>
+                <svg aria-hidden="true" focusable="false" data-prefix="far" data-icon="cloud-arrow-up" width="20"
+                  height="20" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512">
+                  <path fill="currentColor"
+                    d="M354.9 121.7c13.8 16 36.5 21.1 55.9 12.5c8.9-3.9 18.7-6.2 29.2-6.2c39.8 0 72 32.2 72 72c0 4-.3 7.9-.9 11.7c-3.5 21.6 8.1 42.9 28.1 51.7C570.4 276.9 592 308 592 344c0 46.8-36.6 85.2-82.8 87.8c-.6 0-1.3 .1-1.9 .2H504 144c-53 0-96-43-96-96c0-41.7 26.6-77.3 64-90.5c19.2-6.8 32-24.9 32-45.3l0-.2v0 0c0-66.3 53.7-120 120-120c36.3 0 68.8 16.1 90.9 41.7zM512 480v-.2c71.4-4.1 128-63.3 128-135.8c0-55.7-33.5-103.7-81.5-124.7c1-6.3 1.5-12.8 1.5-19.3c0-66.3-53.7-120-120-120c-17.4 0-33.8 3.7-48.7 10.3C360.4 54.6 314.9 32 264 32C171.2 32 96 107.2 96 200l0 .2C40.1 220 0 273.3 0 336c0 79.5 64.5 144 144 144H464h40 8zM223 255c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l39-39V384c0 13.3 10.7 24 24 24s24-10.7 24-24V249.9l39 39c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0l-80 80z">
+                  </path>
                 </svg>
                 提交
               </div>
@@ -279,14 +291,9 @@ onMounted(() => {
     </div>
     <div class="item-content" v-show="currentTab === 0">
       <div style="padding: 20px 30px; display: flex">
-        <div
-          @click="choseTestcase(index)"
-          class="atag"
-          v-for="(item, index) in rep.example"
-          :key="index"
-          style="font-size: 13px; font-weight: bold; border-radius: 10px"
-          closable
-        >
+        <div @click="choseTestcase(index)" class="atag" :class="{ isChick: currentClickCase == index }"
+          v-for="(item, index) in props.rep.examples" :key="index"
+          style="font-size: 13px; font-weight: bold; border-radius: 10px" closable>
           {{ 'Case ' + index }}
         </div>
       </div>
@@ -295,65 +302,53 @@ onMounted(() => {
         <div style="display: flex; font-size: 15px; color: #8a8a98; font-weight: bold">input=</div>
       </div>
       <div style="padding: 5px 30px">
-        <el-input
-          v-model="input"
-          style="min-width: 240px"
-          autosize
-          type="textarea"
-          placeholder="请输入测试样例"
-        />
-      </div>
+        <el-input v-model="input" style="min-width: 240px" autosize type="textarea" placeholder="请输入测试样例" />
 
-      <div style="padding: 0px 30px">
-        <a-input
-          disabled
-          :style="{ width: '860px' }"
-          style="border-radius: 10px; height: 42px"
-          default-value="answer is dfafsafdafad"
-          placeholder="Please enter something"
-          allow-clear
-        />
       </div>
     </div>
     <div class="item-content" v-show="currentTab === 1">
-      <div v-if="result.error == 0">
-        <div style="padding: 30px 0px">
-          <div
-            style="
-              padding: 0px 30px;
-              display: flex;
-              font-size: 15px;
-              color: #8a8a98;
-              font-weight: bold;
-            "
-          >
-            output= {{ result.output }}
+      <div v-if="!isSubmit">
+        <div v-if="result == null">
+          <h2 style="color: #8a8a98; font-weight: 400; padding: 15px 25px">您还未提交</h2>
+        </div>
+        <div v-else-if="result.error == 0">
+          <div style="background-color: rgb(240, 249, 235); padding: 20px;margin: 15px;border-radius: 15px;">
+            <div style="color:rgb(111, 196, 68);font-size: 20px;">运行成功</div>
+            <div style="color: rgb(179, 181, 177);font-size: 14px;">运行时间: <span style="color:rgb(111, 196, 68);">{{
+              result.cpu_time }}ms</span> 运行内存: <span style="color:rgb(111, 196, 68);">{{ result.memory
+                  / 1024 }}kb</span>
+            </div>
+          </div>
+          <div style="margin-top: 30px; padding: 0px 30px">
+            <div style="display: flex; font-size: 15px; color: #8a8a98; font-weight: bold">
+              output=
+            </div>
+          </div>
+          <div style="padding: 5px 30px">
+
+            <el-input v-model="result.output" style="min-width: 240px" autosize type="textarea" placeholder="无输出结果" />
+          </div>
+        </div>
+        <div v-else>
+          <div style="background-color: rgb(250, 219, 216); padding: 20px;margin: 15px;border-radius: 15px;">
+            <div style="color:rgb(231, 76, 60);font-size: 20px;">运行错误</div>
+            <!-- <div style="color: rgb(255,255,255);font-size: 14px;">运行时间: <span style="color:rgb(111, 196, 68);">{{
+              result.cpu_time }}ms</span> 运行内存: <span style="color:rgb(111, 196, 68);">{{ result.memory
+                  / 1024 }}kb</span>
+            </div> -->
           </div>
         </div>
       </div>
       <div v-else>
-        <h2 style="color: red; font-weight: 400; padding: 15px 25px">执行错误</h2>
-        <div style="padding: 0px 25px">
-          <a-alert title="error" type="error" style="border-radius: 15px; width: 860px"
-            >you answer issue mistake</a-alert
-          >
-        </div>
+        <testCase :test="result"></testCase>
       </div>
     </div>
   </div>
 </template>
 <style lang="scss" scoped>
-.v-enter-active,
-.v-leave-active {
-  transition: opacity 0.5s ease;
-}
-
-.v-enter-from,
-.v-leave-to {
-  opacity: 0;
-}
 .containerss {
   height: 100%;
+  z-index: 100;
   width: 100%;
   overflow-y: hidden;
   min-height: 40px;
@@ -375,33 +370,45 @@ onMounted(() => {
     cursor: pointer;
     // margin: 0px 5px;
   }
+
   .svg-box:hover {
     background-color: #c7c7c7;
     color: black !important;
   }
+
   .svg-box:hover .icon-svg {
     color: black !important;
   }
+
   .icon-svg {
     transition: 0.5s;
   }
 }
+
 .item-content {
   width: 100%;
   height: 100%;
   background-color: white;
   display: flex;
   flex-direction: column;
+
   .atag {
     display: flex;
+    user-select: none;
     padding: 15px 10px;
     background-color: white;
     cursor: pointer;
   }
+
+  .isChick {
+    background-color: #f2f3f4;
+  }
+
   .atag:hover {
     background-color: #f2f3f4;
   }
 }
+
 .item {
   border-radius: 10px 10px 0px 0px;
   position: relative;
@@ -410,6 +417,7 @@ onMounted(() => {
   display: flex;
   background-color: rgb(249, 249, 249);
   align-items: center;
+
   // justify-content: space-between;
   .item-left {
     display: flex;
@@ -419,12 +427,14 @@ onMounted(() => {
     // position: relative;
     align-items: center;
     transition: 0.5s;
+
     .top {
       position: absolute;
 
       right: 0;
       display: flex;
       width: 210px;
+
       .top-icon {
         display: flex;
         color: #c7c7c7;
@@ -448,6 +458,7 @@ onMounted(() => {
           gap: 1px;
           display: flex;
           align-items: center;
+
           .running {
             height: 40px;
             width: 210px;
@@ -461,11 +472,13 @@ onMounted(() => {
             justify-content: center;
             animation: expand 0.5s ease forwards;
           }
+
           @keyframes expand {
             0% {
               width: 240px;
               // transform: translate(-50%, -50);
             }
+
             100% {
               width: 180px;
               // transform: translate(-50%, -50%) ;
@@ -484,6 +497,7 @@ onMounted(() => {
             // justify-content:
             gap: 25px;
           }
+
           .submit {
             cursor: pointer;
 
@@ -498,16 +512,20 @@ onMounted(() => {
             height: 35px;
             color: #01b328;
           }
+
           .debug:hover {
             background-color: #e0e0e0 !important;
           }
+
           .run:hover {
             background-color: #e0e0e0 !important;
           }
+
           .submit:hover {
             background-color: #e0e0e0 !important;
           }
         }
+
         .noteFor {
           position: relative;
           width: 90px;
@@ -516,6 +534,7 @@ onMounted(() => {
           justify-content: center;
           display: flex;
           align-items: center;
+
           .clock-note {
             width: 40px;
             height: 40px;
@@ -525,6 +544,7 @@ onMounted(() => {
             display: flex;
             align-items: center;
           }
+
           .bi-note {
             width: 40px;
             height: 40px;
@@ -534,16 +554,20 @@ onMounted(() => {
             display: flex;
             align-items: center;
           }
+
           .clock-note:hover {
             background-color: #e0e0e0 !important;
           }
+
           .bi-note:hover {
             background-color: #e0e0e0 !important;
           }
         }
       }
+
       .item-left-item {
         border-radius: 10px;
+
         height: 80%;
         padding-left: 10px;
         padding-right: 10px;
@@ -553,10 +577,12 @@ onMounted(() => {
         cursor: pointer;
         white-space: nowrap;
       }
+
       .item-left-item:hover {
         background-color: #e6e6e6;
       }
     }
+
     .item-right {
       display: flex;
       height: 100%;
@@ -575,6 +601,7 @@ onMounted(() => {
         cursor: pointer;
         white-space: nowrap;
       }
+
       .item-right-item:hover {
         background-color: #e6e6e6;
       }

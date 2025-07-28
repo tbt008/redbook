@@ -1,8 +1,9 @@
 import axios from 'axios'
 import router from '@/router/index' // 修改这里
-
+import { ElMessage } from 'element-plus'
+import { debounce } from '@/utils/optimizeUtils'
 const request = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_APP_BASE_API,
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json;charset=UTF-8'
@@ -17,6 +18,9 @@ declare module 'axios' {
     data: T
   }
 }
+const errInfo = debounce(() => {
+  ElMessage.error('登录状态已过期，请重新登录！')
+}, 3000)
 request.interceptors.response.use(
   (response) => {
     if (response.data) {
@@ -29,7 +33,8 @@ request.interceptors.response.use(
       // 返回 401 清除token信息并跳转到登录页面
       localStorage.removeItem('auth-token')
 
-      router.push('/login')
+      errInfo()
+      // router.push('/login')
     }
 
     return Promise.reject(error)
@@ -41,6 +46,14 @@ request.interceptors.request.use((config) => {
   if (token) {
     config.headers['auth-Token'] = `Bearer ${token}`
   }
+  else {
+    // 移除 auth-Token 字段
+    if (config.headers.hasOwnProperty('auth-token')) {
+      // console.log('删除');
+      delete config.headers['auth-token'];
+    }
+  }
+  // console.log(config); 
   return config
 })
 function getAuthToken() {

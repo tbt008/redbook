@@ -19,7 +19,8 @@
       <span>2. 提交的压缩包要直接对数据压缩，不要对文件夹压缩。</span>
       <br>
       <br>
-      <span>3. 点击文件名即可下载。</span>
+      <span>3. 只支持对zip和rar的解压。</span>
+ 
       <template #footer>
         <div class="dialog-footer">
           <el-button type="primary" @click="dialogVisible = false">确认</el-button> 
@@ -59,21 +60,61 @@
       </el-button>
 
       <div v-for="group in groupFiles(files)" :key="group.extension" class="file-group">
-        <h4 class="group-title">{{ group.extension.toUpperCase() }}</h4>
+        <div class="group-header">
+          <h4 class="group-title">{{ group.extension.toUpperCase() }}</h4>
+          <!-- 添加全选功能和批量操作按钮 -->
+          <div class="group-actions">
+            <el-checkbox 
+              v-model="groupSelections[group.extension].selectAll"
+              @change="(val: boolean) => handleSelectAll(val, group.extension)"
+            >
+              全选
+            </el-checkbox>
+            <div v-if="groupSelections[group.extension].selected.length > 0" class="batch-actions">
+              <el-button type="danger" size="small" @click="batchDelete(group.extension)">
+                批量删除 ({{ groupSelections[group.extension].selected.length }})
+              </el-button>
+              <el-button type="success" size="small" @click="batchDownload(group.extension)">
+                批量下载 ({{ groupSelections[group.extension].selected.length }})
+              </el-button>
+              <!-- 仅对 zip 和 rar 显示批量解压按钮 -->
+              <el-button 
+                v-if="['zip', 'rar'].includes(group.extension)"
+                type="primary" 
+                size="small" 
+                @click="batchExtract(group.extension)"
+              >
+                批量解压 ({{ groupSelections[group.extension].selected.length }})
+              </el-button>
+            </div>
+          </div>
+        </div>
         <ul class="file-list">
           <li v-for="file in group.files" :key="file" class="file-item">
-            <span class="file-name" @click="downloadFile(file)">{{ file }}</span>
+            <el-checkbox 
+              v-model="groupSelections[group.extension].selected"
+              :label="file"
+              class="file-checkbox"
+            ></el-checkbox>
+            <span class="file-name" @click="downloadFile(file)"></span>
             <div class="file-actions">
-              <!-- 如果是 RAR 或 ZIP 文件，提供解压按钮 -->
-              <el-button v-if="isRar(file)" @click="extractRar(file)" type="primary" size="small">解压</el-button>
-              <el-button v-if="isZip(file)" @click="extractZip(file)" type="primary" size="small">解压</el-button>
-              
-              <!-- 删除文件夹按钮 -->
-              <el-button v-if="isFolder(file)" @click="deleteFolder(file)" type="danger" size="small">删除文件夹</el-button>
-              <!-- 删除文件按钮 -->
-              <el-button v-else @click="deleteFile(file)" type="danger" size="small">删除文件</el-button>
-              <!-- 下载文件按钮 -->
-              <el-button v-if="!isFolder(file)" @click="downloadFile(file)" type="success" size="small">下载</el-button>
+              <!-- 根据文件类型显示不同的操作按钮 -->
+              <template v-if="group.extension === 'zip' || group.extension === 'rar'">
+                <el-button @click="group.extension === 'zip' ? extractZip(file) : extractRar(file)" type="primary" size="small">解压</el-button>
+                <el-button @click="deleteFile(file)" type="danger" size="small">删除</el-button>
+                <el-button @click="downloadFile(file)" type="success" size="small">下载</el-button>
+              </template>
+              <template v-else-if="group.extension === 'in' || group.extension === 'out'">
+                <el-button @click="deleteFile(file)" type="danger" size="small">删除</el-button>
+                <el-button @click="downloadFile(file)" type="success" size="small">下载</el-button>
+              </template>
+              <template v-else-if="isFolder(file)">
+                <el-button @click="deleteFolder(file)" type="danger" size="small">删除</el-button>
+              </template>
+              <template v-else>
+                <el-button @click="deleteFile(file)" type="danger" size="small">删除</el-button>
+                <el-button @click="downloadFile(file)" type="success" size="small">下载</el-button>
+              </template>
             </div>
           </li>
         </ul>
@@ -98,13 +139,33 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router'; 
+import request from '@/util/request'
+import requestBlob from '@/util/requestblob'
 const route = useRoute();
-// const id = route.params.id as string;
-const problem = JSON.parse(route.query.problem as string);
-const name = problem.name;
-const titleid = problem.titleid;
-const id = problem.id as string;
-console.log(problem);
+const problemId = route.params.problemid as string;
+const titleid = problemId;
+const id = problemId;
+const name = ref('');
+import { ElMessage } from 'element-plus';
+// 添加获取题目详情的函数
+const fetchProblemDetails = async () => {
+  try {
+    const response = await request.get(`/question/${id}`,{
+       
+    }) as any; 
+    if (response.code === 200) {
+      name.value = response.data.title;
+    } else {
+      message.value = '获取题目详情失败';
+      messageClass.value = 'error';
+    }
+  } catch (error) {
+    message.value = '获取题目详情时发生错误';
+    messageClass.value = 'error';
+    console.error('Error:', error);
+  }
+};
+
 const files = ref<string[]>([]);
 const message = ref('');
 const messageClass = ref<'error' | 'success' | 'warning' | 'info' | ''>('');
@@ -132,28 +193,26 @@ const fetchFileList = async () => {
   messageClass.value = 'info';
 
   try {
-    const response = await fetch('http://120.26.170.155:12138/list_files', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: id }),
-    });
-
-    const result = await response.json();
-    if (response.ok) {
-      files.value = result.files || [];
+    const response = await request.post('/root/question/list/file', {
+      questionId: id
+    }) as any;
+    
+    if (response.code === 200) {
+      files.value = response.data || [];
+      // console.log(files.value);
+      initializeGroupSelections(files.value);
       message.value = '文件列表获取成功';
       messageClass.value = 'success';
     } else {
       let msg = '获取文件列表失败';
-      if(result.error==="Invalid folder path")msg="文件夹 "+id+" 不存在";
+      if(response.msg === "Bad Request") msg = "文件夹 " + id + " 不存在";
       message.value = msg;
       messageClass.value = 'error';
     }
   } catch (error) {
     message.value = '获取文件列表过程中发生错误';
     messageClass.value = 'error';
-     
-    console.error('Error:', "error");
+    console.error('Error:', error);
   }
 };
 
@@ -170,21 +229,21 @@ const handleSubmit = async () => {
 
   const formData = new FormData();
   formData.append('file', fileInput.value.files[0]);
-  formData.append('path', id);
+  formData.append('questionId', id);
 
   try {
-    const response = await fetch('http://120.26.170.155:12138/upload', {
-      method: 'POST',
-      body: formData,
-    });
+    const response = await request.post('/root/quesion/save/file', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }) as any;
 
-    const result = await response.json();
-    if (response.ok) {
-      message.value = result.message || '文件上传成功';
+    if (response.code === 200) {
+      message.value = response.message || '文件上传成功';
       messageClass.value = 'success';
       await fetchFileList(); // 上传成功后重新获取文件列表
     } else {
-      message.value = result.error || '文件上传失败';
+      message.value = response.error || '文件上传失败';
       messageClass.value = 'error';
     }
   } catch (error) {
@@ -200,19 +259,18 @@ const extractRar = async (file: string) => {
   messageClass.value = 'info';
 
   try {
-    const response = await fetch('http://120.26.170.155:12138/extract_rar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: id, filename: file }),
-    });
+    const response = await request.post('/root/question/extract/rar', {
+      questionId: id,
+      folderName: file
+    }) as any;
 
-    const result = await response.json();
-    if (response.ok) {
-      message.value = result.message || 'RAR 文件解压成功';
+    if (response.code === 200) {
+      message.value = response.message || 'RAR 文件解压成功';
       messageClass.value = 'success';
+      ElMessage.success(response.message || 'RAR 文件解压成功');
       await fetchFileList();
     } else {
-      message.value = result.error || '解压失败';
+      message.value = response.error || '解压失败';
       messageClass.value = 'error';
     }
   } catch (error) {
@@ -228,19 +286,18 @@ const extractZip = async (file: string) => {
   messageClass.value = 'info';
 
   try {
-    const response = await fetch('http://120.26.170.155:12138/extract_zip', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: id, filename: file }),
-    });
+    const response = await request.post('/root/question/extract/zip', {
+      questionId: id,
+      folderName: file
+    }) as any;
 
-    const result = await response.json();
-    if (response.ok) {
-      message.value = result.message || 'ZIP 文件解压成功';
+    if (response.code === 200) {
+      message.value = response.message || 'ZIP 文件解压成功';
       messageClass.value = 'success';
+      ElMessage.success(response.message || 'ZIP 文件解压成功');
       await fetchFileList();
     } else {
-      message.value = result.error || '解压失败';
+      message.value = response.error || '解压失败';
       messageClass.value = 'error';
     }
   } catch (error) {
@@ -255,19 +312,18 @@ const deleteFile = async (file: string) => {
   message.value = `正在删除文件 ${file}...`;
   messageClass.value = 'info';
   try {
-    const response = await fetch('http://120.26.170.155:12138/delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: id, filename: file }),
-    });
+    const response = await request.post('/root/question/delete/file', {
+      questionId: id,
+      folderName: file
+    }) as any;
 
-    const result = await response.json();
-    if (response.ok) {
-      message.value = result.message || '文件删除成功';
+    if (response.code === 200) {
+      message.value = response.message || '文件删除成功';
       messageClass.value = 'success';
+      ElMessage.success(response.message || '文件删除成功');
       await fetchFileList();
     } else {
-      message.value = result.error || '删除文件失败';
+      message.value = response.error || '删除文件失败';
       messageClass.value = 'error';
     }
   } catch (error) {
@@ -279,26 +335,27 @@ const deleteFile = async (file: string) => {
 
 // 删除文件夹
 const deleteFolder = async (folder?: string) => {
-  message.value = `正在删除文件夹 ${folder}...`;
+  message.value = `正在删除文件夹 ${folder||id}...`;
   messageClass.value = 'info';
-  let path =id;
-  if(folder)
+  let path = id;
+  if (folder) {
     path += '/' + folder;
+  }
   console.log(path);
+  
   try {
-    const response = await fetch('http://120.26.170.155:12138/delete_folder', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder_name: path }),
-    });
+    const response = await request.post('/root/question/delete/folder', {
+      questionId: id,
+      folderName: path
+    }) as any;
 
-    const result = await response.json();
-    if (response.ok) {
-      message.value = result.message || '文件夹删除成功';
+    if (response.code === 200) {
+      message.value = response.message || '文件夹删除成功';
       messageClass.value = 'success';
+      ElMessage.success(response.message || '文件夹删除成功');
       await fetchFileList();
     } else {
-      message.value = result.error || '删除文件夹失败';
+      message.value = response.error || '删除文件夹失败';
       messageClass.value = 'error';
     }
   } catch (error) {
@@ -306,81 +363,94 @@ const deleteFolder = async (folder?: string) => {
     messageClass.value = 'error';
     console.error('Error:', error);
   }
-
 };
-  //创建文件夹
-  const CreateFolder = async () => {
-    let folderName = id;
-    if (!folderName) {
-      message.value = '文件夹名称不能为空';
-      messageClass.value = 'error';
-      return;
-    }
-  
-    try {
-      // 发起 POST 请求创建文件夹
-      const response = await fetch('http://120.26.170.155:12138/create_folder', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ folder_name: folderName }),
-      });
-  
-      const result = await response.json();
-  
-      if (response.ok) {
-        message.value = result.message;
-        messageClass.value = 'success';
-      } else {
-        message.value = result.error || '创建失败';
-        messageClass.value = 'error';
-      }
-    } catch (error) {
-      message.value = '创建文件夹时发生错误';
+//创建文件夹
+const CreateFolder = async () => {
+  let folderName = id;
+  if (!folderName) {
+    message.value = '文件夹名称不能为空';
+    messageClass.value = 'error';
+    return;
+  }
+  try {
+    const response = await request.post('/root/question/create/folder', {
+      questionId: id,
+      folderName: folderName
+    }) as any;
+
+    if (response.code === 200) {
+      message.value = response.message || '创建文件夹成功';
+      messageClass.value = 'success'; 
+    } else {
+      message.value = response.error || '创建文件夹失败';
       messageClass.value = 'error';
     }
-  }; 
-  // 下载文件
-  const downloadFile = async (file: string) => {
-    let filename = file;
-    if (!filename) {
-      message.value = '文件不能为空';
-      messageClass.value = 'error';
-      return;
+  } catch (error) {
+    message.value = '创建文件夹时发生错误';
+    messageClass.value = 'error';
+    console.error('Error:', error);
+  }
+}; 
+ 
+
+const downloadFile = async (folderName: string) => {
+  if (!folderName) {
+    message.value = '文件不能为空';
+    messageClass.value = 'error';
+    return;
+  }
+
+  const questionId = Number(id);
+  if (isNaN(questionId)) {
+    message.value = '无效的问题ID';
+    messageClass.value = 'error';
+    return;
+  }
+
+  try {
+    const response = await request.post('/root/question/get/file', {
+      questionId,
+      folderName
+    }) as any;
+
+    if (!response || response.code !== 200) {
+      throw new Error('下载失败');
     }
 
-    try {
-      // 发起 POST 请求下载文件
-      const response = await fetch('http://120.26.170.155:12138/get_file', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({                 
-          path: id,
-          filename: filename }),
-      });
-
-      if (response.ok) {
-        const blob = await response.blob(); // 获取文件的二进制内容
-        const fileURL = URL.createObjectURL(blob); // 创建一个 URL 对象
-        const link = document.createElement('a'); // 创建下载链接
-        link.href = fileURL;
-        link.download = filename; // 设置下载的文件名
-        link.click(); // 触发点击下载
-        message.value = '文件下载成功';
-        messageClass.value = 'success';
-      } else {
-        const result = await response.json();
-        message.value = result.error || '下载失败';
-        messageClass.value = 'error';
-      }
-    } catch (error) {
-      message.value = '下载文件时发生错误';
-      messageClass.value = 'error';
+    // 解码base64数据
+    const base64Data = response.data.body;
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
-  };
+    
+    // 创建blob对象
+    const blob = new Blob([bytes]);
+    
+    // 创建下载链接
+    const fileURL = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = fileURL;
+    link.download = folderName;
+    
+    // 触发下载
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // 清理URL对象
+    URL.revokeObjectURL(fileURL);
+    
+    message.value = '文件下载成功';
+    messageClass.value = 'success';
+    
+  } catch (error) {
+    console.error('下载文件时发生错误:', error);
+    message.value = '下载文件时发生错误';
+    messageClass.value = 'error';
+  }
+};
 
 // 添加新的类型定义和排序函数
 interface FileGroup {
@@ -389,7 +459,6 @@ interface FileGroup {
 }
 
 const groupFiles = (files: string[]): FileGroup[] => {
-  // 创建一个Map来存储不同后缀的文件
   const groupMap = new Map<string, string[]>();
   
   files.forEach(file => {
@@ -403,10 +472,23 @@ const groupFiles = (files: string[]): FileGroup[] => {
     groupMap.get(extension)?.push(file);
   });
 
+  // 自然排序比较函数
+  const naturalCompare = (a: string, b: string) => {
+    return a.split(/(\d+)/).map(part => {
+      const num = parseInt(part);
+      return isNaN(num) ? part : String(num).padStart(10, '0');
+    }).join('').localeCompare(
+      b.split(/(\d+)/).map(part => {
+        const num = parseInt(part);
+        return isNaN(num) ? part : String(num).padStart(10, '0');
+      }).join('')
+    );
+  };
+
   // 转换为数组并排序
   const groups = Array.from(groupMap.entries()).map(([ext, files]) => ({
     extension: ext,
-    files: files.sort()
+    files: files.sort(naturalCompare) // 使用自然排序
   }));
 
   // 确保文件夹始终在最前面
@@ -417,7 +499,109 @@ const groupFiles = (files: string[]): FileGroup[] => {
   });
 };
 
-onMounted(fetchFileList);
+// 为每个文件类型组维护独立的选择状态
+interface GroupSelection {
+  selected: string[];
+  selectAll: boolean;
+}
+
+const groupSelections = ref<Record<string, GroupSelection>>({});
+
+// 初始化或更新文件组的选择状态
+const initializeGroupSelections = (files: string[]) => {
+  const groups = groupFiles(files);
+  groups.forEach(group => {
+    if (!groupSelections.value[group.extension]) {
+      groupSelections.value[group.extension] = {
+        selected: [],
+        selectAll: false
+      };
+    }
+  });
+};
+
+// 处理全选功能
+const handleSelectAll = (val: boolean, extension: string) => {
+  const group = groupFiles(files.value).find(g => g.extension === extension);
+  if (group) {
+    groupSelections.value[extension].selected = val ? [...group.files] : [];
+  }
+};
+
+// 批量删除指定类型的文件
+const batchDelete = async (extension: string) => {
+  const selectedFiles = groupSelections.value[extension].selected;
+  message.value = '正在批量删除文件...';
+  messageClass.value = 'info';
+
+  try {
+    for (const file of selectedFiles) {
+      if (isFolder(file)) {
+        await deleteFolder(file);
+      } else {
+        await deleteFile(file);
+      }
+    }
+    groupSelections.value[extension].selected = [];
+    groupSelections.value[extension].selectAll = false;
+    message.value = '批量删除完成';
+    messageClass.value = 'success';
+    await fetchFileList();
+  } catch (error) {
+    message.value = '批量删除过程中发生错误';
+    messageClass.value = 'error';
+  }
+};
+
+// 批量下载指定类型的文件
+const batchDownload = async (extension: string) => {
+  const selectedFiles = groupSelections.value[extension].selected;
+  message.value = '正在准备批量下载...';
+  messageClass.value = 'info';
+
+  try {
+    for (const file of selectedFiles) {
+      if (!isFolder(file)) {
+        await downloadFile(file);
+      }
+    }
+    message.value = '批量下载完成';
+    messageClass.value = 'success';
+  } catch (error) {
+    message.value = '批量下载过程中发生错误';
+    messageClass.value = 'error';
+  }
+};
+
+// 批量解压文件
+const batchExtract = async (extension: string) => {
+  const selectedFiles = groupSelections.value[extension].selected;
+  message.value = '正在批量解压文件...';
+  messageClass.value = 'info';
+
+  try {
+    for (const file of selectedFiles) {
+      if (extension === 'zip') {
+        await extractZip(file);
+      } else if (extension === 'rar') {
+        await extractRar(file);
+      }
+    }
+    groupSelections.value[extension].selected = [];
+    groupSelections.value[extension].selectAll = false;
+    message.value = '批量解压完成';
+    messageClass.value = 'success';
+    await fetchFileList();
+  } catch (error) {
+    message.value = '批量解压过程中发生错误';
+    messageClass.value = 'error';
+  }
+};
+
+onMounted(() => {
+  fetchProblemDetails();
+  fetchFileList();
+});
 </script>
 
 <style scoped>
@@ -554,5 +738,23 @@ button:focus {
   background-color: #ecf5ff;
   border-radius: 4px;
   display: inline-block;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.group-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 8px;
 }
 </style>

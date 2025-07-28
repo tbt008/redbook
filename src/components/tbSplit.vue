@@ -15,15 +15,14 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const container = ref(null)
 const spliter = ref(null)
-const topHeight = ref('500px')
-const bottomHeight = ref('500px')
+const topHeight = ref('')
+const bottomHeight = ref('')
 const ratio = ref(0.5)
 
 function updatePaneStyles(newRatio) {
   const containerHeight = container.value.clientHeight
   topHeight.value = `${containerHeight * newRatio - 5}px`
   bottomHeight.value = `${containerHeight * (1 - newRatio) - 5}px`
-  console.log(topHeight.value)
 }
 
 function handleResize(e) {
@@ -34,16 +33,16 @@ function handleResize(e) {
     e.preventDefault()
     // 限制鼠标移动事件的范围为container容器四至范围内
     if (
-      e.clientX < rect.left ||
-      e.clientX > rect.right ||
-      e.clientY < rect.top ||
-      e.clientY > rect.bottom
+        e.clientX < rect.left ||
+        e.clientX > rect.right ||
+        e.clientY < rect.top ||
+        e.clientY > rect.bottom
     ) {
       onMouseUp()
     }
     const moveScale = (e.clientY - initX) / containerHeight
     const newRatio = moveScale
-    console.log(newRatio)
+
     if (newRatio > 0.1 && newRatio < 0.9) {
       ratio.value = newRatio
       updatePaneStyles(newRatio)
@@ -108,30 +107,30 @@ onUnmounted(() => {
   -ms-user-select: none;
   user-select: none;
 
-  &:before,
-  &:after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    background-color: rgba(0, 0, 0, 0.15);
-    height: 1.5px;
-    width: 30px;
-  }
+&:before,
+&:after {
+   content: '';
+   position: absolute;
+   top: 50%;
+   left: 50%;
+   background-color: rgba(0, 0, 0, 0.15);
+   height: 1.5px;
+   width: 30px;
+ }
 
-  &:before {
-    margin-top: -2px;
-  }
+&:before {
+   margin-top: -2px;
+ }
 
-  &:after {
-    margin-top: 1px;
-  }
+&:after {
+   margin-top: 1px;
+ }
 
-  &:hover:before,
-  &:hover:after {
-    width: 30px;
-    height: 1.5px;
-    background-color: rgba(0, 0, 0, 0.35);
-  }
+&:hover:before,
+&:hover:after {
+   width: 30px;
+   height: 1.5px;
+   background-color: rgba(0, 0, 0, 0.35);
+ }
 }
 </style>

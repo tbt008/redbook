@@ -5,78 +5,99 @@
         <template #template> <el-skeleton-item variant="circle" /> </template>
         <template #default>
           <div style="margin: auto; width: 70%; flex-wrap: wrap">
-            <div
-              style="
+            <div style="margin: auto; display: flex">
+              <div style="
                 color: rgb(255, 255, 255);
                 padding-top: 50px;
                 font-size: 50px;
+                margin: auto;
+                display: flex;
                 text-align: center;
-              "
-            >
-              {{ constestInfo.title }}
+              ">
+                <div style="display: flex">{{ constestInfo.title }}</div>
+                <div style="
+                  padding-left: 30px;
+                  display: flex;
+                  text-align: center;
+                  margin: auto 0;
+                  height: 25px;
+                ">
+                  <div v-if="constestInfo.needPassword" :class="['difficulty-label', 'difficulty-entry']">
+                    <el-icon>
+                      <Lock />
+                    </el-icon>密码
+                  </div>
+                  <div style="margin-left: 10px" v-if="constestInfo.isInvite"
+                    :class="['difficulty-label', 'difficulty-easy']">
+                    <el-icon>
+                      <key />
+                    </el-icon>邀请
+                  </div>
+                  <div style="margin-left: 10px" v-if="constestInfo.contestType == 1"
+                    :class="['difficulty-label', 'difficulty-medium']">
+                    IOI
+                  </div>
+                  <div style="margin-left: 10px" v-if="constestInfo.contestType == 2"
+                    :class="['difficulty-label', 'difficulty-medium']">
+                    ACM
+                  </div>
+                </div>
+              </div>
             </div>
-            <el-tag v-if="constestInfo.isInputPassword" :type="primary" effect="dark"
-              ><el-icon><Lock /></el-icon>密码</el-tag
-            >
-            <el-tag
-              style="margin-left: 10px"
-              v-if="constestInfo.isInvite"
-              :type="success"
-              effect="dark"
-              ><el-icon><key /></el-icon>邀请</el-tag
-            >
-            <el-tag
-              style="margin-left: 10px"
-              v-if="constestInfo.contestType == 1"
-              :type="primary"
-              effect="dark"
-              >IOI</el-tag
-            >
-            <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
-            <div
-              style="color: rgb(220, 220, 220); width: 100%; font-size: 20px; text-align: center"
-            >
-              <el-icon><BellFilled /></el-icon>比赛时间:{{ constestInfo.startTime }}至{{
-                constestInfo.endTime
-              }}
+
+            <div style="color: rgb(220, 220, 220); width: 100%; font-size: 15px; text-align: center">
+              <el-icon>
+                <BellFilled />
+              </el-icon>比赛时间 : {{ constestInfo.startTime }} 至
+              {{ constestInfo.endTime }}
             </div>
             <div>
-              <div
-                style="color: rgb(220, 220, 220); width: 100%; font-size: 20px; text-align: center"
-              >
-                <el-icon><Promotion /></el-icon>
-                主办方:ptuCode.com
+              <div style="color: rgb(220, 220, 220); width: 100%; font-size: 15px; text-align: center">
+                <el-icon>
+                  <Promotion />
+                </el-icon>
+                主办方 : cubecode.cn
               </div>
-              <div
-                style="color: rgb(220, 220, 220); width: 100%; font-size: 20px; text-align: center"
-              >
-                <el-icon><UserFilled /></el-icon>参与人数：{{ constestInfo.userNumber }}
+              <div style="color: rgb(220, 220, 220); width: 100%; font-size: 15px; text-align: center">
+                <el-icon>
+                  <UserFilled />
+                </el-icon>参与人数：{{ constestInfo.participationNumber }}
               </div>
-              <div
-                style="
-                  color: rgb(220, 220, 220);
-                  width: 100%;
-                  font-size: 20px;
-                  text-align: center;
-                  margin-bottom: 20px;
-                "
-              >
-                语言:
-                <span v-if="constestInfo.language == 0">不限</span>
-                <span v-if="constestInfo.language == 1">C</span>
-                <span v-if="constestInfo.language == 2">C++</span>
-                <span v-if="constestInfo.language == 3">Java</span>
-                <span v-if="constestInfo.language == 4">Python</span>
+              <div style="
+                color: rgb(220, 220, 220);
+                width: 100%;
+                font-size: 15px;
+                text-align: center;
+                margin-bottom: 20px;
+              ">
+                语言 :
+                {{ constestInfo.language }}
+              </div>
+              <div style="
+                text-align: left;
+                width: 100%;
+                margin-bottom: 20px;
+              ">
+                <el-button v-if="
+                  constestInfo.isJoin == false && constestInfo.isInvite == false && isEnd == false
+                " type="danger" @click="joinContest"><el-icon>
+                    <Sunny />
+                  </el-icon> 报名</el-button>
+                <el-button v-else-if="constestInfo.isJoin == true || constestInfo.isInvite == true" type="danger" plain
+                  disabled><el-icon>
+                    <Sunny />
+                  </el-icon> 已报名</el-button>
               </div>
             </div>
           </div>
-          <progress-bar :startTime="startTime" :endTime="endTime" />
+          <progress-bar v-if="!isShowCountDown && constestInfo.isJoin == true && isEnd == false" :startTime="startTime"
+            :endTime="endTime" />
         </template>
       </el-skeleton>
     </div>
 
-    <div style="height: 500px; width: 70%; margin: auto">
-      <el-tabs v-model="activeName" class="contest-tabs" @tab-click="handleClick">
+    <div style="height: 500px; width: 80%; margin: auto">
+      <el-tabs v-model="selectTab" class="contest-tabs" @tab-click="updateTab">
         <el-tab-pane label="比赛说明" name="first" style="display: flex; flex-wrap: wrap">
           <el-skeleton :loading="loading" animated>
             <template #template>
@@ -84,54 +105,48 @@
             </template>
             <template #default>
               <div v-if="isShowCountDown" style="margin: auto">
-                <count-down
-                  @selectQuestion="selectQuestion"
-                  :endTime="startTime"
-                  :endText="endText"
-                />
+                <count-down @selectQuestion="selectQuestion" :endTime="startTime" :endText="endText" />
               </div>
-              <div
-                class="warning"
-                v-if="constestInfo.isBeInvited == 0 && constestInfo.isInvite == true"
-              >
+              <div class="warning" v-if="constestInfo.isJoin == false && constestInfo.isInvite == true">
                 当前比赛需要邀请，且您未被邀请，无法参加！
               </div>
 
-              <div
-                class="passwordInput"
-                v-if="constestInfo.isInputPassword != 1 && constestInfo.isInputPassword != null"
-              >
-                <el-input
-                  v-model="inputPassword"
-                  style="width: 240px"
-                  placeholder="请输入比赛密码"
-                />
+              <div class="passwordInput"
+                v-if="constestInfo.needPassword == true && constestInfo.isInputPassword == false">
+                <el-input v-model="inputPassword" style="width: 240px" placeholder="请输入比赛密码" />
                 <el-button type="primary" @click="submitPassword()">提交</el-button>
               </div>
-              <div
-                style="
-                  background-color: beige;
-                  min-height: 300px;
-                  height: auto;
-                  width: 80%;
-                  margin: auto;
-                  padding: 30px;
-                "
-              >
-                {{ constestInfo.announcement }}
-              </div>
+
+
+              <mavon-editor style=" border-radius: 20px;
+box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1); 
+ min-height: 300px;
+ /* background-color: #ffffff; */
+                height: auto;
+                width: 80%;
+                margin: auto;
+                padding: 30px;" v-model="constestInfo.description" :subfield="false" :boxShadow="false"
+                previewBackground="#ffffff" :defaultOpen="'preview'" :toolbarsFlag="false" :editable="false"
+                :scrollStyle="true" :ishljs="true" />
+
+
             </template>
           </el-skeleton>
         </el-tab-pane>
-        <div>
-          <el-tab-pane label="题目" name="second"
-            ><el-scrollbar height="600px">
+        <div v-if="constestInfo.isJoin == true && isEnd == false">
+          <el-tab-pane label="题目" name="second"><el-scrollbar height="600px">
               <el-table :data="questionList" style="width: 100%">
                 <el-table-column label="题号" prop="letter"> </el-table-column>
                 <el-table-column label="题目" prop="title">
                   <template #default="{ row }">
-                    <el-link @click="intoQuestion(row.questionId)">{{ row.title }}</el-link>
+                    <el-link @click="intoQuestion(row.questionId)">
+                      {{ row.title }}
+                    </el-link>
                   </template>
+                </el-table-column>
+                <el-table-column label="通过率" width="100">
+                  <template #default="{ row }">
+                    <el-link>{{ row.acTimes }}/{{ row.tryTimes }} </el-link></template>
                 </el-table-column>
                 <el-table-column label="状态" prop="isPass">
                   <template #default="{ row }">
@@ -146,78 +161,250 @@
                 <template #empty>
                   <el-empty description="没有数据" />
                 </template>
-              </el-table> </el-scrollbar
-          ></el-tab-pane>
-          <el-tab-pane label="提交" name="third">
-            <el-scrollbar height="600px">
-              <el-table :data="codeRecordList" style="width: 100%">
-                <!-- <el-table-column label="id" prop="id"> </el-table-column> -->
-                <el-table-column label="用户名" prop="userId"> </el-table-column>
-                <el-table-column label="题号" prop="">
-                  <template #default="{ row }">
-                    <el-link>{{ hashmap.get(row.questionId) }}</el-link>
-                  </template>
-                </el-table-column>
-                <el-table-column label="运行状态" prop="result">
-                  <template #default="{ row }">
-                    <el-tag v-if="row.result == 100" type="success">答案正确</el-tag>
-                    <el-tag v-else-if="row.result < 100 && row.result > 0" type="primary"
-                      >部分正确</el-tag
-                    >
-                    <el-tag v-if="row.result == 0" type="danger">答案错误</el-tag>
-                    <el-tag v-if="row.result == -2" type="warning">编译错误</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column label="时间(ms)" prop="runtime"> </el-table-column>
-                <el-table-column label="内存(kb)" prop="memory"> </el-table-column>
-                <el-table-column label="语言" prop="language">
-                  <template #default="{ row }">
-                    <div v-if="row.language == 1">C</div>
-                    <div v-if="row.language == 2">C++</div>
-                    <div v-if="row.language == 3">Java</div>
-                    <div v-if="row.language == 4">Python</div>
-                  </template>
-                </el-table-column>
-                <el-table-column label="提交时间" prop="createTime"> </el-table-column>
-                <template #empty>
-                  <el-empty description="没有数据" />
-                </template>
-              </el-table> </el-scrollbar
-          ></el-tab-pane>
-          <el-tab-pane label="排名" name="fourth">
-            <el-scrollbar height="600px">
-              <el-table :data="rankinglist" style="width: 100%">
-                <el-table-column label="名次" prop="count"> </el-table-column>
-                <el-table-column label="参赛者" prop="uickName"> </el-table-column>
-                <el-table-column label="通过" prop="totalNum"> </el-table-column>
+              </el-table> </el-scrollbar></el-tab-pane>
 
-                <el-table-column
-                  v-for="(item, index) in questionList"
-                  :key="index"
-                  :label="item.letter"
-                >
-                  <template #default="{ row }">
-                    <el-link>{{ row.questionInfo[index].score }}</el-link>
-                  </template>
-                </el-table-column>
-
-                <template #empty>
-                  <el-empty description="没有数据" />
-                </template>
-              </el-table> </el-scrollbar
-          ></el-tab-pane>
         </div>
+        <el-tab-pane label="提交" name="third">
+          <el-input v-model="inputUser" style="width: 240px" placeholder="输入完整学号后按回车查询" @change="searchUser"
+            :prefix-icon="Search" />
+
+          <el-table :data="codeRecordList" style="width: 100%" @row-click="goToSubmissionDetail">
+            <el-table-column label="用户名" prop="uid"> </el-table-column>
+            <el-table-column label="题号" prop="displayTitle">
+              <template #header>
+                <el-dropdown :hide-on-click="false">
+                  <span class="el-dropdown-link">
+                    题号
+                    <el-icon class="el-icon--right">
+                      <arrow-down />
+                    </el-icon>
+                  </span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item v-for="(item, index) in displayTitle" :key="index">
+                        <el-checkbox @click="handleCommand(index)" v-bind="item.checked" label="" size="large" />
+                        {{ item.text }}</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </template>
+              <template #default="{ row }">
+                <el-link>{{ row.displayTitle }}</el-link>
+              </template>
+            </el-table-column>
+            <el-table-column label="运行状态" prop="runResult">
+              <template #header>
+                <el-dropdown :hide-on-click="false">
+                  <span class="el-dropdown-link">
+                    运行状态
+                    <el-icon class="el-icon--right">
+                      <arrow-down />
+                    </el-icon>
+                  </span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item v-for="(item, index) in runResult" :key="index">
+                        <el-checkbox @click="handleRun(index)" v-bind="item.checked" label="" size="large" />
+                        {{ item.text }}</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </template>
+              <template #default="{ row }">
+                <el-tag v-if="row.runResult == '答案正确'" type="success">答案正确</el-tag>
+                <el-tag v-else-if="row.runResult == '部分正确'" type="primary">部分正确</el-tag>
+                <el-tag v-else-if="row.runResult == '答案错误'" type="danger">答案错误</el-tag>
+                <el-tag v-else-if="row.runResult == '编译错误'" type="warning">编译错误</el-tag>
+                <el-tag v-else-if="row.runResult == '正在判题'" type="primary">正在判题</el-tag>
+                <el-tag v-else type="danger">{{ row.runResult }}</el-tag>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="时间(ms)" prop="runtime">
+              <template #default="{ row }">
+                <div v-if="row.runtime == null">N/A</div>
+                <div v-else>
+                  {{ row.runtime }}
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="内存(kb)" prop="memory">
+              <template #default="{ row }">
+                <div v-if="row.memory == null">N/A</div>
+                <div v-else>
+                  {{ row.memory }}
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="语言" prop="language">
+              <template #default="{ row }">
+                <div v-if="row.language == 1">C</div>
+                <div v-if="row.language == 2">C++</div>
+                <div v-if="row.language == 3">Java</div>
+                <div v-if="row.language == 4">Python</div>
+              </template>
+            </el-table-column>
+            <el-table-column label="提交时间" prop="createTime"> </el-table-column>
+            <template #empty>
+              <el-empty description="没有数据" />
+            </template>
+          </el-table>
+          <!-- elementplus el-pagination: 分页器 -->
+          <div class="pagination-container">
+            <el-pagination v-model:current-page="recordCurrentPage" v-model:page-size="recordPageSize"
+              :total="recordTotal" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next"
+              @size-change="recordHandleSizeChange" @current-change="recordHandleCurrentChange" />
+          </div>
+        </el-tab-pane>
+        <el-tab-pane label="排名" name="fourth">
+          <div style="display: flex; justify-content: space-between;">
+            <!-- elementplus el-input: 搜索输入框 -->
+            <el-input v-model="searchKeyword" placeholder="输入完整学号后按回车查询" class="filter-item" clearable
+              @keyup.enter="handleSearch">
+              <template #prefix>
+                <!-- elementplus el-icon: 搜索图标 -->
+                <el-icon>
+                  <Search />
+                </el-icon>
+              </template>
+            </el-input>
+            <div style="float: right;">
+              <span v-if="selfRank?.value" style="margin-right: 20px; color: #409EFF">
+                我的排名: 第 {{ selfRank.value }} 名
+              </span>
+              <span style="font-size: 12px; margin: 10px; color:rgb(100,100,100)">默认每分钟刷新</span>
+              <el-button @click="refreshRank" type="primary" :icon="Refresh" circle></el-button>
+            </div>
+          </div>
+          <el-table :data="rankinglist" style="width: 100%">
+
+            <el-table-column label="名次" prop="rank" width="80"> </el-table-column>
+            <el-table-column label="学号" prop="uid" width="150"> </el-table-column>
+            <el-table-column label="参赛者" prop="userName" width="100">
+              <template #default="{ row }">
+                <el-tooltip class="box-item" effect="dark" :content="row.nickName" placement="top">
+                  <div>{{ row.userName }}</div>
+                </el-tooltip>
+
+              </template>
+            </el-table-column>
+            <el-table-column label="班级" prop="classic" width="100">
+              <template #default="{ row }">
+                {{ getClassName(row.classic) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="通过" prop="totalNum" width="80">
+              <template #default="{ row }">
+                {{ Number(row.totalNum).toFixed(2) }}
+              </template> </el-table-column>
+            <el-table-column label="罚时" width="100">
+              <template #default="{ row }">
+                <div>{{ penalty(row) }}</div>
+              </template>
+            </el-table-column>
+
+            <el-table-column v-for="(item, index) in displayTitle" :key="index" :label="item.text" align="center">
+              <template #default="{ row }">
+                <!-- acm -->
+                <div v-if="constestInfo.contestType == 2">
+                  <div v-if="row.questionInfo[index].score == 100" class="rank-css" style="color: #67c23a">
+                    <div>
+                      <div>
+                        {{ formatScore(row.questionInfo[index].score) }}
+
+                        (-{{ row.questionInfo[index].count }})
+                      </div>
+
+                      <div style="color: rgb(96, 96, 96); font-size: 13px">
+                        {{ row.questionInfo[index].submitTime }}
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else-if="row.questionInfo[index].submitTime != null" class="rank-css" style="color: red">
+                    <div>
+                      <div>
+                        {{ formatScore(row.questionInfo[index].score) }}
+
+                        (-{{ row.questionInfo[index].count }})
+                      </div>
+
+                      <div style="color: rgb(96, 96, 96); font-size: 13px">
+                        {{ row.questionInfo[index].submitTime }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else class="rank-css"></div>
+                </div>
+                <!-- ioi -->
+                <div v-else>
+                  <div v-if="row.questionInfo[index].score == 100" class="rank-css" style="color: #67c23a">
+                    <div>
+                      <div>
+                        {{ formatScore(row.questionInfo[index].score) }}
+                      </div>
+
+                      <div style="color: rgb(96, 96, 96); font-size: 13px">
+                        {{ row.questionInfo[index].submitTime }}
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else-if="
+                    row.questionInfo[index].submitTime != null &&
+                    row.questionInfo[index].score != 0
+                  " class="rank-css" style="color: rgb(230, 162, 60)">
+                    <div>
+                      <div>
+                        {{ formatScore(row.questionInfo[index].score) }}
+                      </div>
+
+                      <div style="color: rgb(96, 96, 96); font-size: 13px">
+                        {{ row.questionInfo[index].submitTime }}
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else-if="
+                    row.questionInfo[index].submitTime != null &&
+                    row.questionInfo[index].score == 0
+                  " class="rank-css" style="color: red">
+                    <div>
+                      <div>
+                        {{ formatScore(row.questionInfo[index].score) }}
+                      </div>
+
+                      <div style="color: rgb(96, 96, 96); font-size: 13px">
+                        {{ row.questionInfo[index].submitTime }}
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="rank-css"></div>
+                </div>
+              </template>
+            </el-table-column>
+
+            <template #empty>
+              <el-empty description="没有数据" />
+            </template>
+          </el-table>
+          <!-- elementplus el-pagination: 分页器 -->
+          <div class="pagination-container">
+            <el-pagination v-model:current-page="rankCurrentPage" v-model:page-size="rankPageSize" :total="rankTotal"
+              :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="rankHandleSizeChange"
+              @current-change="rankHandleCurrentChange" />
+          </div>
+        </el-tab-pane>
       </el-tabs>
     </div>
   </div>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import request from '@/util/request.ts'
 import countDown from '@/components/countDown.vue'
 import progressBar from '@/components/progressBar.vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Search, Refresh, ArrowDown } from '@element-plus/icons-vue'
 const activeName = ref('first')
 const router = useRouter()
 const id = ref()
@@ -229,39 +416,307 @@ const questionList = ref([])
 const constestInfo = ref({})
 const codeRecordList = ref([])
 const rankinglist = ref([])
+const inputUser = ref('')
 const loading = ref(true)
-const map = ref({})
+const checkedQuestionName = ref([])
+const selectTab = ref('first')
 const endText = ref('比赛开始！')
-var hashmap = new Map()
-const intoQuestion = (id) => {
-  router.push(`/question?id=${id}&contest=${constestInfo.value.id}`)
+const rankCurrentPage = ref(1)
+const rankPageSize = ref(10)
+const rankTotal = ref(0)
+const recordCurrentPage = ref(1)
+const recordPageSize = ref(10)
+const recordTotal = ref(0)
+const isEnd = ref(false)
+const questionNumber = ref([])
+const runStatusList = ref([])
+const displayTitle = ref([])
+const runResult = ref([
+  { text: '答案正确', checked: false },
+  { text: '部分正确', checked: false },
+  { text: '答案错误', checked: false },
+  { text: '编译错误', checked: false },
+  { text: '正在判题', checked: false }
+])
+const searchKeyword = ref('')
+const selfRank = ref(null)
+const classNames = ref([])
+const classMap = ref(new Map())
+const handleSearch = async () => {
+  rankCurrentPage.value = 1
+  await getUser()
 }
-const refreshRank = () => {
-  request.get(`/ranking/${id.value}`).then((res) => {
+const getUser = async () => {
+  //不是数字就禁止
+  if (isNaN(searchKeyword.value)) {
+    ElMessage.error('请输入正确的学号')
+    return
+  }
+  try {
+    const res = await request.post(`/ranking/get/search`, {
+      contestId: id.value,
+      uid: searchKeyword.value
+    })
+
     if (res.code == 200) {
-      rankinglist.value = res.data
+      console.log(rankinglist.value)
+      rankinglist.value = [res.data]
+
     } else {
-      ElMessage.error(res.msg)
-      console.log(res)
+      ElMessage.error('搜索失败：' + res.msg)
+    }
+  } catch (error) {
+    ElMessage.error('搜索失败！')
+  }
+}
+const goToSubmissionDetail = async (row) => {
+  const isSelf = await getSubmissionDetail(row.submitId)
+  if (isSelf) {
+    row.uid
+    router.push(`/submission/${row.submitId}?contest=${id.value}`)
+  } else {
+    ElMessage.warning('无权限查看')
+  }
+}
+// 获取提交详情
+const getSubmissionDetail = async (submissionId) => {
+  try {
+    const response = (await request.post('/contest/record/submission', {
+      submissionId: submissionId
+    }))
+    if (response.code === 200) {
+      return true;
+    }
+  } catch (error) {
+    console.log("获取提交详情失败" + error)
+  }
+}
+const handleRun = (index1) => {
+  runStatusList.value = []
+  runResult.value[index1].checked = !runResult.value[index1].checked
+  runResult.value.forEach((item, index) => {
+    if (item.checked == true) {
+      runStatusList.value.push(item.text)
     }
   })
+  selectRecord()
 }
+// 分页大小改变处理
+const recordHandleSizeChange = async (val) => {
+  recordPageSize.value = val
+  recordCurrentPage.value = 1
+  selectRecord()
+}
+
+// 当前页改变处理
+const recordHandleCurrentChange = async (val) => {
+  recordCurrentPage.value = val
+  selectRecord()
+}
+// 分页大小改变处理
+const rankHandleSizeChange = async (val) => {
+  rankPageSize.value = val
+  rankCurrentPage.value = 1
+  refreshRank()
+}
+
+// 当前页改变处理
+const rankHandleCurrentChange = async (val) => {
+  rankCurrentPage.value = val
+  refreshRank()
+}
+const timeToSeconds = (timeString) => {
+  // 使用冒号分割字符串以获取小时、分钟和秒
+  const [hours, minutes, seconds] = timeString.split(':').map(Number)
+  // 计算总秒数：小时 * 3600 + 分钟 * 60 + 秒
+  const totalSeconds = hours * 3600 + minutes * 60 + seconds
+  return totalSeconds
+}
+const penalty = (row) => {
+  // acm
+  if (constestInfo.value.contestType == 2) {
+    var sum_ac_time = 0
+    var sum_count = 0
+
+    row.questionInfo.forEach((item, index) => {
+      if (item.acceptedTime != null && item.score == 100) {
+        sum_ac_time += timeToSeconds(item.acceptedTime)
+        sum_count += item.count
+      }
+    })
+
+    // 计算小时、分钟和秒
+    const hours = Math.floor(sum_ac_time / 3600);
+    const minutes = Math.floor((sum_ac_time % 3600) / 60);
+    const secs = sum_ac_time % 60;
+
+    // 将小时、分钟和秒格式化为两位数
+    const paddedHours = String(hours).padStart(2, '0');
+    const paddedMinutes = String(minutes).padStart(2, '0') + sum_count * 20;
+    const paddedSeconds = String(secs).padStart(2, '0');
+
+    // 拼接成 00:00:00 格式
+    return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`
+
+  } else {
+    var maxTime = 0
+    row.questionInfo.forEach((item, index) => {
+      if (item.acceptedTime != null && item.score == 100) {
+        maxTime = Math.max(maxTime, timeToSeconds(item.acceptedTime))
+      }
+    })
+    // 计算小时、分钟和秒
+    const hours = Math.floor(maxTime / 3600);
+    const minutes = Math.floor((maxTime % 3600) / 60);
+    const secs = maxTime % 60;
+
+    // 将小时、分钟和秒格式化为两位数
+    const paddedHours = String(hours).padStart(2, '0');
+    const paddedMinutes = String(minutes).padStart(2, '0')
+    const paddedSeconds = String(secs).padStart(2, '0');
+
+    // 拼接成 00:00:00 格式
+    return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`
+
+  }
+}
+const handleCommand = (index1) => {
+  // 遍历获取displayTitle
+  checkedQuestionName.value = []
+  displayTitle.value[index1].checked = !displayTitle.value[index1].checked
+  displayTitle.value.forEach((item, index) => {
+    if (item.checked == true) {
+      checkedQuestionName.value.push(item.text)
+    }
+  })
+  selectRecord()
+}
+
+const timer = ref(null)
+const updateTab = (tab) => {
+  if (tab.paneName == 'second') {
+    selectQuestion()
+    if (timer.value != null) {
+      clearInterval(timer.value)
+      timer.value = null
+    }
+  } else if (tab.paneName == 'third') {
+    selectRecord()
+    if (timer.value != null) {
+      clearInterval(timer.value)
+      timer.value = null
+    }
+  } else if (tab.paneName == 'fourth') {
+    refreshRank()
+    // 创建一个定时器，每分钟执行一遍
+    timer.value = setInterval(() => {
+      refreshRank()
+    }, 60000)
+
+  } else {
+
+    if (timer.value != null) {
+      clearInterval(timer.value)
+      timer.value = null
+    }
+  }
+
+}
+const joinContest = () => {
+  request
+    .post(`/contest/join`, {
+      contestId: id.value
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        ElMessage.success('报名比赛成功！')
+        constestInfo.value.isJoin == true
+      } else {
+        ElMessage.error('报名比赛失败：' + res.msg)
+      }
+    })
+    .catch(() => {
+      ElMessage.error('报名比赛失败！')
+    })
+}
+const searchUser = (value) => {
+  if (isNaN(value)) {
+    ElMessage.error('请输入正确的学号')
+    return
+  }
+  request
+    .post(`/contest/record/get/all`, {
+      contestId: id.value,
+      uid: value,
+      pageStart: recordCurrentPage.value,
+      pageSize: recordPageSize.value,
+      questionDisplayNames: checkedQuestionName.value,
+      runStatusList: runStatusList.value
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        codeRecordList.value = res.data.list
+        recordTotal.value = res.data.total
+      } else {
+        ElMessage.error('获取提交记录失败：' + res.msg)
+      }
+    })
+    .catch(() => {
+      ElMessage.error('获取提交记录失败！')
+    })
+}
+const intoQuestion = (id) => {
+  // 打开新标签页
+  const url = `/question?id=${id}&contest=${constestInfo.value.id}`
+  window.open(url, '_blank')
+}
+const refreshRank = () => {
+  request
+    .post(`/ranking/get`, {
+      contestId: id.value,
+      pageStart: rankCurrentPage.value,
+      pageSize: rankPageSize.value
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        rankinglist.value = res.data.list
+        questionNumber.value = []
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+
+        res.data.list[0].questionInfo.forEach((item, index) => {
+          item.letter = letters[index]
+
+
+          var r = { text: `${letters[index]}`, value: `${letters[index]}` }
+          r.checked = false
+          questionNumber.value.push(r)
+        })
+        if (displayTitle.value.length == 0) {
+          displayTitle.value = questionNumber.value
+        }
+
+        rankTotal.value = res.data.total
+      } else {
+        ElMessage.error(res.msg)
+        console.log(res)
+      }
+    })
+}
+
 const selectQuestion = () => {
   request
     .get(`/contest/racepage/${id.value}/question`)
     .then((res) => {
       if (res.code == 200) {
         questionList.value = res.data
+        isShowCountDown.value = false
+        displayTitle.value = []
         const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
         questionList.value.forEach((item, index) => {
-          // 确保索引在字母数组范围内内，这里简单处理只取前26个
-          if (index < letters.length) {
-            item.letter = letters[index]
-            let t = item.questionId
-            hashmap.set(t, letters[index])
-          } else {
-            item.letter = '超出了字母范围'
-          }
+          item.letter = letters[index]
+          var r = { text: `${letters[index]}`, value: `${letters[index]}` }
+          r.checked = false
+          displayTitle.value.push(r)
         })
       } else {
         ElMessage.error(res.msg)
@@ -270,31 +725,70 @@ const selectQuestion = () => {
     .catch((err) => {
       ElMessage.error(err)
     })
-  isShowCountDown.value = false
 }
 const selectRecord = () => {
-  request.get(`/contest/record/get/all/${id.value}`).then((res) => {
-    codeRecordList.value = res.data
-  })
+  request
+    .post(`/contest/record/get/all`, {
+      contestId: id.value,
+      uid: inputUser.value,
+      pageStart: recordCurrentPage.value,
+      pageSize: recordPageSize.value,
+      questionDisplayNames: checkedQuestionName.value,
+      runStatusList: runStatusList.value
+    })
+    .then((res) => {
+      if (res.code == 200) {
+        codeRecordList.value = res.data.list
+        recordTotal.value = res.data.total
+      } else {
+        ElMessage.error('获取提交记录失败：' + res.msg)
+      }
+    })
+    .catch(() => {
+      ElMessage.error('获取提交记录失败！')
+    })
 }
+onBeforeUnmount(async () => {
+  if (timer.value != null) {
+    clearInterval(timer.value)
+    timer.value = null
+  }
+})
 onMounted(async () => {
   id.value = router.currentRoute.value.params.id
-  request.get(`/contest/racepage/${id.value}`).then((res) => {
-    constestInfo.value = res.data
-    loading.value = false
-    startTime.value = new Date(constestInfo.value.startTime).getTime() / 1000 + ' '
-    endTime.value = new Date(constestInfo.value.endTime).getTime() / 1000 + ' '
+  request.get(`/contest/racepage/${id.value}`).then(async (res) => {
+    if (res.code == 200) {
+      constestInfo.value = res.data
+      loading.value = false
+      startTime.value = new Date(constestInfo.value.startTime).getTime() / 1000 + ' '
+      endTime.value = new Date(constestInfo.value.endTime).getTime() / 1000 + ' '
+      isEnd.value =
+        new Date(constestInfo.value.endTime).getTime() - new Date().getTime() < 0 ? true : false
+      isShowCountDown.value =
+        new Date(constestInfo.value.startTime).getTime() - new Date().getTime() > 0 ? true : false
+      // 比赛开始，查询题目
+      if (isShowCountDown.value == false) {
+        selectQuestion()
+        selectRecord()
+        refreshRank()
+        getSelfRank()
+      }
+      await getClassList()
+    } else if (res.code === 401) {
+      // 返回 401 清除token信息并跳转到登录页面
+      localStorage.removeItem('authToken')
 
-    isShowCountDown.value =
-      new Date(constestInfo.value.startTime).getTime() - new Date().getTime() > 0 ? true : false
-    // 比赛开始，查询题目
-    if (isShowCountDown.value == false) {
-      selectQuestion()
-      selectRecord()
-      refreshRank()
+
+      router.push('/login')
+    } else {
+      ElMessage.error(res.msg)
     }
   })
 })
+const filterHandler = (value, row, column) => {
+  const property = column['property']
+  return row[property] === value
+}
 const submitPassword = () => {
   let obj = {
     contestId: id.value,
@@ -309,13 +803,109 @@ const submitPassword = () => {
     }
   })
 }
+
+// 获取自己的排名
+const getSelfRank = async () => {
+  try {
+    // 检查是否登录
+    const token = localStorage.getItem('authToken')
+    if (!token) {
+      return
+    }
+
+    const res = await request.post(`/ranking/get/self/${id.value}`)
+
+    if (res.code == 200) {
+      selfRank.value = res.data
+    }
+  } catch (error) {
+    console.error('获取个人排名失败:', error)
+  }
+}
+
+// 获取班级列表
+const getClassList = async () => {
+  try {
+    const res = await request.post('/classic/list', {
+      pageStart: 1,
+      pageSize: 1000000
+    })
+    if (res.code === 200) {
+      // 创建班级ID到班级名称的映射
+      res.data.list.forEach(item => {
+        classMap.value.set(item.id, item.className)
+      })
+    }
+  } catch (error) {
+    console.error('获取班级列表失败:', error)
+  }
+}
+
+// 新增：根据班级ID获取班级名称的函数
+const getClassName = (classicId) => {
+  return classMap.value.get(classicId) || '未知班级'
+}
+
+const formatScore = (score) => {
+  return Number(score).toFixed(2)
+}
 </script>
 <style>
+.filter-item {
+  width: 240px;
+}
+
+/* 分页容器样式 */
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.difficulty-label {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.difficulty-entry {
+  background-color: #abafa8;
+  color: white;
+}
+
+.difficulty-easy {
+  background-color: #67c23a;
+  color: white;
+}
+
+.difficulty-medium {
+  background-color: #e6a23c;
+  color: white;
+}
+
+.difficulty-hard {
+  background-color: #409eff;
+  color: white;
+}
+
+.difficulty-expert {
+  background-color: #f56c6c;
+  color: white;
+}
+
+.rank-css {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+  width: 100%;
+}
+
 .contest-info {
   background:
     url(@/views/imgs/contest.png) no-repeat,
-    linear-gradient(
-      303deg,
+    linear-gradient(303deg,
       #186ee8 0%,
       #1b6fe8 9%,
       #2274e9 19%,
@@ -330,25 +920,34 @@ const submitPassword = () => {
       #64b3f4 93%,
       #67b7f4 97%,
       #69b9f5 99%,
-      #6abaf5 100%
-    );
+      #6abaf5 100%);
   background-size: cover;
   object-fit: cover;
   background-position: center center;
-  padding: 0%;
+  padding: 40px 20px;
+  /* 增加内边距确保内容在蓝色区域内 */
   height: 300px;
+  position: relative;
+  /* 添加相对定位 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
+
 .warning {
   color: rgb(245, 49, 49);
   font-size: 20px;
   padding: 30px;
   margin: auto;
 }
+
 .passwordInput {
   margin: auto;
   width: 100%;
   padding: 30px;
 }
+
 .contest-tabs {
   /* padding: 25px; */
   /* margin: 30px; */
@@ -357,4 +956,28 @@ const submitPassword = () => {
   /* font-size: 32px; */
   /* font-weight: 600; */
 }
+
+/* 确保已报名按钮在蓝色区域左边 */
+.contest-info .el-button {
+  position: absolute;
+  bottom: 30px;
+  /* 距离底部30px*/
+  left: 120px;
+  z-index: 10;
+}
+
+
+.registered-button {
+  position: absolute !important;
+  bottom: 30px !important;
+  left: 60px !important;
+  z-index: 10 !important;
+}
+
+
+.contest-tabs .el-tab-pane {
+  margin-bottom: 40px;
+}
+
+ 
 </style>

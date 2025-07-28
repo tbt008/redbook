@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, provide, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import lrSplit from '@/components/lrSplit.vue'
 import tbSplit from '@/components/tbSplit.vue'
@@ -8,27 +8,21 @@ import question from './question.vue'
 import request from '@/util/request'
 import codeTest from './codeTest.vue'
 import codeRegion from './CodeRegion.vue'
+
 const router = useRouter()
-const loading = ref(true)
 const awaitContent = ref({})
 const language = ref(0)
-
 const code = ref('')
 const showACImg = ref(false)
 const questionId = ref()
 const contestId = ref()
-const judgeResult = ref({})
-var timer = null
 const showACImgfun = () => {
   showACImg.value = true
   setTimeout(() => {
     showACImg.value = false
   }, 3000) // 延迟3 秒
 }
-provide('submitStatus', judgeResult)
-const providerMethod = (result) => {
-  judgeResult.value = result.data
-}
+
 const codeNow = (value) => {
   code.value = value
 }
@@ -36,14 +30,15 @@ const changeLanuage = (value) => {
   language.value = value
 }
 watch(() => codeNow())
-const qid = ref()
 const rep = ref({})
 onMounted(async () => {
   questionId.value = router.currentRoute.value.query.id
   contestId.value = router.currentRoute.value.query.contest
-  request.get(`/question/${questionId.value}`).then((res) => {
+  request.post(`/question/info`, {
+    questionId: questionId.value,
+    contestId: contestId.value
+  }).then((res) => {
     rep.value = res.data
-    qid.value = rep.value.questionId
   })
 })
 </script>
@@ -55,30 +50,19 @@ onMounted(async () => {
         <!-- 左边题目描述 -->
         <template #one>
           <div class="question-info">
-            <question :loading="loading" :rep="rep"></question>
+            <question :rep="rep" :contest-id="contestId"></question>
           </div>
         </template>
         <!-- 右边代码区域 -->
         <template #two>
-          <tbSplit>
+          <tbSplit class="right">
             <template #one>
-              <codeRegion
-                :loading="loading"
-                :rep="awaitContent"
-                @submitCode="codeNow"
-                @changeLanuage="changeLanuage"
-              ></codeRegion>
+              <codeRegion :rep="awaitContent" @submitCode="codeNow" @changeLanuage="changeLanuage"></codeRegion>
             </template>
             <template #two>
               <div class="footer">
-                <codeTest
-                  @showACImgfun="showACImgfun"
-                  :language="language"
-                  :code="code"
-                  :rep="rep"
-                  :question-id="qid"
-                  :contest-id="contestId"
-                ></codeTest>
+                <codeTest @showACImgfun="showACImgfun" :language="language" :code="code" :rep="rep"
+                  :question-id="questionId" :contest-id="contestId"></codeTest>
               </div>
             </template>
           </tbSplit>
@@ -89,9 +73,8 @@ onMounted(async () => {
 </template>
 <style lang="scss" scoped>
 .containersss {
-  height: 100vh;
   width: 100%;
-  position: relative;
+  height: 94vh;
   display: flex;
   background-color: #f0f0f0;
   flex-direction: column;
@@ -104,17 +87,21 @@ onMounted(async () => {
     .bottom {
       width: 100%;
       display: flex;
-      position: relative;
-      max-width: 1520.8px;
+
       .question-info {
-        height: 100%;
-        // position: relative;
+        height: 94vh;
         display: flex;
       }
     }
+
+    .right {
+      height: 94vh;
+    }
+
     .footer {
       overflow-y: hidden;
-      overflow: hidden; /* 隐藏溢出的内容 */
+      overflow: hidden;
+      /* 隐藏溢出的内容 */
       z-index: 10;
     }
   }

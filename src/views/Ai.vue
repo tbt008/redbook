@@ -4,7 +4,7 @@
     <el-aside :width="isCollapse ? '64px' : '200px'" class="aside">
       <!-- 侧边栏头部 - 包含标题和折叠按钮 -->
       <div class="aside-header">
-        <span v-show="!isCollapse" class="logo-text">AI Chat</span>
+        <span v-show="!isCollapse" class="logo-text" @click="goHome">AI Chat</span>
         <el-icon class="toggle-icon" @click="toggleCollapse">
           <Fold v-if="!isCollapse" />
           <Expand v-else />
@@ -12,19 +12,24 @@
       </div>
 
       <!-- AI 模型选择菜单 -->
-      <el-menu
-        :default-active="selectedAI"
-        class="el-menu-vertical"
-        :collapse="isCollapse"
-        @select="selectAI"
-      >
+      <el-menu :default-active="selectedAI" class="el-menu-vertical" :collapse="isCollapse" @select="selectAI">
         <el-menu-item index="智谱清言">
-          <el-icon><ChatDotRound /></el-icon>
+          <el-icon>
+            <ChatDotRound />
+          </el-icon>
           <template #title>智谱清言</template>
         </el-menu-item>
         <el-menu-item index="讯飞星火">
-          <el-icon><ChatLineRound /></el-icon>
+          <el-icon>
+            <ChatLineRound />
+          </el-icon>
           <template #title>讯飞星火</template>
+        </el-menu-item>
+        <el-menu-item index="deepseek">
+          <el-icon>
+            <ChatDotRound />
+          </el-icon>
+          <template #title>deepseek</template>
         </el-menu-item>
       </el-menu>
 
@@ -35,11 +40,15 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="light" :class="{ 'is-active': !isDarkMode }">
-                <el-icon><Sunny /></el-icon>
+                <el-icon>
+                  <Sunny />
+                </el-icon>
                 <span>日间模式</span>
               </el-dropdown-item>
               <el-dropdown-item command="dark" :class="{ 'is-active': isDarkMode }">
-                <el-icon><Moon /></el-icon>
+                <el-icon>
+                  <Moon />
+                </el-icon>
                 <span>夜间模式</span>
               </el-dropdown-item>
             </el-dropdown-menu>
@@ -53,43 +62,50 @@
     <el-container class="main-container">
       <!-- 顶部标题栏 - 显示当前 AI 和清空按钮 -->
       <el-header class="header">
-        <span class="header-title">{{ selectedAI }}</span>
-        <el-button type="danger" size="small" @click="deleteChat" :icon="Delete">
-          清空聊天记录
-        </el-button>
+        <div class="header-left">
+          <span class="header-title">{{ selectedAI }}</span>
+          <el-button type="primary" size="small" @click="goHome" :icon="Back" class="home-button" plain round>
+            返回首页
+          </el-button>
+        </div>
+        <div class="header-buttons">
+          <el-button type="danger" size="small" @click="deleteChat" :icon="Delete" plain round>
+            清空聊天记录
+          </el-button>
+        </div>
       </el-header>
 
       <!-- 聊天内容区域 -->
       <el-main class="main-content">
         <!-- 消息显示区域 - 分别为两种 AI 模型 -->
         <div v-if="selectedAI === '智谱清言'" class="messages" ref="messagesContainer">
-          <div
-            v-for="(message, index) in messages['智谱清言']"
-            :key="index"
-            :class="['message-item', message.role === 'user' ? 'message-user' : '']"
-          >
+          <!-- 添加欢迎消息 -->
+          <div v-if="showWelcome && messages['智谱清言'].length === 0" class="welcome-message">
+            欢迎使用 CUBECODE AI 聊天应用
+          </div>
+
+          <div v-for="(message, index) in messages['智谱清言']" :key="index"
+            :class="['message-item', message.role === 'user' ? 'message-user' : '']">
             <!-- AI消息布局 -->
             <template v-if="message.role === 'ai'">
-              <el-avatar :size="40" :src="aiAvatar" class="avatar" />
-              <div class="message-bubble ai-bubble">
-                {{ message.content }}
-              </div>
+              <el-avatar :size="40" :src="getAiAvatar" class="avatar clickable" @click="showImageViewer(getAiAvatar)" />
+              <div class="message-bubble ai-bubble" v-html="formatMessage(message.content)"></div>
             </template>
 
             <!-- 用户消息布局 -->
             <template v-else>
               <div class="message-content-wrapper">
-                <div class="message-bubble user-bubble">
+                <div class="message-bubble user-bubble preserve-whitespace">
                   {{ message.content }}
                 </div>
-                <el-avatar :size="40" :src="userAvatar" class="avatar" />
+                <el-avatar :size="40" :src="userAvatar" class="avatar clickable" @click="showImageViewer(userAvatar)" />
               </div>
             </template>
           </div>
 
           <!-- 修改加载动画显示条件 -->
-          <div v-if="isLoading && currentLoadingAI === '智谱清言'" class="message-item">
-            <el-avatar :size="40" :src="aiAvatar" class="avatar" />
+          <div v-if="isLoading['智谱清言']" class="message-item">
+            <el-avatar :size="40" :src="getAiAvatar" class="avatar" />
             <div class="message-bubble ai-bubble loading-bubble">
               <span class="loading-dots"> <i></i><i></i><i></i> </span>
             </div>
@@ -98,33 +114,68 @@
 
         <!-- 讯飞星火的消息区域 -->
         <div v-if="selectedAI === '讯飞星火'" class="messages" ref="messagesContainer">
-          <div
-            v-for="(message, index) in messages['讯飞星火']"
-            :key="index"
-            :class="['message-item', message.role === 'user' ? 'message-user' : '']"
-          >
+          <!-- 添加欢迎消息 -->
+          <div v-if="showWelcome && messages['讯飞星火'].length === 0" class="welcome-message">
+            欢迎使用 CUBECODE AI 聊天应用
+          </div>
+
+          <div v-for="(message, index) in messages['讯飞星火']" :key="index"
+            :class="['message-item', message.role === 'user' ? 'message-user' : '']">
             <!-- AI消息布局 -->
             <template v-if="message.role === 'ai'">
-              <el-avatar :size="40" :src="aiAvatar" class="avatar" />
-              <div class="message-bubble ai-bubble">
-                {{ message.content }}
-              </div>
+              <el-avatar :size="40" :src="getAiAvatar" class="avatar clickable" @click="showImageViewer(getAiAvatar)" />
+              <div class="message-bubble ai-bubble" v-html="formatMessage(message.content)"></div>
             </template>
 
             <!-- 用户消息布局 -->
             <template v-else>
               <div class="message-content-wrapper">
-                <div class="message-bubble user-bubble">
+                <div class="message-bubble user-bubble preserve-whitespace">
                   {{ message.content }}
                 </div>
-                <el-avatar :size="40" :src="userAvatar" class="avatar" />
+                <el-avatar :size="40" :src="userAvatar" class="avatar clickable" @click="showImageViewer(userAvatar)" />
               </div>
             </template>
           </div>
 
           <!-- 修改加载动画显示条件 -->
-          <div v-if="isLoading && currentLoadingAI === '讯飞星火'" class="message-item">
-            <el-avatar :size="40" :src="aiAvatar" class="avatar" />
+          <div v-if="isLoading['讯飞星火']" class="message-item">
+            <el-avatar :size="40" :src="getAiAvatar" class="avatar" />
+            <div class="message-bubble ai-bubble loading-bubble">
+              <span class="loading-dots"> <i></i><i></i><i></i> </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 添加 deepseek 的消息区域 -->
+        <div v-if="selectedAI === 'deepseek'" class="messages" ref="messagesContainer">
+          <!-- 添加欢迎消息 -->
+          <div v-if="showWelcome && messages['deepseek'].length === 0" class="welcome-message">
+            欢迎使用 CUBECODE AI 聊天应用
+          </div>
+
+          <div v-for="(message, index) in messages['deepseek']" :key="index"
+            :class="['message-item', message.role === 'user' ? 'message-user' : '']">
+            <!-- AI消息布局 -->
+            <template v-if="message.role === 'ai'">
+              <el-avatar :size="40" :src="getAiAvatar" class="avatar clickable" @click="showImageViewer(getAiAvatar)" />
+              <div class="message-bubble ai-bubble" v-html="formatMessage(message.content)"></div>
+            </template>
+
+            <!-- 用户消息布局 -->
+            <template v-else>
+              <div class="message-content-wrapper">
+                <div class="message-bubble user-bubble preserve-whitespace">
+                  {{ message.content }}
+                </div>
+                <el-avatar :size="40" :src="userAvatar" class="avatar clickable" @click="showImageViewer(userAvatar)" />
+              </div>
+            </template>
+          </div>
+
+          <!-- 修改加载动画显示条件 -->
+          <div v-if="isLoading['deepseek']" class="message-item">
+            <el-avatar :size="40" :src="getAiAvatar" class="avatar" />
             <div class="message-bubble ai-bubble loading-bubble">
               <span class="loading-dots"> <i></i><i></i><i></i> </span>
             </div>
@@ -134,22 +185,11 @@
         <!-- 输入区域 -->
         <div class="input-section">
           <div class="input-wrapper">
-            <el-input
-              v-model="userMessage"
-              type="textarea"
-              :autosize="{ minRows: 3, maxRows: 6 }"
-              placeholder="请输入消息..."
-              resize="none"
-              @keyup.enter.exact="sendMessage"
-              class="custom-input"
-            />
-            <el-button
-              type="primary"
-              :icon="Position"
-              class="send-button"
-              @click="sendMessage"
-              :disabled="!userMessage.trim()"
-            >
+            <el-input v-model="userMessage" type="textarea" :autosize="{ minRows: 3, maxRows: 6 }"
+              placeholder="请输入消息..." resize="none" @keyup.enter.exact="sendMessage" class="custom-input"
+              :disabled="isLoading[selectedAI]" />
+            <el-button type="primary" :icon="Position" class="send-button" @click="sendMessage"
+              :disabled="!userMessage.trim() || isLoading[selectedAI]">
               发送
             </el-button>
           </div>
@@ -157,10 +197,13 @@
       </el-main>
     </el-container>
   </el-container>
+
+  <!-- 添加图片查看器组件 -->
+  <el-image-viewer v-if="showViewer" :url-list="[currentImage]" @close="showViewer = false" />
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, computed } from 'vue'
 import {
   ChatDotRound,
   ChatLineRound,
@@ -170,40 +213,73 @@ import {
   Delete,
   Moon,
   Sunny,
-  InfoFilled
+  InfoFilled,
+  Brush,
+  Back
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { marked } from 'marked'
+const router = useRouter()
+const defaultAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
+// 替换原来的 userAvatar 常量定义
+const userAvatar = computed(() => {
+  // console.log(localStorage.getItem('avatar'))
+  return localStorage.getItem('avatar') || defaultAvatar
+})
+// const aiAvatar = new URL('../views/imgs/usagi_avatar.png', import.meta.url).href
+const aiAvatar = new URL('../views/imgs/about3.jpg', import.meta.url).href
+// const aiAvatar2 = new URL('../views/imgs/bot.jpg', import.meta.url).href
+const aiAvatar2 = new URL('../views/imgs/about3.jpg', import.meta.url).href
+// const aiAvatar3 = new URL('../views/imgs/usagi_king.jpg', import.meta.url).href
+const aiAvatar3 = new URL('../views/imgs/about3.jpg', import.meta.url).href
 
-const userAvatar = new URL('../assets/images/user.png', import.meta.url).href
-const aiAvatar = new URL('../assets/images/b450806e36caa423.jpg', import.meta.url).href
-
+// const usagiAvatar = new URL('../views/imgs/usagi_background_yellow.jpg', import.meta.url).href
+// const usagiAvatar2 = new URL('../views/imgs/usagi_background.png', import.meta.url).href
+const usagiAvatar = new URL('../views/imgs/white.png', import.meta.url).href
+const usagiAvatar2 = new URL('../views/imgs/white.png', import.meta.url).href
 const isCollapse = ref(false) // 侧边栏折叠状态
 const userMessage = ref('') // 用户输入消息
 const selectedAI = ref('智谱清言') // 当前选中的 AI
 const messagesContainer = ref<HTMLElement | null>(null)
-const isLoading = ref(false) // 加载状态
-const currentLoadingAI = ref('') // 当前正在加载的 AI
+const isLoading = ref<{ [key: string]: boolean }>({
+  '智谱清言': false,
+  '讯飞星火': false,
+  'deepseek': false
+})
 const isDarkMode = ref(false) // 暗色模式状态
+const useCustomBg = ref<{ [key: string]: boolean }>({
+  '智谱清言': false,
+  '讯飞星火': false,
+  'deepseek': false
+})
+const currentBgIndex = ref<{ [key: string]: number }>({
+  '智谱清言': 0,
+  '讯飞星火': 0,
+  'deepseek': 0
+})
 
 // 消息存储----为每个 AI 维护独立的消息列表
 const messages = ref<{ [key: string]: { role: string; content: string; isNew?: boolean }[] }>({
-  智谱清言: [],
-  讯飞星火: []
+  '智谱清言': [],
+  '讯飞星火': [],
+  'deepseek': []
 })
-
+// 补充点击事件
+const goHome = () => {
+  router.push('/')
+}
 // 初始化暗色模式
 const initDarkMode = () => {
   const savedMode = localStorage.getItem('darkMode')
   if (savedMode === 'true') {
     isDarkMode.value = true
-    document.documentElement.classList.add('dark')
-    document.documentElement.style.setProperty('--el-bg-color', '#2c2c2c')
-    document.documentElement.style.setProperty('--el-menu-bg-color', '#2c2c2c')
-    document.documentElement.style.setProperty('--el-text-color-primary', '#E5EAF3')
-    document.documentElement.style.setProperty('--messages-bg-color', '#141414')
-  } else {
-    document.documentElement.style.setProperty('--messages-bg-color', '#f5f5f5')
+    // 将样式应用到组件根元素而不是document
+    const container = document.querySelector('.layout-container')
+    if (container) {
+      container.classList.add('dark')
+    }
   }
 }
 
@@ -212,56 +288,132 @@ const toggleCollapse = () => {
   isCollapse.value = !isCollapse.value
 }
 
-// 选择AI
-const selectAI = (index: string) => {
-  selectedAI.value = index
+// 添加一个新的辅助函数来处理背景更新
+const updateBackground = (aiType: string) => {
+  const messagesEl = document.querySelector('.messages') as HTMLElement
+  if (!messagesEl) return
+
+  if (useCustomBg.value[aiType]) {
+    const img = new Image()
+    img.onload = () => {
+      messagesEl.style.backgroundImage = `url(${img.src})`
+      messagesEl.style.backgroundSize = 'cover'
+      messagesEl.style.backgroundPosition = 'center'
+    }
+
+    if (currentBgIndex.value[aiType] === 1) {
+      img.src = usagiAvatar
+      messagesEl.style.backgroundImage = `url(${usagiAvatar})`
+    } else if (currentBgIndex.value[aiType] === 2) {
+      img.src = usagiAvatar2
+      messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
+    }
+    messagesEl.style.backgroundSize = 'cover'
+    messagesEl.style.backgroundPosition = 'center'
+  } else {
+    messagesEl.style.backgroundImage = 'none'
+    messagesEl.style.backgroundColor = 'var(--messages-bg-color)'
+  }
 }
 
-// 消息发送处理
+// 修改 selectAI 方法
+const selectAI = (index: string) => {
+  selectedAI.value = index
+  // 立即更新背景
+  // nextTick(() => {
+  //   updateBackground(index)
+  // })
+}
+
+// 修改删除聊天记录的函数
+const deleteChat = async () => {
+  const uid = localStorage.getItem('uid')
+  // 修改 AI 类型判断逻辑
+  let ai
+  switch (selectedAI.value) {
+    case '讯飞星火':
+      ai = 1
+      break
+    case '智谱清言':
+      ai = 2
+      break
+    case 'deepseek':
+      ai = 3
+      break
+    default:
+      ai = 2
+  }
+
+  try {
+    const deleteDto = {
+      uid: uid,
+      ai: ai
+    }
+
+    const response = await request.delete('/AI/delete', {
+      data: deleteDto
+    }) as any
+
+    if (response.code === 200) {
+      messages.value[selectedAI.value] = []
+      // 更新 localStorage 中的消息
+      localStorage.setItem('aiMessages', JSON.stringify(messages.value))
+      ElMessage.success('聊天记录已清空')
+    } else {
+      ElMessage.error(response.data || '删除失败')
+    }
+  } catch (error) {
+    ElMessage.error('删除请求失败')
+  }
+}
+
+// 修改发送消息的函数
 const sendMessage = async (e?: KeyboardEvent) => {
   if (e?.shiftKey) return
-  if (!userMessage.value.trim()) return
-
   const currentAI = selectedAI.value
+  if (!userMessage.value.trim() || isLoading.value[currentAI]) return
+
+  showWelcome.value = false
   const messageContent = userMessage.value.trim()
   userMessage.value = ''
 
-  // 添加用户消息
   messages.value[currentAI].push({
     role: 'user',
     content: messageContent,
     isNew: true
   })
 
-  // 滚动到底部
   await nextTick()
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
   }
 
-  isLoading.value = true
-  currentLoadingAI.value = currentAI
-
+  isLoading.value[currentAI] = true
+  const uid = localStorage.getItem('uid')
   try {
     const response = await request.post('/AI/chat', {
-      uid: 1,
+      uid: uid,
       content: messageContent,
       ai: currentAI
-    })
+    }, {
+      timeout: 300000
+    }) as any
 
-    if (response.data.code === 200) {
+    if (response.code === 200) {
       messages.value[currentAI].push({
         role: 'ai',
-        content: response.data.data,
+        content: response.data,
         isNew: true
       })
+      // 保存消息到 localStorage
+      localStorage.setItem('aiMessages', JSON.stringify(messages.value))
     } else {
       messages.value[currentAI].push({
         role: 'ai',
-        content: `错误: ${response.data.msg || '未知错误'}`,
+        content: `错误: ${response.msg || '未知错误'}`,
         isNew: true
       })
-      ElMessage.error(response.data.msg || '请求失败')
+      ElMessage.error(response.msg || '请求失败')
     }
   } catch (error) {
     messages.value[currentAI].push({
@@ -271,8 +423,7 @@ const sendMessage = async (e?: KeyboardEvent) => {
     })
     ElMessage.error('网络请求失败')
   } finally {
-    isLoading.value = false
-    currentLoadingAI.value = ''
+    isLoading.value[currentAI] = false
     await nextTick()
     if (messagesContainer.value) {
       messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
@@ -280,47 +431,15 @@ const sendMessage = async (e?: KeyboardEvent) => {
   }
 }
 
-// 清空聊天记录
-const deleteChat = async () => {
-  const ai = selectedAI.value === '讯飞星火' ? 1 : 2
-  try {
-    const deleteDto = {
-      uid: 1,
-      ai: ai
-    }
-
-    const response = await request.delete('/AI/delete', {
-      data: deleteDto
-    })
-
-    if (response.data.code === 200) {
-      messages.value[selectedAI.value] = []
-      ElMessage.success('聊天记录已清空')
-    } else {
-      ElMessage.error(response.data.msg || '删除失败')
-    }
-  } catch (error) {
-    ElMessage.error('删除请求失败')
-  }
-}
-
 // 主题切换
 const handleThemeChange = (command: string) => {
   isDarkMode.value = command === 'dark'
-  const html = document.documentElement
+  const container = document.querySelector('.layout-container')
 
   if (isDarkMode.value) {
-    html.classList.add('dark')
-    html.style.setProperty('--el-bg-color', '#2c2c2c')
-    html.style.setProperty('--el-menu-bg-color', '#2c2c2c')
-    html.style.setProperty('--el-text-color-primary', '#E5EAF3')
-    html.style.setProperty('--messages-bg-color', '#141414')
+    container?.classList.add('dark')
   } else {
-    html.classList.remove('dark')
-    html.style.removeProperty('--el-bg-color')
-    html.style.removeProperty('--el-menu-bg-color')
-    html.style.removeProperty('--el-text-color-primary')
-    html.style.setProperty('--messages-bg-color', '#f5f5f5')
+    container?.classList.remove('dark')
   }
 
   localStorage.setItem('darkMode', isDarkMode.value.toString())
@@ -329,19 +448,54 @@ const handleThemeChange = (command: string) => {
 // 在组件挂载时初始化主题
 onMounted(() => {
   initDarkMode()
+
+  // 从 localStorage 加载历史消息
+  const savedMessages = localStorage.getItem('aiMessages')
+  if (savedMessages) {
+    const parsedMessages = JSON.parse(savedMessages)
+    // 确保所有必需的 AI 类型都有对应的消息数组
+    messages.value = {
+      '智谱清言': parsedMessages['智谱清言'] || [],
+      '讯飞星火': parsedMessages['讯飞星火'] || [],
+      'deepseek': parsedMessages['deepseek'] || []
+    }
+  }
+
+  // 从 localStorage 恢复主题状态
+  const savedThemes = localStorage.getItem('aiThemes')
+  if (savedThemes) {
+    const { useCustomBg: savedCustomBg, currentBgIndex: savedBgIndex } = JSON.parse(savedThemes)
+    useCustomBg.value = savedCustomBg
+    currentBgIndex.value = savedBgIndex
+
+    // 应用保存的主题
+    // const messagesEl = document.querySelector('.messages') as HTMLElement
+    const currentAI = selectedAI.value
+
+    // if (useCustomBg.value[currentAI]) {
+    //   if (currentBgIndex.value[currentAI] === 1) {
+    //     messagesEl.style.backgroundImage = `url(${usagiAvatar})`
+    //   } else if (currentBgIndex.value[currentAI] === 2) {
+    //     messagesEl.style.backgroundImage = `url(${usagiAvatar2})`
+    //   }
+    //   messagesEl.style.backgroundSize = 'cover'
+    //   messagesEl.style.backgroundPosition = 'center'
+    // }
+  }
 })
 
 const showInfo = () => {
   ElMessageBox.alert(
-    `欢迎使用 PTUCODE AI 聊天应用！<br><br>` +
-      `使用指南：<br>` +
-      `• 智谱清言和讯飞星火两种对话模型<br>` +
-      `• 在左侧可以切换不同的 AI 模型<br>` +
-      `• 按 Enter 键快速发送消息<br>` +
-      `• Shift + Enter 换行<br>` +
-      `• 支持清空聊天记录<br>` +
-      `• 支持日间/夜间模式切换<br>` +
-      `• <strong>有其他问题请联系管理员</strong> •`,
+    `欢迎使用 CUBECODE AI 聊天应用！<br><br>` +
+    `使用指南：<br>` +
+    `• 点击左上角的<strong>AI Chat</strong>可快速回到首页<br>` +
+    `• 拥有智谱清言、讯飞星火、deepseek三种对话模型<br>` +
+    `• 在左侧可以切换不同的 AI 模型<br>` +
+    `• 按 Enter 键快速发送消息<br>` +
+    `• Shift + Enter 换行<br>` +
+    `• 支持清空聊天记录<br>` +
+    `• 支持日间/夜间模式切换<br>` +
+    `• <strong>有其他问题请联系管理员</strong> •`,
     '使用说明',
     {
       confirmButtonText: 'OK',
@@ -352,17 +506,65 @@ const showInfo = () => {
     }
   )
 }
+
+
+const showViewer = ref(false)
+const currentImage = ref('')
+
+const showImageViewer = (imageUrl: string) => {
+  currentImage.value = imageUrl
+  showViewer.value = true
+}
+
+// 添加计算属性获取当前AI头像
+const getAiAvatar = computed(() => {
+  const currentAI = selectedAI.value
+  if (!useCustomBg.value[currentAI]) {
+    return aiAvatar2
+  }
+  return currentBgIndex.value[currentAI] === 1 ? aiAvatar3 : aiAvatar
+})
+
+// 添加markdown格式化函数
+const formatMessage = (content: string) => {
+  return marked(content, {
+    breaks: true, // 允许换行符转换为 <br>
+    gfm: true     // 启用 GitHub 风格的 Markdown 语法
+  })
+}
+
+const showWelcome = ref(true)
+
+
 </script>
 
 <style scoped>
+/* 将所有暗色模式样式移到组件内 */
+.layout-container.dark {
+  --messages-bg-color: #242424;
+  --el-bg-color: #242424;
+  --el-menu-bg-color: #242424;
+  --el-text-color-primary: #e0e0e0;
+}
+
 .layout-container {
   height: 100vh;
-  border: 1px solid var(--el-border-color-light);
+  /* 占满整个视口高度 */
+  width: 100vw;
+  /* 占满整个视口宽度 */
+  position: fixed;
+  /* 固定定位，防止页面滚动 */
+  top: 0;
+  left: 0;
+  --messages-bg-color: #fafafa;
+  --el-bg-color: #ffffff;
+  --el-menu-bg-color: #ffffff;
+  --el-text-color-primary: #303133;
 }
 
 .aside {
   background-color: var(--el-menu-bg-color);
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   border-right: 1px solid var(--el-border-color-lighter);
   position: relative;
   display: flex;
@@ -379,9 +581,13 @@ const showInfo = () => {
 }
 
 .logo-text {
+  cursor: pointer;
   font-size: 20px;
   font-weight: bold;
   color: var(--el-text-color-primary);
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .toggle-icon {
@@ -396,6 +602,8 @@ const showInfo = () => {
 }
 
 .main-container {
+  height: 100%;
+  width: 100%;
   background-color: var(--el-bg-color);
   transition: background-color 0.3s ease;
 }
@@ -417,18 +625,33 @@ const showInfo = () => {
 }
 
 .main-content {
-  padding: 0;
-  position: relative;
+  height: calc(100vh - 60px);
+  /* 减去header高度 */
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  background-color: var(--messages-bg-color);
 }
 
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
-  background-color: var(--messages-bg-color);
+  padding: 0px;
+  padding-bottom: 50px;
   transition: background-color 0.3s ease;
+  position: relative;
+}
+
+.messages::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* background-color: rgba(255, 255, 255, 0.1); */
+  z-index: 0;
+  pointer-events: none;
 }
 
 .message-item {
@@ -436,6 +659,8 @@ const showInfo = () => {
   align-items: flex-start;
   margin-bottom: 20px;
   padding: 0 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .message-user {
@@ -463,15 +688,15 @@ const showInfo = () => {
 }
 
 .user-bubble {
-  background-color: var(--el-color-primary-light-5);
-  color: var(--el-text-color-primary);
+  background-color: #e3f2fd;
+  color: #37474f;
 }
 
 .ai-bubble {
-  background-color: var(--el-bg-color-overlay);
-  color: var(--el-text-color-primary);
+  background-color: #f5f5f5;
+  color: #37474f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   margin-left: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .avatar {
@@ -513,10 +738,12 @@ const showInfo = () => {
     transform: scale(0.3);
     opacity: 0.3;
   }
+
   50% {
     transform: scale(1);
     opacity: 1;
   }
+
   100% {
     transform: scale(0.3);
     opacity: 0.3;
@@ -524,10 +751,14 @@ const showInfo = () => {
 }
 
 .input-section {
-  padding: 20px;
+  padding: 20px 20px 0px 20px;
   background-color: var(--el-bg-color);
   border-top: 1px solid var(--el-border-color-light);
   transition: background-color 0.3s ease;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .input-wrapper {
@@ -541,8 +772,9 @@ const showInfo = () => {
 }
 
 .custom-input :deep(.el-textarea__inner) {
-  background-color: var(--el-bg-color-overlay);
-  color: var(--el-text-color-primary);
+  background-color: #ffffff;
+  color: #37474f;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
   resize: none;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
@@ -582,6 +814,7 @@ const showInfo = () => {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -641,5 +874,112 @@ const showInfo = () => {
 .footer-button:last-child {
   margin-left: auto;
   margin-right: 20%;
+}
+
+.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.clickable:hover {
+  transform: scale(1.1);
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* 添加markdown样式支持 */
+.ai-bubble :deep(pre) {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.ai-bubble :deep(code) {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.ai-bubble :deep(p) {
+  margin: 8px 0;
+}
+
+.ai-bubble :deep(ul),
+.ai-bubble :deep(ol) {
+  padding-left: 20px;
+}
+
+.ai-bubble :deep(a) {
+  color: var(--el-color-primary);
+  text-decoration: none;
+}
+
+.ai-bubble :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.ai-bubble :deep(blockquote) {
+  border-left: 4px solid var(--el-border-color);
+  margin: 8px 0;
+  padding-left: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+/* 确保markdown内容继承颜色主题 */
+.dark .ai-bubble :deep(pre),
+.dark .ai-bubble :deep(code) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.welcome-message {
+  text-align: center;
+  padding: 60px;
+  color: var(--el-text-color-secondary);
+  font-size: 24px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-weight: bold;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-button {
+  margin-left: 12px;
+}
+
+.preserve-whitespace {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 暗色模式下的消息气泡 */
+.layout-container.dark .user-bubble {
+  background-color: #1e3a5f;
+  color: #e0e0e0;
+}
+
+.layout-container.dark .ai-bubble {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+/* 暗色模式下的输入框 */
+.layout-container.dark .custom-input :deep(.el-textarea__inner) {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #3d3d3d;
 }
 </style>
