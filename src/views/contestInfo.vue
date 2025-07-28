@@ -165,7 +165,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
 
         </div>
         <el-tab-pane label="提交" name="third">
-          <el-input v-model="inputUser" style="width: 240px" placeholder="输入完整学号后回车查询" @change="searchUser"
+          <el-input v-model="inputUser" style="width: 240px" placeholder="输入完整学号后按回车查询" @change="searchUser"
             :prefix-icon="Search" />
 
           <el-table :data="codeRecordList" style="width: 100%" @row-click="goToSubmissionDetail">
@@ -259,7 +259,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
         <el-tab-pane label="排名" name="fourth">
           <div style="display: flex; justify-content: space-between;">
             <!-- elementplus el-input: 搜索输入框 -->
-            <el-input v-model="searchKeyword" placeholder="输入完整学号后按回车搜索" class="filter-item" clearable
+            <el-input v-model="searchKeyword" placeholder="输入完整学号后按回车查询" class="filter-item" clearable
               @keyup.enter="handleSearch">
               <template #prefix>
                 <!-- elementplus el-icon: 搜索图标 -->
