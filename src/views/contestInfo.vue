@@ -924,8 +924,15 @@ const formatScore = (score) => {
   background-size: cover;
   object-fit: cover;
   background-position: center center;
-  padding: 0%;
+  padding: 40px 20px;
+  /* 增加内边距确保内容在蓝色区域内 */
   height: 300px;
+  position: relative;
+  /* 添加相对定位 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .warning {
@@ -948,5 +955,22 @@ const formatScore = (score) => {
   /* height: 70px; */
   /* font-size: 32px; */
   /* font-weight: 600; */
+}
+
+/* 确保已报名按钮在蓝色区域左边 */
+.contest-info .el-button {
+  position: absolute;
+  bottom: 30px;
+  /* 距离底部30px*/
+  left: 120px;
+  z-index: 10;
+}
+
+
+.registered-button {
+  position: absolute !important;
+  bottom: 30px !important;
+  left: 60px !important;
+  z-index: 10 !important;
 }
 </style>
