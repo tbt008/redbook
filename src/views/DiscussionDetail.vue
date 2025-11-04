@@ -400,12 +400,13 @@ const searchProblems = async (query: string) => {
   if (query) {
     problemsLoading.value = true
     try {
-      const response = await request.post('question/list',
-        {
+      const response = await request.get('/question/list', {
+        params: {
           pageStart: 1,
           pageSize: 10,
           title: query,
-        }) as any
+        }
+      }) as any
 
       if (response.code === 200) {
         problemOptions.value = response.data.list
@@ -469,8 +470,10 @@ const handleEdit = async () => {
       handleArticleTypeChange(1)
       if (discussion.value.sourceId) {
         try {
-          const response = await request.post('/question/info', {
-            questionId: discussion.value.sourceId
+          const response = await request.get('/question/info', {
+            params: {
+              questionId: discussion.value.sourceId
+            }
           }) as any
           console.log(response)
           if (response.code === 200) {
@@ -541,8 +544,10 @@ const questionTitle = ref<string>('')
 // 获取题目详情
 const getQuestionTitle = async (questionId: number) => {
   try {
-    const response = await request.post('/question/info', {
-      questionId: questionId
+    const response = await request.get('/question/info', {
+      params: {
+        questionId: questionId
+      }
     }) as any
 
     if (response.code === 200) {

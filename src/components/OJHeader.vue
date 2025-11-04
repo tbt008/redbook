@@ -20,11 +20,11 @@
           <img class="user-img" :src="userImg" alt="" @click="showMenu = !showMenu" />
         </div>
         <el-menu v-show="showMenu" class="user-menu" :class="{ show: showMenu }">
-          <el-menu-item @click="handleCommand('space')">我的空间</el-menu-item>
+          <el-menu-item index="space" @click="handleCommand('space')">我的空间</el-menu-item>
           <!-- 是否是管理员 -->
-          <el-menu-item v-if="isAdmin" @click="handleCommand('admin')">管理页面</el-menu-item>
-          <el-menu-item @click="handleCommand('password')">修改密码</el-menu-item>
-          <el-menu-item @click="handleCommand('logout')">退出登录</el-menu-item>
+          <el-menu-item v-if="isAdmin" index="admin" @click="handleCommand('admin')">管理页面</el-menu-item>
+          <el-menu-item index="password" @click="handleCommand('password')">修改密码</el-menu-item>
+          <el-menu-item index="logout" @click="handleCommand('logout')">退出登录</el-menu-item>
         </el-menu>
       </div>
       <div v-else @click="handleUser">

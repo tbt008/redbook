@@ -20,7 +20,7 @@
         </el-select>
         <el-input v-model="inputContestName" style="width: 240px; height: 33px" placeholder="输入比赛名后回车查询"
           @change="searchContestName" :suffix-icon="Search" />
-        <el-button type="primary" @click="showAddContest = true">新增比赛</el-button>
+        <el-button type="primary" @click="navigateToAddContest">新增比赛</el-button>
       </div>
 
       <el-table :data="contestList" style="width: 100%" v-loading="loading">
@@ -67,7 +67,7 @@
         </el-table-column>
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
-            <el-button :icon="Edit" circle plain type="primary" @click="onEdit(row)"> </el-button>
+            <el-button :icon="Edit" circle plain type="primary" @click="navigateToEditContest(row)"> </el-button>
             <el-button :icon="Download" circle plain type="primary" @click="onDownload(row)">
             </el-button>
             <el-button :icon="RefreshRight" circle plain type="warning" @click="onReset(row)"></el-button>
@@ -84,14 +84,7 @@
       </div>
     </div>
   </div>
-  <!-- 新增比赛 -->
-  <el-dialog v-model="showAddContest" title="新增比赛" width="70%" :close-on-click-modal="false">
-    <ContestEditor @cancel="cancel" @primary="cancel"></ContestEditor>
-  </el-dialog>
-  <!-- 修改比赛 -->
-  <el-dialog v-model="showUpdateContest" title="修改比赛" width="70%" :close-on-click-modal="false">
-    <ContestEditor @cancel="cancel" @primary="cancel" :id="contestId"></ContestEditor>
-  </el-dialog>
+  <!-- 竞赛编辑现在通过单独页面实现，不再需要对话框 -->
   <!-- 成员名单 -->
   <el-dialog v-model="showUpdateMember" title="成员名单" width="50%" :close-on-click-modal="false">
     <ContestMember @cancel="cancel" @primary="cancel" :id="contestId"></ContestMember>
@@ -118,15 +111,17 @@
 </template>
 
 <script lang="js" setup>
-import ContestEditor from '@/components/contestEditor.vue'
+
 import ContestMember from '@/components/contestMember.vue'
 import { Delete, Edit, Plus, Download, RefreshRight } from '@element-plus/icons-vue'
 // Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 // 工具和类型
 import request from '@/util/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
-const showUpdateContest = ref(false)
+
+const router = useRouter()
 const contestList = ref([])
 const showUpdateMember = ref(false)
 const contestId = ref(0)
@@ -150,17 +145,19 @@ const intoContest = (id) => {
   const url = `/contest/detail/${id}`
   window.open(url, '_blank')
 }
-const onEdit = (row) => {
-  contestId.value = row.id
-  showUpdateContest.value = true
+// 导航到编辑竞赛页面
+const navigateToEditContest = (row) => {
+  router.push(`/admin/contest-edit?id=${row.id}`)
+}
+
+// 导航到新增竞赛页面
+const navigateToAddContest = () => {
+  router.push('/admin/contest-edit')
 }
 const searchContestName = (value) => {
   getContestList()
 }
-const cancel = () => {
-  showAddContest.value = false
-  showUpdateContest.value = false
-}
+
 const onDownload = (row) => {
   request
     .post(`/ranking/contest/excel`, {
@@ -248,7 +245,7 @@ onMounted(async () => {
   loading.value = false
 })
 
-const showAddContest = ref(false)
+
 
 // 添加重测相关的响应式变量
 const resetDisabled = ref(false)

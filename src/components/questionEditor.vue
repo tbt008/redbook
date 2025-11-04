@@ -23,7 +23,7 @@
           <!-- elementplus el-tag: 已选标签展示 -->
           <el-tag v-for="tagId in selectedTagIds" :key="tagId" closable type="primary" class="selected-tag"
             @close="handleTagChange(false, tagId)">
-            {{ allTags.find((tag) => tag.id === tagId)?.name }}
+            {{allTags.find((tag) => tag.id === tagId)?.name}}
           </el-tag>
         </div>
       </el-form-item>
@@ -68,10 +68,12 @@
         <el-input v-model="tip" style="width: 100%" :rows="2" type="textarea" placeholder="Please input" />
       </el-form-item>
       <el-form-item label="题目内容" prop="content">
-        <mavon-editor style="height: 500px" ref="mavonEditorRef" v-model="content" :ishljs="true" />
+        <mavon-editor style="height: 500px" ref="mavonEditorRef" v-model="content" :ishljs="true" :toolbars="toolbars"
+          @imgAdd="handleImgAdd" />
       </el-form-item>
       <el-form-item label="题目答案" prop="answer">
-        <mavon-editor style="height: 500px" ref="mavonEditorRef" v-model="answer" :ishljs="true" />
+        <mavon-editor style="height: 500px" ref="mavonEditorRef" v-model="answer" :ishljs="true" :toolbars="toolbars"
+          @imgAdd="handleImgAdd" />
       </el-form-item>
       <el-form-item>
         <el-button @click="primary" type="primary">发布</el-button>
@@ -90,7 +92,7 @@
             <!-- elementplus el-check-tag: 可选择的标签 -->
             <el-check-tag v-for="tagId in selectedTagIds" :key="tagId" :checked="true" class="tag-item"
               @change="() => handleTagChange(false, tagId)">
-              {{ allTags.find((tag) => tag.id === tagId)?.name }}
+              {{allTags.find((tag) => tag.id === tagId)?.name}}
             </el-check-tag>
           </template>
           <div v-else class="no-tags-selected">暂未选择标签</div>
@@ -149,6 +151,61 @@ const input = ref('')
 const output = ref('')
 const explain = ref('')
 const mavonEditorRef = ref()
+
+// 配置markdown编辑器工具栏
+const toolbars = {
+  bold: true,
+  italic: true,
+  header: true,
+  underline: true,
+  strikethrough: true,
+  mark: true,
+  superscript: true,
+  subscript: true,
+  quote: true,
+  ol: true,
+  ul: true,
+  link: true,
+  imagelink: true,
+  code: true,
+  table: true,
+  fullscreen: true,
+  readmodel: true,
+  htmlcode: true,
+  undo: true,
+  redo: true,
+  trash: true,
+  navigation: true,
+  alignleft: true,
+  aligncenter: true,
+  alignright: true,
+  subfield: true,
+  preview: true
+}
+
+// 处理图片添加事件
+const handleImgAdd = (pos, $file) => {
+  // 创建FormData对象用于文件上传
+  const formData = new FormData()
+  formData.append('file', $file)
+
+  // 使用与contestEditor.vue中相同的上传接口
+  request.post('/oss/upload/user/avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }).then((res) => {
+    if (res.code === 200) {
+      // 使用mavon-editor提供的insertImg方法插入图片
+      mavonEditorRef.value.$img2Url(pos, res.data.url)
+    } else {
+      ElMessage.error('图片上传失败: ' + res.msg)
+    }
+  }).catch((error) => {
+    console.error('图片上传错误:', error)
+    ElMessage.error('图片上传失败，请稍后重试')
+  })
+}
 
 const delExample = (index) => {
   exampleList.value.splice(index, 1)

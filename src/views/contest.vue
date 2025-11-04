@@ -4,41 +4,62 @@
       <div class="contest-layout">
         <!-- 左侧比赛列表 -->
         <div class="contest-content">
-          <!-- 进行中的比赛容器 -->
-          <div class="contest-container" v-if="constestList.length">
+          <!-- 顶部搜索和筛选栏 -->
+          <div class="contest-toolbar">
+            <div class="search-filter-bar">
+              <el-select v-model="statusFilter" placeholder="全部" style="width: 120px; margin-right: 10px;">
+                <el-option label="全部" value="all"></el-option>
+                <el-option label="进行中" value="ongoing"></el-option>
+                <el-option label="已结束" value="ended"></el-option>
+              </el-select>
+              <el-select v-model="searchType" placeholder="赛制" style="width: 100px; margin-right: 10px;">
+                <el-option label="全部" value=""></el-option>
+                <el-option label="IOI" value="1"></el-option>
+                <el-option label="ACM" value="2"></el-option>
+              </el-select>
+              <el-input v-model="searchKeyword" placeholder="搜索比赛" clearable style="flex: 1;">
+                <template #prefix>
+                  <el-icon>
+                    <Search />
+                  </el-icon>
+                </template>
+              </el-input>
+            </div>
+          </div>
+          
+          <!-- 合并的比赛列表容器 -->
+          <div class="contest-container" v-if="combinedContestList.length">
             <div class="contest-list">
               <div class="contest-section">
-                <span class="contest-title">进行中</span>
-                <div class="contest-item" v-for="(item, index) in constestList" :key="index">
+                <span class="contest-title">{{ statusFilter === 'all' ? '所有比赛' : statusFilter === 'ongoing' ? '进行中的比赛' : '已结束的比赛' }}</span>
+                <div class="contest-item" v-for="(item, index) in combinedContestList" :key="index">
                   <img :src="item.cover" alt="" class="contest-item-img" />
                   <div style="width: 100%; margin-left: 20px">
                     <div class="contest-item-title">
                       {{ item.title }}
-                      <el-tag v-if="item.isPassword" :type="primary" effect="dark"><el-icon>
+                      <el-tag v-if="item.isPassword" :type="'primary'" effect="dark"><el-icon>
                           <Lock />
                         </el-icon>密码</el-tag>
-                      <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="success" effect="dark"><el-icon>
+                      <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="'success'" effect="dark"><el-icon>
                           <key />
                         </el-icon>邀请</el-tag>
-                      <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark">IOI</el-tag>
-                      <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
-                      <el-tag style="margin-left: 10px"
-                        :type="new Date(item.startTime) > new Date() ? 'warning' : 'success'" effect="dark">
-                        {{ new Date(item.startTime) > new Date() ? '待开始' : '进行中' }}
+                      <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="'primary'" effect="dark">IOI</el-tag>
+                      <el-tag style="margin-left: 10px" v-else :type="'primary'" effect="dark">ACM</el-tag>
+                      <el-tag style="margin-left: 10px" :type="getStatus(item).type" effect="dark">
+                        {{ getStatus(item).label }}
                       </el-tag>
                     </div>
 
                     <div class="contest-item-info">
                       <el-icon>
                         <BellFilled />
-                      </el-icon>比赛时间 : {{ item.startTime }} 至 {{ item.endTime }}
+                      </el-icon>比赛时间 : {{ formatDate(item.startTime) }} 至 {{ formatDate(item.endTime) }}
                     </div>
                     <div class="contest-item-info" style="display: flex; justify-content: flex-start; gap: 40px;">
                       <div>
                         <el-icon>
                           <Promotion />
-                        </el-icon> 主办方 : cubecode.cn
-
+                        </el-icon> 主办方 : {{ item.organizer || 'cubecode.cn' }}
                       </div>
                       <div>
                         <el-icon>
@@ -48,64 +69,14 @@
                     </div>
                     <div class="contest-item-info">
                       语言 : {{ item.language }}
+                      <template v-if="getStatus(item).label === '待开始'">
+                        ｜ 距开始：{{ countdownToStart(item) }}
+                      </template>
                     </div>
                   </div>
                   <div class="apply-button">
-                    <el-button type="success" round style="width: 100px; height: 50px"
-                      @click="inputInfo(item.contestId)">进入</el-button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 已结束的比赛容器 -->
-          <div class="contest-container" v-if="oldConstestList.length">
-            <div class="contest-list">
-              <div class="contest-section">
-                <span class="contest-title">已结束</span>
-                <div class="contest-item" v-for="(item, index) in oldConstestList" :key="index">
-                  <img :src="item.cover" alt="" class="contest-item-img" />
-                  <div style="width: 100%; margin-left: 20px">
-                    <div class="contest-item-title">
-                      {{ item.title }}
-                      <el-tag v-if="item.isPassword" :type="primary" effect="dark"><el-icon>
-                          <Lock />
-                        </el-icon>密码</el-tag>
-                      <el-tag style="margin-left: 10px" v-if="item.isInvite" :type="success" effect="dark"><el-icon>
-                          <key />
-                        </el-icon>邀请</el-tag>
-                      <el-tag style="margin-left: 10px" v-if="item.type == 1" :type="primary" effect="dark">IOI</el-tag>
-                      <el-tag style="margin-left: 10px" v-else :type="primary" effect="dark">ACM</el-tag>
-                      <el-tag style="margin-left: 10px" type="info" effect="dark">已结束</el-tag>
-                    </div>
-
-                    <div class="contest-item-info">
-                      <el-icon>
-                        <BellFilled />
-                      </el-icon>
-                      <span>比赛时间: {{ item.startTime }} 至 {{ item.endTime }}</span>
-                    </div>
-                    <div class="contest-item-info" style="display: flex; justify-content: flex-start; gap: 40px;">
-                      <div>
-                        <el-icon>
-                          <Promotion />
-                        </el-icon>
-                        主办方:CubeCode.cn
-                      </div>
-                      <div>
-                        <el-icon>
-                          <UserFilled />
-                        </el-icon>参与人数：{{ item.participationNumber }}
-                      </div>
-                    </div>
-                    <div class="contest-item-info">
-                      语言:{{ item.language }}
-                    </div>
-                  </div>
-                  <div class="apply-button">
-                    <el-button type="info" round style="width: 100px; height: 50px"
-                      @click="inputInfo(item.contestId)">回顾比赛</el-button>
+                    <el-button :type="getStatus(item).label === '已结束' ? 'info' : 'success'" round style="width: 100px; height: 50px"
+                      @click="inputInfo(item.contestId)">{{ getStatus(item).label === '已结束' ? '回顾比赛' : '进入' }}</el-button>
                   </div>
                 </div>
               </div>
@@ -118,48 +89,27 @@
                 @current-change="handleCurrentChange" />
             </div>
           </div>
+          
+          <!-- 无比赛时显示 -->
+          <div v-else class="no-contest">
+            暂无符合条件的比赛
+          </div>
         </div>
 
-        <!-- 右侧区域 -->
+        <!-- 右侧区域 - 只保留进行中的比赛列表 -->
         <div class="contest-sidebar">
-          <!-- 进行中的比赛列表 -->
           <div class="ongoing-contests">
             <h3 class="sidebar-title">进行中的比赛</h3>
             <div class="contest-links">
-              <div v-for="(item, index) in constestList" :key="index" class="contest-link"
+              <div v-for="(item, index) in activeContests" :key="index" class="contest-link"
                 @click="inputInfo(item.contestId)">
                 <span class="contest-name">{{ item.title }}</span>
                 <el-icon>
                   <ArrowRight />
                 </el-icon>
               </div>
-              <div v-if="!constestList.length" class="no-contests">
+              <div v-if="!activeContests.length" class="no-contests">
                 暂无进行中的比赛
-              </div>
-            </div>
-          </div>
-
-          <!-- 筛选区域 -->
-          <div class="filter-card">
-            <h3>筛选比赛</h3>
-            <div class="filter-section">
-              <div class="filter-item">
-                <label>赛制</label>
-                <el-radio-group v-model="searchType">
-                  <el-radio value="">全部</el-radio>
-                  <el-radio value="1">IOI</el-radio>
-                  <el-radio value="2">ACM</el-radio>
-                </el-radio-group>
-              </div>
-              <div class="filter-item">
-                <label>搜索</label>
-                <el-input v-model="searchKeyword" placeholder="搜索比赛" clearable>
-                  <template #prefix>
-                    <el-icon>
-                      <Search />
-                    </el-icon>
-                  </template>
-                </el-input>
               </div>
             </div>
           </div>
@@ -192,6 +142,19 @@
 
 .contest-content {
   flex: 1;
+}
+
+.contest-toolbar {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+}
+
+.status-toggle {
+  display: flex;
+  gap: 8px;
 }
 
 .contest-sidebar {
@@ -330,6 +293,13 @@
   justify-content: center;
 }
 
+/* 搜索和筛选栏样式 */
+.search-filter-bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
 /* 左侧容器样式 */
 .contest-container {
   background-color: #fff;
@@ -415,66 +385,91 @@
 </style>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import request from '@/util/request.ts'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import GoAi from '@/components/goAi.vue'
+import dayjs from 'dayjs'
 const router = useRouter()
-const constestList = ref([])
-const oldConstestList = ref([])
+const route = useRoute()
+const constestList = ref([]) // 进行中的比赛
+const oldConstestList = ref([]) // 已结束的比赛
 const searchType = ref('')
-// -1 全部 0ioi 1acm
 const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
-const nextContest = ref(null)
+const now = ref(Date.now())
+let timer = null
+const statusFilter = ref('all') // all | ongoing | ended
+
+// 合并的比赛列表
+const combinedContestList = computed(() => {
+  if (statusFilter.value === 'ongoing') {
+    return constestList.value
+  } else if (statusFilter.value === 'ended') {
+    return oldConstestList.value
+  } else {
+    // 全部 - 进行中的比赛在前，已结束的比赛在后
+    return [...constestList.value, ...oldConstestList.value]
+  }
+})
+
+// 活跃的比赛（进行中和待开始）
+const activeContests = computed(() => {
+  return constestList.value.filter(item => {
+    const status = getStatus(item).label
+    return status === '进行中' || status === '待开始'
+  })
+})
 
 const getConstestList = async () => {
-  let obj = {
+  // 获取进行中的比赛
+  let ongoingObj = {
     status: 0,
     title: searchKeyword.value || undefined,
     type: searchType.value || undefined,
     pageStart: 1,
     pageSize: 10000
   }
-  request
-    .post(`/contest/list`, obj)
-    .then((res) => {
-      if (res.code == 200) {
-        constestList.value = res.data.list
-      } else {
-        ElMessage.error(res.msg)
-      }
-    })
-    .catch((error) => {
-      ElMessage.error(error)
-    })
-  let obj1 = {
+  
+  // 获取已结束的比赛
+  let endedObj = {
     status: 1,
     title: searchKeyword.value || undefined,
     type: searchType.value || undefined,
     pageStart: currentPage.value,
     pageSize: pageSize.value
   }
-  request
-    .post(`/contest/list`, obj1)
-    .then((res) => {
-      if (res.code == 200) {
-        oldConstestList.value = res.data.list
-        total.value = res.data.total
-      } else {
-        ElMessage.error(res.msg)
-      }
-    })
-    .catch((error) => {
-      ElMessage.error(error)
-    })
+  
+  // 并行请求数据
+  const [ongoingRes, endedRes] = await Promise.all([
+    request.post(`/contest/list`, ongoingObj),
+    (statusFilter.value === 'all' || statusFilter.value === 'ended') ? request.post(`/contest/list`, endedObj) : Promise.resolve({ code: 200, data: { list: [], total: 0 } })
+  ])
+  
+  // 处理进行中的比赛数据
+  if (ongoingRes.code == 200) {
+    constestList.value = ongoingRes.data.list
+  } else {
+    ElMessage.error(ongoingRes.msg)
+  }
+  
+  // 处理已结束的比赛数据
+  if (endedRes.code == 200) {
+    oldConstestList.value = endedRes.data.list
+    total.value = endedRes.data.total
+  } else {
+    ElMessage.error(endedRes.msg)
+  }
 }
 
 
 onMounted(async () => {
+  initFromRoute()
   await Promise.all([getConstestList()])
+  // 启动1秒刷新一次的计时器用于倒计时
+  timer = setInterval(() => (now.value = Date.now()), 1000)
 })
 
 // 分页大小改变处理
@@ -501,4 +496,76 @@ const inputInfo = (id) => {
   // 进入该比赛详情页
   router.push(`/contest/detail/${id}`)
 }
+
+// 工具：格式化时间
+const formatDate = (ts) => {
+  try {
+    return dayjs(ts).format('YYYY-MM-DD HH:mm')
+  } catch {
+    return ts
+  }
+}
+
+// 比赛状态
+const getStatus = (c) => {
+  const start = new Date(c.startTime).getTime()
+  const end = new Date(c.endTime).getTime()
+  if (now.value < start) return { label: '待开始', type: 'warning' }
+  if (now.value <= end) return { label: '进行中', type: 'success' }
+  return { label: '已结束', type: 'info' }
+}
+
+// 距离开始倒计时
+const countdownToStart = (c) => {
+  const start = new Date(c.startTime).getTime()
+  const diff = Math.max(0, start - now.value)
+  const h = Math.floor(diff / 3600000)
+  const m = Math.floor((diff % 3600000) / 60000)
+  const s = Math.floor((diff % 60000) / 1000)
+  if (h > 0) return `${h}小时${m}分${s}秒`
+  if (m > 0) return `${m}分${s}秒`
+  return `${s}秒`
+}
+
+// 清理计时器
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+})
+
+// URL 同步
+const updateQuery = () => {
+  router.replace({
+    path: '/contest',
+    query: {
+      status: statusFilter.value,
+      type: searchType.value || undefined,
+      q: searchKeyword.value || undefined,
+      pageStart: currentPage.value,
+      pageSize: pageSize.value
+    }
+  })
+}
+
+const initFromRoute = () => {
+  const q = route.query
+  if (q.status && (q.status === 'all' || q.status === 'ongoing' || q.status === 'ended')) {
+    statusFilter.value = String(q.status)
+  }
+  if (q.type) searchType.value = String(q.type)
+  if (q.q) searchKeyword.value = String(q.q)
+  if (q.pageStart) currentPage.value = Number(q.pageStart)
+  if (q.pageSize) pageSize.value = Number(q.pageSize)
+}
+
+// 监听筛选条件变化
+watch([statusFilter, searchType, searchKeyword], async () => {
+  currentPage.value = 1
+  updateQuery()
+  await getConstestList()
+}, { deep: true })
+
+watch([currentPage, pageSize], async () => {
+  updateQuery()
+  await getConstestList()
+})
 </script>

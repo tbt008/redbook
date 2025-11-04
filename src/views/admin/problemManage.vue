@@ -31,22 +31,16 @@
             </el-icon>
           </template>
         </el-input>
-        <el-button type="primary" @click="showAddQuestion = true">新增题目</el-button>
+        <el-button type="primary" @click="navigateToAddQuestion">新增题目</el-button>
       </div>
 
       <!-- 已选标签显示区域 -->
       <div v-if="selectedTagIds.length" class="selected-tags-bar">
         <div style="font-size: 12px; line-height: 24px">已选择：</div>
         <!-- elementplus el-tag: 已选标签展示 -->
-        <el-tag
-          v-for="tagId in selectedTagIds"
-          :key="tagId"
-          closable
-          type="primary"
-          class="selected-tag"
-          @close="handleTagChange(false, tagId)"
-        >
-          {{ allTags.find((tag) => tag.id === tagId)?.name }}
+        <el-tag v-for="tagId in selectedTagIds" :key="tagId" closable type="primary" class="selected-tag"
+          @close="handleTagChange(false, tagId)">
+          {{allTags.find((tag) => tag.id === tagId)?.name}}
         </el-tag>
       </div>
 
@@ -67,13 +61,7 @@
             </router-link>
             <div class="problem-tags">
               <!-- elementplus el-tag: 题目标签 -->
-              <el-tag
-                v-for="tag in row.tags"
-                :key="tag"
-                size="small"
-                effect="plain"
-                class="tag-item"
-              >
+              <el-tag v-for="tag in row.tags" :key="tag" size="small" effect="plain" class="tag-item">
                 {{ tag }}
               </el-tag>
             </div>
@@ -87,28 +75,21 @@
         </el-table-column>
         <el-table-column label="赛时禁用" width="100">
           <template #default="{ row }">
-            <el-switch
-              @click="statusChange(row.id)"
-              v-model="row.status"
-              :active-value="1"
-              :inactive-value="0"
-            />
+            <el-switch @click="statusChange(row.id)" v-model="row.status" :active-value="1" :inactive-value="0" />
           </template>
         </el-table-column>
 
         <!-- 难度列 -->
         <el-table-column label="难度" width="100">
           <template #default="{ row }">
-            <span
-              :class="[
-                'difficulty-label',
-                row.difficulty === 1 ? 'difficulty-entry' : '',
-                row.difficulty === 2 ? 'difficulty-easy' : '',
-                row.difficulty === 3 ? 'difficulty-medium' : '',
-                row.difficulty === 4 ? 'difficulty-hard' : '',
-                row.difficulty === 5 ? 'difficulty-expert' : ''
-              ]"
-            >
+            <span :class="[
+              'difficulty-label',
+              row.difficulty === 1 ? 'difficulty-entry' : '',
+              row.difficulty === 2 ? 'difficulty-easy' : '',
+              row.difficulty === 3 ? 'difficulty-medium' : '',
+              row.difficulty === 4 ? 'difficulty-hard' : '',
+              row.difficulty === 5 ? 'difficulty-expert' : ''
+            ]">
               {{ row.difficultyName }}
             </span>
           </template>
@@ -117,17 +98,13 @@
         <!-- 通过率列 -->
         <el-table-column label="通过率" width="180">
           <template #default="{ row }">
-            <el-progress
-              :percentage="Number(row.passRate)"
-              text-inside
-              :stroke-width="18"
-              :color="getProgressColor(row.passRate)"
-            />
+            <el-progress :percentage="Number(row.passRate)" text-inside :stroke-width="18"
+              :color="getProgressColor(row.passRate)" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150">
           <template #default="{ row }">
-            <el-button :icon="Edit" circle plain type="primary" @click="onEdit(row)"> </el-button>
+            <el-button :icon="Edit" circle plain type="primary" @click="navigateToEditQuestion(row)"> </el-button>
 
             <el-button :icon="Delete" circle plain type="danger" @click="onDelete(row)"></el-button>
             <el-button :icon="Plus" circle plain type="primary" @click="addData(row)"></el-button>
@@ -137,47 +114,19 @@
 
       <!-- elementplus el-pagination: 分页器 -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
+          :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
+          @current-change="handleCurrentChange" />
       </div>
     </div>
   </div>
-  <!-- 新增题目 -->
-  <el-dialog v-model="showAddQuestion" title="新增题目" width="70%" :close-on-click-modal="false">
-    <QuestionEditor @cancel="cancel" @primary="cancel"></QuestionEditor>
-  </el-dialog>
-  <!-- 修改题目 -->
-  <el-dialog
-    v-model="showUpdateQuestion"
-    title="修改题目"
-    width="90%"
-    :close-on-click-modal="false"
-  >
-    <QuestionEditor @cancel="cancel" @primary="cancel" :id="questionId"></QuestionEditor>
-  </el-dialog>
+  <!-- 题目编辑功能已移至独立页面 -->
   <!-- elementplus el-dialog: 标签选择弹窗 -->
-  <el-dialog
-    v-model="showTagDialog"
-    title="选择标签"
-    width="45%"
-    :close-on-click-modal="false"
-    style="border-radius: 20px; font-weight: 600"
-  >
+  <el-dialog v-model="showTagDialog" title="选择标签" width="45%" :close-on-click-modal="false"
+    style="border-radius: 20px; font-weight: 600">
     <div class="tag-dialog-content">
       <!-- 添加搜索输入框 -->
-      <el-input
-        v-model="tagSearchKeyword"
-        placeholder="搜索标签"
-        class="tag-search-input"
-        clearable
-      >
+      <el-input v-model="tagSearchKeyword" placeholder="搜索标签" class="tag-search-input" clearable>
         <template #prefix>
           <el-icon>
             <Search />
@@ -191,14 +140,9 @@
         <div class="tag-group-content">
           <template v-if="selectedTagIds.length">
             <!-- elementplus el-check-tag: 可选择的标签 -->
-            <el-check-tag
-              v-for="tagId in selectedTagIds"
-              :key="tagId"
-              :checked="true"
-              class="tag-item"
-              @change="() => handleTagChange(false, tagId)"
-            >
-              {{ allTags.find((tag) => tag.id === tagId)?.name }}
+            <el-check-tag v-for="tagId in selectedTagIds" :key="tagId" :checked="true" class="tag-item"
+              @change="() => handleTagChange(false, tagId)">
+              {{allTags.find((tag) => tag.id === tagId)?.name}}
             </el-check-tag>
           </template>
           <div v-else class="no-tags-selected">暂未选择标签</div>
@@ -212,13 +156,8 @@
       <div v-for="group in filteredGroupedTags" :key="group.superName" class="tag-group">
         <div class="tag-group-title">{{ group.superName }}</div>
         <div class="tag-group-content">
-          <el-check-tag
-            v-for="tag in group.tags"
-            :key="tag.id"
-            :checked="selectedTagIds.includes(tag.id)"
-            @change="(checked) => handleTagChange(checked, tag.id)"
-            class="tag-item"
-          >
+          <el-check-tag v-for="tag in group.tags" :key="tag.id" :checked="selectedTagIds.includes(tag.id)"
+            @change="(checked) => handleTagChange(checked, tag.id)" class="tag-item">
             {{ tag.name }}
           </el-check-tag>
         </div>
@@ -245,8 +184,7 @@ import { Search, Check } from '@element-plus/icons-vue'
 // 工具和类型
 import request from '@/util/request'
 
-const showUpdateQuestion = ref(false)
-const questionId = ref(0)
+// 移除不再需要的对话框状态变量
 // 状态变量
 const loading = ref(true)
 const difficulty = ref(null)
@@ -259,9 +197,10 @@ const sortField = ref('createTime')
 const sortOrder = ref('desc')
 const problems = ref([])
 const allTags = ref([])
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const statusChange = (id) => {
   request
     .post('/question/modify/status', {
@@ -288,13 +227,14 @@ const getProgressColor = (rate) => {
 const addData = (row) => {
   router.push(`/files/problemid=${row.id}`)
 }
-const onEdit = (row) => {
-  questionId.value = row.id
-  showUpdateQuestion.value = true
+// 导航到题目编辑页面
+const navigateToEditQuestion = (row) => {
+  router.push(`/admin/question-edit?id=${row.id}`)
 }
-const cancel = () => {
-  showUpdateQuestion.value = false
-  getProblems()
+
+// 导航到新增题目页面
+const navigateToAddQuestion = () => {
+  router.push('/admin/question-edit')
 }
 const onDelete = (row) => {
   ElMessageBox.confirm('确定真的删除？', '警告', {
@@ -311,6 +251,37 @@ const onDelete = (row) => {
       }
     })
   })
+}
+// 同步查询参数到 URL
+const updateQuery = () => {
+  const query = {
+    pageStart: currentPage.value,
+    pageSize: pageSize.value,
+    sortField: sortField.value,
+    sortOrder: sortOrder.value,
+    difficulty: difficulty.value ?? undefined,
+    title: searchKeyword.value || undefined,
+    tagNames: selectedTagIds.value.length ? selectedTagIds.value.join(',') : undefined
+  }
+  router.replace({ path: '/admin/problem', query })
+}
+
+// 初始化：从 URL 读取参数
+const initFromRoute = () => {
+  const q = route.query
+  if (q.pageStart) currentPage.value = Number(q.pageStart)
+  if (q.pageSize) pageSize.value = Number(q.pageSize)
+  if (q.sortField) sortField.value = String(q.sortField)
+  if (q.sortOrder) sortOrder.value = String(q.sortOrder)
+  if (q.difficulty !== undefined) {
+    const d = q.difficulty
+    difficulty.value = d === '' || d === 'null' ? null : Number(d)
+  }
+  if (q.title) searchKeyword.value = String(q.title)
+  if (q.tagNames) {
+    const raw = Array.isArray(q.tagNames) ? q.tagNames : String(q.tagNames).split(',')
+    selectedTagIds.value = raw.filter(Boolean).map((v) => Number(v))
+  }
 }
 // 添加标签搜索关键词
 const tagSearchKeyword = ref('')
@@ -347,14 +318,16 @@ const filteredGroupedTags = computed(() => {
 const getProblems = async () => {
   loading.value = true
   try {
-    const response = await request.post('/root/question/list', {
-      pageStart: currentPage.value,
-      pageSize: pageSize.value,
-      sortField: sortField.value,
-      sortOrder: sortOrder.value,
-      difficulty: difficulty.value || undefined,
-      tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
-      title: searchKeyword.value || undefined
+    const response = await request.get('/root/question/list', {
+      params: {
+        pageStart: currentPage.value,
+        pageSize: pageSize.value,
+        sortField: sortField.value,
+        sortOrder: sortOrder.value,
+        difficulty: difficulty.value || undefined,
+        tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
+        title: searchKeyword.value || undefined
+      }
     })
 
     if (response.code === 200) {
@@ -384,12 +357,14 @@ const getTags = async () => {
 const handleSizeChange = async (val) => {
   pageSize.value = val
   currentPage.value = 1
+  updateQuery()
   await getProblems()
 }
 
 // 当前页改变处理
 const handleCurrentChange = async (val) => {
   currentPage.value = val
+  updateQuery()
   await getProblems()
 }
 
@@ -398,6 +373,7 @@ watch(
   [difficulty, selectedTagIds, searchKeyword],
   async () => {
     currentPage.value = 1
+    updateQuery()
     await getProblems()
   },
   { deep: true }
@@ -405,6 +381,7 @@ watch(
 
 // 组件挂载时初始化数据
 onMounted(async () => {
+  initFromRoute()
   await getTags()
   await getProblems()
 })

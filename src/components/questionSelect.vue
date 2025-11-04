@@ -169,8 +169,9 @@ const props = defineProps({
 })
 onMounted(async () => {
   await getTags()
-
-  await getSelectedQuestion()
+  if (props.contestId) {
+    await getSelectedQuestion()
+  }
   await getProblems()
 })
 // 根据通过率返回不同的颜色
@@ -207,12 +208,14 @@ const groupedTags = computed(() => {
 const getProblems = async () => {
   loading.value = true
   try {
-    const response = await request.post('/question/contest/get/list', {
-      pageStart: currentPage.value,
-      pageSize: pageSize.value,
-      difficulty: difficulty.value || undefined,
-      tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
-      title: searchKeyword.value || undefined
+    const response = await request.get('/question/contest/get/list', {
+      params: {
+        pageStart: currentPage.value,
+        pageSize: pageSize.value,
+        difficulty: difficulty.value || undefined,
+        tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
+        title: searchKeyword.value || undefined
+      }
     })
 
     if (response.code === 200) {
@@ -252,6 +255,7 @@ const handleSizeChange = async (val) => {
 }
 const getSelectedQuestion = async () => {
   try {
+    if (!props.contestId) return
     const response = await request.get(`/root/contest/problem/${props.contestId}`)
     if (response.code === 200) {
       selectedQuestion.value = response.data

@@ -321,8 +321,9 @@ import { type Tag, type TagGroup } from '@/types/tag'
 import ProblemStatsPie from '@/components/ProblemStatsPie.vue'
 import GoAi from '@/components/goAi.vue'
 import dayjs from 'dayjs' // 确保项目中安装了 dayjs
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
+const route = useRoute()
 // 状态变量
 const loading = ref(true)
 const difficulty = ref<number | null>(null)
@@ -337,6 +338,37 @@ const problems = ref<Problem[]>([])
 const allTags = ref<Tag[]>([])
 const hoveredProblem = ref<Problem | null>(null)
 const token = localStorage.getItem('authToken')
+// 将当前筛选、分页、排序写入 URL Query
+const updateQuery = () => {
+  const query: Record<string, any> = {
+    pageStart: currentPage.value,
+    pageSize: pageSize.value,
+    sortField: sortField.value,
+    sortOrder: sortOrder.value,
+  }
+  if (difficulty.value !== null) query.difficulty = difficulty.value
+  if (selectedTagIds.value.length > 0) query.tagNames = selectedTagIds.value.join(',')
+  if (searchKeyword.value) query.title = searchKeyword.value
+  router.replace({ query })
+}
+
+// 从 URL Query 初始化筛选、分页、排序
+const initFromRoute = () => {
+  const q = route.query
+  if (q.pageStart) currentPage.value = Number(q.pageStart)
+  if (q.pageSize) pageSize.value = Number(q.pageSize)
+  if (q.sortField && typeof q.sortField === 'string') sortField.value = q.sortField
+  if (q.sortOrder && typeof q.sortOrder === 'string') sortOrder.value = q.sortOrder
+  if (q.difficulty) difficulty.value = Number(q.difficulty)
+  if (q.tagNames && typeof q.tagNames === 'string') {
+    selectedTagIds.value = q.tagNames
+      .split(',')
+      .map((v) => Number(v))
+      .filter((v) => !Number.isNaN(v))
+  }
+  if (q.title && typeof q.title === 'string') searchKeyword.value = q.title
+}
+
 // 添加题目点击处理
 // https://element-plus.org/zh-CN/component/loading.html 详细一点
 const handleQuestionClick = (questionId: number, dailyQuestionId: number) => {
@@ -426,14 +458,16 @@ const filteredGroupedTags = computed<TagGroup[]>(() => {
 const getProblems = async () => {
   loading.value = true
   try {
-    const response = (await request.post('/question/list', {
-      pageStart: currentPage.value,
-      pageSize: pageSize.value,
-      sortField: sortField.value,
-      sortOrder: sortOrder.value,
-      difficulty: difficulty.value || undefined,
-      tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
-      title: searchKeyword.value || undefined
+    const response = (await request.get('/question/list', {
+      params: {
+        pageStart: currentPage.value,
+        pageSize: pageSize.value,
+        sortField: sortField.value,
+        sortOrder: sortOrder.value,
+        difficulty: difficulty.value || undefined,
+        tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
+        title: searchKeyword.value || undefined
+      }
     })) as any
 
     if (response.code === 200) {
@@ -462,12 +496,14 @@ const getTags = async () => {
 const handleSizeChange = async (val: number) => {
   pageSize.value = val
   currentPage.value = 1
+  updateQuery()
   await getTotalCount()
 }
 
 // 当前页改变处理
 const handleCurrentChange = async (val: number) => {
   currentPage.value = val
+  updateQuery()
   await getProblems()
 }
 
@@ -475,14 +511,16 @@ const handleCurrentChange = async (val: number) => {
 const getTotalCount = async () => {
   loading.value = true
   try {
-    const response = (await request.post('/question/list', {
-      pageStart: currentPage.value,
-      pageSize: pageSize.value,
-      sortField: sortField.value,
-      sortOrder: sortOrder.value,
-      difficulty: difficulty.value || undefined,
-      tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
-      title: searchKeyword.value || undefined
+    const response = (await request.get('/question/list', {
+      params: {
+        pageStart: currentPage.value,
+        pageSize: pageSize.value,
+        sortField: sortField.value,
+        sortOrder: sortOrder.value,
+        difficulty: difficulty.value || undefined,
+        tagNames: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
+        title: searchKeyword.value || undefined
+      }
     })) as any
 
     if (response.code === 200) {
@@ -501,6 +539,7 @@ watch(
   [difficulty, selectedTagIds, searchKeyword],
   async () => {
     currentPage.value = 1
+    updateQuery()
     await getTotalCount()
   },
   { deep: true }
@@ -508,6 +547,8 @@ watch(
 
 // 组件挂载时初始化数据
 onMounted(async () => {
+  // 初始化时优先从 URL 读取参数
+  initFromRoute()
   // 获取当前月份的每日一题
   const currentMonth = dayjs().format('YYYY-MM')
   await getDailyQuestions(currentMonth)
