@@ -24,10 +24,7 @@
                                 {{ solution.title }}
                             </h3>
                             <div class="solution-stats">
-                                <el-button type="primary" text @click="likeSolution(solution.id)">
-                                    <el-icon>
-                                        <ThumbsUp />
-                                    </el-icon>
+                                <el-button type="primary" text @click="likeSolution(solution.id)" :icon="'thumb-up'">
                                     点赞数{{ solution.likeNum }}
                                 </el-button>
                             </div>

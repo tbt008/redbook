@@ -519,12 +519,13 @@ const searchProblems = async (query: string) => {
   if (query) {
     problemsLoading.value = true
     try {
-      const response = await request.post('question/list',
-        {
+      const response = await request.get('/question/list', {
+        params: {
           pageStart: 1,
           pageSize: 10,
           title: query,
-        }) as any
+        }
+      }) as any
 
       if (response.code === 200) {
         problemOptions.value = response.data.list
@@ -564,8 +565,8 @@ onMounted(async () => {
 
     // 获取题目信息并自动打开发布对话框
     try {
-      const response = await request.post('/question/info', {
-        questionId: qid
+      const response = await request.get('/question/info', {
+        params: { questionId: qid }
       }) as any
 
       if (response.code === 200) {

@@ -308,7 +308,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                 <!-- acm -->
                 <div v-if="constestInfo.contestType == 2">
                   <div v-if="row.questionInfo[index].score == 100" class="rank-css" style="color: #67c23a">
-                    <div>
+                    <div @click="goToSubmissionDetail(row.questionInfo[index])" style="cursor: pointer;">
                       <div>
                         {{ formatScore(row.questionInfo[index].score) }}
 
@@ -321,7 +321,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                     </div>
                   </div>
                   <div v-else-if="row.questionInfo[index].submitTime != null" class="rank-css" style="color: red">
-                    <div>
+                    <div @click="goToSubmissionDetail(row.questionInfo[index])" style="cursor: pointer;">
                       <div>
                         {{ formatScore(row.questionInfo[index].score) }}
 
@@ -339,7 +339,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                 <!-- ioi -->
                 <div v-else>
                   <div v-if="row.questionInfo[index].score == 100" class="rank-css" style="color: #67c23a">
-                    <div>
+                    <div @click="goToSubmissionDetail(row.questionInfo[index])" style="cursor: pointer;">
                       <div>
                         {{ formatScore(row.questionInfo[index].score) }}
                       </div>
@@ -353,7 +353,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                     row.questionInfo[index].submitTime != null &&
                     row.questionInfo[index].score != 0
                   " class="rank-css" style="color: rgb(230, 162, 60)">
-                    <div>
+                    <div @click="goToSubmissionDetail(row.questionInfo[index])" style="cursor: pointer;">
                       <div>
                         {{ formatScore(row.questionInfo[index].score) }}
                       </div>
@@ -367,7 +367,7 @@ box-shadow: 3px 3px 12px 3px rgba(0, 0, 0, 0.1);
                     row.questionInfo[index].submitTime != null &&
                     row.questionInfo[index].score == 0
                   " class="rank-css" style="color: red">
-                    <div>
+                    <div @click="goToSubmissionDetail(row.questionInfo[index])" style="cursor: pointer;">
                       <div>
                         {{ formatScore(row.questionInfo[index].score) }}
                       </div>
@@ -470,10 +470,11 @@ const getUser = async () => {
   }
 }
 const goToSubmissionDetail = async (row) => {
-  const isSelf = await getSubmissionDetail(row.submitId)
+  // 确保正确获取submitId，排行榜中字段名为submitid（小写d）
+  const submitId = row.submitId || row.submitid;
+  const isSelf = await getSubmissionDetail(submitId)
   if (isSelf) {
-    row.uid
-    router.push(`/submission/${row.submitId}?contest=${id.value}`)
+    router.push(`/submission/${submitId}?contest=${id.value}`)
   } else {
     ElMessage.warning('无权限查看')
   }
@@ -490,6 +491,7 @@ const getSubmissionDetail = async (submissionId) => {
   } catch (error) {
     console.log("获取提交详情失败" + error)
   }
+  return false;
 }
 const handleRun = (index1) => {
   runStatusList.value = []
@@ -502,27 +504,60 @@ const handleRun = (index1) => {
   selectRecord()
 }
 // 分页大小改变处理
+// 分页大小改变处理
 const recordHandleSizeChange = async (val) => {
   recordPageSize.value = val
   recordCurrentPage.value = 1
+  // 更新URL查询参数
+  router.push({
+    path: `/contest/detail/${id.value}`,
+    query: {
+      page: 1,
+      pagesize: val
+    }
+  })
   selectRecord()
 }
 
 // 当前页改变处理
 const recordHandleCurrentChange = async (val) => {
   recordCurrentPage.value = val
+  // 更新URL查询参数
+  router.push({
+    path: `/contest/detail/${id.value}`,
+    query: {
+      page: val,
+      pagesize: recordPageSize.value
+    }
+  })
   selectRecord()
 }
 // 分页大小改变处理
 const rankHandleSizeChange = async (val) => {
   rankPageSize.value = val
   rankCurrentPage.value = 1
+  // 更新URL查询参数
+  router.push({
+    path: `/contest/detail/${id.value}`,
+    query: {
+      page: 1,
+      pagesize: val
+    }
+  })
   refreshRank()
 }
 
 // 当前页改变处理
 const rankHandleCurrentChange = async (val) => {
   rankCurrentPage.value = val
+  // 更新URL查询参数
+  router.push({
+    path: `/contest/detail/${id.value}`,
+    query: {
+      page: val,
+      pagesize: rankPageSize.value
+    }
+  })
   refreshRank()
 }
 const timeToSeconds = (timeString) => {
@@ -683,14 +718,17 @@ const refreshRank = () => {
         questionNumber.value = []
         const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 
-        res.data.list[0].questionInfo.forEach((item, index) => {
-          item.letter = letters[index]
+        // 检查列表是否为空，避免访问undefined的属性
+        if (res.data.list && res.data.list.length > 0 && res.data.list[0].questionInfo) {
+          res.data.list[0].questionInfo.forEach((item, index) => {
+            item.letter = letters[index]
 
 
-          var r = { text: `${letters[index]}`, value: `${letters[index]}` }
-          r.checked = false
-          questionNumber.value.push(r)
-        })
+            var r = { text: `${letters[index]}`, value: `${letters[index]}` }
+            r.checked = false
+            questionNumber.value.push(r)
+          })
+        }
         if (displayTitle.value.length == 0) {
           displayTitle.value = questionNumber.value
         }
@@ -755,7 +793,20 @@ onBeforeUnmount(async () => {
   }
 })
 onMounted(async () => {
+  // 获取路由参数和查询参数
   id.value = router.currentRoute.value.params.id
+  const query = router.currentRoute.value.query
+  
+  // 如果有查询参数，设置分页信息
+  if (query.page) {
+    recordCurrentPage.value = Number(query.page)
+    rankCurrentPage.value = Number(query.page)
+  }
+  if (query.pagesize) {
+    recordPageSize.value = Number(query.pagesize)
+    rankPageSize.value = Number(query.pagesize)
+  }
+  
   request.get(`/contest/racepage/${id.value}`).then(async (res) => {
     if (res.code == 200) {
       constestInfo.value = res.data

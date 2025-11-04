@@ -13,6 +13,10 @@ const router = createRouter({
       name: 'Home',
       component: Home
     },
+    // 独立的题目编辑和创建页面
+    { path: '/admin/question-edit', name: 'questionEditPage', component: () => import('@/views/questionEditorPage.vue'), meta: { requiresAdmin: true } },
+    // 独立的竞赛编辑和创建页面
+    { path: '/admin/contest-edit', name: 'contestEditPage', component: () => import('@/views/contestEditorPage.vue'), meta: { requiresAdmin: true } },
 
     {
       path: '/problems',

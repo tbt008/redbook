@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus';
 const requestBlob = axios.create({
   baseURL: import.meta.env.VITE_APP_BASE_API,
   timeout: 60000,
+  withCredentials: true, // 允许跨域请求携带cookies和认证信息
   responseType: 'blob', // 默认 responseType 为 blob
   headers: {
     'Content-Type': 'application/json;charset=UTF-8',

@@ -14,7 +14,7 @@ const awaitContent = ref({})
 const language = ref(0)
 const code = ref('')
 const showACImg = ref(false)
-const questionId = ref()
+const questionId = ref(0) // 设置默认值防止undefined
 const contestId = ref()
 const showACImgfun = () => {
   showACImg.value = true
@@ -29,7 +29,12 @@ const codeNow = (value) => {
 const changeLanuage = (value) => {
   language.value = value
 }
-watch(() => codeNow())
+// 移除不必要的watch，或者使用正确的watchEffect
+// 如果需要监听code变化，可以使用：
+// watch(code, (newCode) => {
+//   // 处理code变化
+// })
+
 const rep = ref({})
 onMounted(async () => {
   questionId.value = router.currentRoute.value.query.id
