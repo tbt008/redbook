@@ -48,14 +48,27 @@
       <el-form-item label="空间限制" prop="memoryLimit">
         <el-input-number v-model="memoryLimit" :min="1" :max="1000000" />MB
       </el-form-item>
-      <div style="display: block" v-for="(item, index) in exampleList" :key="index">
-        <div style="display: block">
-          <div class="example-item">
-            <div>输入：{{ item.input }}</div>
-            <div>输出：{{ item.output }}</div>
-            <div>解释：{{ item.explain }}</div>
+      <div class="example-container" v-for="(item, index) in exampleList" :key="index">
+        <div class="example-header">
+          <h3>样例 {{ index + 1 }}</h3>
+        </div>
+        <div class="example-content">
+          <div class="example-input">
+            <div class="example-label">输入：</div>
+            <pre class="example-text">{{ item.input }}</pre>
           </div>
-          <el-button type="primary" @click="delExample(index)">删除</el-button>
+          <div class="example-output">
+            <div class="example-label">输出：</div>
+            <pre class="example-text">{{ item.output }}</pre>
+          </div>
+          <div class="example-explain" v-if="item.explain">
+            <div class="example-label">解释：</div>
+            <pre class="example-text">{{ item.explain }}</pre>
+          </div>
+        </div>
+        <div class="example-actions">
+          <el-button type="primary" size="small" @click="editExample(index)">编辑</el-button>
+          <el-button type="danger" size="small" @click="delExample(index)">删除</el-button>
         </div>
       </div>
       <el-form-item label="题目样例">
@@ -122,6 +135,27 @@
       </span>
     </template>
   </el-dialog>
+
+  <!-- 样例编辑弹窗 -->
+  <el-dialog v-model="showEditDialog" title="编辑样例" width="50%" :close-on-click-modal="false">
+    <el-form :model="editingExample" label-width="100px">
+      <el-form-item label="输入数据">
+        <el-input v-model="editingExample.input" style="width: 100%" :rows="3" type="textarea" placeholder="输入数据" />
+      </el-form-item>
+      <el-form-item label="输出数据">
+        <el-input v-model="editingExample.output" style="width: 100%" :rows="3" type="textarea" placeholder="输出数据" />
+      </el-form-item>
+      <el-form-item label="样例解释">
+        <el-input v-model="editingExample.explain" style="width: 100%" :rows="3" type="textarea" placeholder="解释" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="showEditDialog = false">取消</el-button>
+        <el-button type="primary" @click="saveEditExample">保存</el-button>
+      </span>
+    </template>
+  </el-dialog>
 </template>
 <script lang="js" setup>
 import { ref, computed, watch } from 'vue'
@@ -136,6 +170,10 @@ const status = ref('0')
 const difficulty = ref('1')
 const exampleList = ref([])
 const emit = defineEmits(['cancel', 'primary'])
+// 样例编辑相关
+const showEditDialog = ref(false)
+const editingExample = ref({ input: '', output: '', explain: '' })
+const editingIndex = ref(-1)
 // 定义接收的 props
 const props = defineProps({
   id: {
@@ -217,6 +255,26 @@ const addExample = () => {
     explain: explain.value
   }
   exampleList.value.push(obj)
+}
+// 编辑样例
+const editExample = (index) => {
+  editingIndex.value = index
+  // 深拷贝要编辑的样例数据
+  editingExample.value = JSON.parse(JSON.stringify(exampleList.value[index]))
+  showEditDialog.value = true
+}
+// 保存编辑后的样例
+const saveEditExample = () => {
+  if (editingIndex.value !== -1) {
+    exampleList.value[editingIndex.value] = {
+      input: editingExample.value.input,
+      output: editingExample.value.output,
+      explain: editingExample.value.explain
+    }
+    showEditDialog.value = false
+    editingIndex.value = -1
+    ElMessage.success('样例编辑成功')
+  }
 }
 
 onMounted(() => {
@@ -390,14 +448,6 @@ watch(
 </style>
 
 <style>
-.example-item {
-  background-color: rgb(154, 227, 202);
-  min-width: 200px;
-  border-radius: 15px;
-  padding: 20px;
-  margin: 10px;
-}
-
 .editorType {
   margin: 20px;
 }
@@ -433,5 +483,80 @@ watch(
   width: 178px;
   height: 178px;
   text-align: center;
+}
+
+/* 优化后的样例展示样式 */
+.example-container {
+  background-color: #ffffff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.example-container:hover {
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.example-header {
+  background-color: #fafafa;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e4e7ed;
+  border-radius: 8px 8px 0 0;
+}
+
+.example-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.example-content {
+  padding: 20px;
+}
+
+.example-input,
+.example-output,
+.example-explain {
+  margin-bottom: 16px;
+}
+
+.example-input:last-child,
+.example-output:last-child,
+.example-explain:last-child {
+  margin-bottom: 0;
+}
+
+.example-label {
+  font-weight: 500;
+  color: #606266;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.example-text {
+  background-color: #f5f7fa;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 12px;
+  margin: 0;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: #303133;
+}
+
+.example-actions {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #e4e7ed;
+  background-color: #fafafa;
+  border-radius: 0 0 8px 8px;
 }
 </style>
