@@ -68,4 +68,6 @@ function getAuthToken() {
   }
   return null
 }
+
+export { getAuthToken }
 export default request

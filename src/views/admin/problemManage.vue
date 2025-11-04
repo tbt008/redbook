@@ -32,6 +32,15 @@
           </template>
         </el-input>
         <el-button type="primary" @click="navigateToAddQuestion">新增题目</el-button>
+        <el-upload
+          class="filter-item"
+          :show-file-list="false"
+          :before-upload="handleBeforeUpload"
+          :http-request="handleXmlUpload"
+          accept=".xml"
+        >
+          <el-button type="success">导入XML题目</el-button>
+        </el-upload>
       </div>
 
       <!-- 已选标签显示区域 -->
@@ -182,7 +191,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 // Element Plus 图标
 import { Search, Check } from '@element-plus/icons-vue'
 // 工具和类型
-import request from '@/util/request'
+import request, { getAuthToken } from '@/util/request'
+// XML导入功能使用request实例，已移除axios导入
 
 // 移除不再需要的对话框状态变量
 // 状态变量
@@ -226,6 +236,60 @@ const getProgressColor = (rate) => {
 }
 const addData = (row) => {
   router.push(`/files/problemid=${row.id}`)
+}
+
+// XML文件上传前验证
+const handleBeforeUpload = (file) => {
+  const isXml = file.type === 'text/xml' || file.name.endsWith('.xml')
+  if (!isXml) {
+    ElMessage.error('只能上传XML文件！')
+    return false
+  }
+  return true
+}
+
+// 自定义XML文件上传逻辑
+const handleXmlUpload = async (options) => {
+  const { file } = options
+  
+  try {
+    // 显示确认对话框
+    await ElMessageBox.confirm(
+      `确定要导入XML文件「${file.name}」吗？导入过程可能需要一些时间。`,
+      '导入确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    )
+    
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    loading.value = true
+    const response = await request.post('/root/question/import/xml', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    
+    if (response.data && response.data.code === 200) {
+      ElMessage.success(`成功导入 ${response.data.data?.length || 0} 道题目`)
+      // 重新获取题目列表
+      await getProblems()
+    } else {
+      ElMessage.error('导入失败：' + (response.data?.msg || '未知错误'))
+    }
+  } catch (error) {
+    // 如果是用户取消操作，不显示错误信息
+    if (error !== 'cancel') {
+      console.error('XML导入失败:', error)
+      ElMessage.error('导入失败，请检查网络或文件格式')
+    }
+  } finally {
+    loading.value = false
+  }
 }
 // 导航到题目编辑页面
 const navigateToEditQuestion = (row) => {
