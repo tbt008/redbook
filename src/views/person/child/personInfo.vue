@@ -69,6 +69,57 @@ const beginUploadImg = (fileItem) => {
         uploadPicLoading.value = true
 
 }
+const uploadAvatarFailedFun = (fileItem) => {
+    uploadPicLoading.value = false
+    ElNotification({
+        type: 'info',
+        title: '失败',
+        content: '上传图片失败'
+    })
+}
+onMounted(() => {
+    let obj = document.getElementsByClassName('sonstyle')[6]
+    obj.style.backgroundColor = '#EDEEF0'
+    obj.style.color = '#0A84FF'
+    headers.value = {
+        'token': localStorage.getItem('token'),
+        'attack-code': "Eren_yeager"
+    }
+    setTimeout(() => {
+        beginLoading.value = false
+    }, 2000)
+})
+</script>
+
+<template>
+
+    <!-- <uploadBox v-show="showUpload" ></uploadBox> -->
+    <div class="containerssss">
+
+        <el-skeleton :loading="uploadPicLoading" animated>
+            <template #template>
+                <div style="display: flex; justify-content: center;">
+                    <el-skeleton-item variant="image"
+                        style="width: 120px; height: 120px; border-radius: 1000px;"></el-skeleton-item>
+                </div>
+            </template>
+            <template #default>
+                <div style="display: flex; justify-content: center;">
+                    <img :src="props.userInfo.avatar"
+                        style="width: 120px; height: 120px; border-radius: 1000px; display: flex; justify-content: center;"
+                        alt="">
+                    <imgLoader v-show="uploadPicLoading"></imgLoader>
+                </div>
+            </template>
+        </el-skeleton>
+        <a-popover>
+            <div
+                style="position: absolute; width: 30px; height: 30px; border-radius: 1000px; background-color: #E0F4E7; color: #2DB55D; display: flex; justify-content: center; align-items: center; left: 415px; top: 80px; cursor: pointer;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
+                    class="h-4 w-4 text-green-s dark:text-dark-green-s">
+                    <path fill-rule="evenodd"
+                        d="M11 20a1 1 0 011-1h8a1 1 0 110 2h-8a1 1 0 01-1-1zM17.018 5c-.26 0-.51.104-.695.288L4.837 16.773l-.463 1.853 1.853-.463L17.712 6.677A.981.981 0 0017.018 5zm-2.11-1.126a2.983 2.983 0 014.219 4.217L7.444 19.773a1 1 0 01-.464.263l-3.738.934a1 1 0 01-1.213-1.212l.934-3.739a1 1 0 01.263-.464L14.91 3.874z"
+                        clip-rule="evenodd"></path>
                 </svg>
             </div>
             <template #content>
