@@ -453,13 +453,14 @@ const getUser = async () => {
     return
   }
   try {
-    const res = await request.post(`/ranking/get/search`, {
-      contestId: id.value,
-      uid: searchKeyword.value
+    const res = await request.get(`/ranking/get/search`, {
+      params: {
+        contestId: id.value,
+        uid: searchKeyword.value
+      }
     })
 
     if (res.code == 200) {
-      console.log(rankinglist.value)
       rankinglist.value = [res.data]
 
     } else {
@@ -679,15 +680,20 @@ const searchUser = (value) => {
     ElMessage.error('请输入正确的学号')
     return
   }
-  request
-    .post(`/contest/record/get/all`, {
-      contestId: id.value,
-      uid: value,
-      pageStart: recordCurrentPage.value,
-      pageSize: recordPageSize.value,
-      questionDisplayNames: checkedQuestionName.value,
-      runStatusList: runStatusList.value
+  // 直接构建包含查询参数的URL
+  let url = `/contest/record/get/all?contestId=${id.value}&uid=${value}&pageStart=${recordCurrentPage.value}&pageSize=${recordPageSize.value}`
+  // 添加可选参数
+  if (checkedQuestionName.value && checkedQuestionName.value.length > 0) {
+    checkedQuestionName.value.forEach(name => {
+      url += `&questionDisplayNames=${encodeURIComponent(name)}`
     })
+  }
+  if (runStatusList.value && runStatusList.value.length > 0) {
+    runStatusList.value.forEach(status => {
+      url += `&runStatusList=${encodeURIComponent(status)}`
+    })
+  }
+  request.get(url)
     .then((res) => {
       if (res.code == 200) {
         codeRecordList.value = res.data.list
@@ -765,15 +771,20 @@ const selectQuestion = () => {
     })
 }
 const selectRecord = () => {
-  request
-    .post(`/contest/record/get/all`, {
-      contestId: id.value,
-      uid: inputUser.value,
-      pageStart: recordCurrentPage.value,
-      pageSize: recordPageSize.value,
-      questionDisplayNames: checkedQuestionName.value,
-      runStatusList: runStatusList.value
+  // 直接构建包含查询参数的URL
+  let url = `/contest/record/get/all?contestId=${id.value}&uid=${inputUser.value}&pageStart=${recordCurrentPage.value}&pageSize=${recordPageSize.value}`
+  // 添加可选参数
+  if (checkedQuestionName.value && checkedQuestionName.value.length > 0) {
+    checkedQuestionName.value.forEach(name => {
+      url += `&questionDisplayNames=${encodeURIComponent(name)}`
     })
+  }
+  if (runStatusList.value && runStatusList.value.length > 0) {
+    runStatusList.value.forEach(status => {
+      url += `&runStatusList=${encodeURIComponent(status)}`
+    })
+  }
+  request.get(url)
     .then((res) => {
       if (res.code == 200) {
         codeRecordList.value = res.data.list
