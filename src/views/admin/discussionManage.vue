@@ -116,7 +116,7 @@ const getArticleTypeTag = (type: number) => {
     0: 'success',
     1: 'warning',
     2: 'info',
-    3: 'default',
+    3: 'info',
     4: 'danger',
     5: 'primary'
   }

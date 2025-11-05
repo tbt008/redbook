@@ -9,7 +9,7 @@
           <div style="font-size: 12px; line-height: 32px">筛选条件</div>
           <!-- elementplus el-select: 难度选择下拉框 -->
           <el-select v-model="difficulty" placeholder="难度" class="filter-item">
-            <el-option label="全部" :value="null" />
+            <el-option label="全部" :value="''" />
             <el-option label="入门" :value="1" />
             <el-option label="简单" :value="2" />
             <el-option label="普及" :value="3" />

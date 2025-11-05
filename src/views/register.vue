@@ -49,6 +49,9 @@
           </el-select>
           <input v-model="password" type="password" placeholder="密码" />
           <input v-model="confirmPassword" type="password" placeholder="确认密码" />
+          <div style="margin: 15px 0;">
+            <Captcha ref="captchaRef" v-model="captchaCode" @captchaIdChange="handleCaptchaIdChange" />
+          </div>
           <input type="button" class="login-button" value="注册" @click="register" />
         </form>
       </section>
@@ -64,14 +67,20 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElSelect, ElOption } from 'element-plus'
 import request from '@/util/request'
 import { useRouter } from 'vue-router'
+import Captcha from '@/components/Captcha.vue'
 
 const router = useRouter()
+
+// 验证码组件引用
+const captchaRef = ref(null);
 
 const username = ref('')
 const studentId = ref('')
 const classic = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const captchaCode = ref('')
+const captchaId = ref('')
 
 const classicList = ref([])
 const pageInfo = ref({
@@ -98,9 +107,13 @@ onMounted(() => {
   getClassicList()
 })
 
+const handleCaptchaIdChange = (id) => {
+  captchaId.value = id
+}
+
 const register = async () => {
   // 表单验证
-  if (!username.value || !password.value || !confirmPassword.value || !classic.value || !studentId.value) {
+  if (!username.value || !password.value || !confirmPassword.value || !classic.value || !studentId.value || !captchaCode.value) {
     ElMessage.warning('请填写所有必填项')
     return
   }
@@ -119,7 +132,9 @@ const register = async () => {
     password: password.value,
     classic: classic.value,
     studentId: username.value,
-    username: studentId.value
+    username: studentId.value,
+    captchaId: captchaId.value,
+    captchaCode: captchaCode.value
   }
 
   try {
@@ -129,6 +144,10 @@ const register = async () => {
       router.push('/login')
     } else {
       ElMessage.error(res.msg)
+      // 验证码错误时自动刷新
+      if (captchaRef.value && res.msg.includes('验证码')) {
+        captchaRef.value.refreshCaptcha();
+      }
     }
   } catch (error) {
     ElMessage.error('注册失败，请稍后重试')

@@ -113,7 +113,7 @@
 <script lang="js" setup>
 
 import ContestMember from '@/components/contestMember.vue'
-import { Delete, Edit, Plus, Download, RefreshRight } from '@element-plus/icons-vue'
+import { Delete, Edit, Plus, Download, RefreshRight, Search } from '@element-plus/icons-vue'
 // Vue 相关
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'

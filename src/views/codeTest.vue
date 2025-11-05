@@ -38,6 +38,19 @@ const choseTestcase = (type) => {
   input.value = props.rep.examples[type].input
   currentClickCase.value = (type)
 }
+
+// 处理测试用例输入变化，限制大小为10KB
+const handleInputChange = (value) => {
+  const inputSize = new Blob([value]).size
+  const maxSize = 10 * 1024 // 10KB
+  
+  if (inputSize > maxSize) {
+    // 截断到最大限制
+    const truncatedValue = value.substring(0, maxSize)
+    input.value = truncatedValue
+    ElMessage.warning(`测试用例大小不能超过10KB`)
+  }
+}
 const submitCode = async () => {
   submitStatus.value = '运行中'
   judgeQuestionLoading.value = true
@@ -302,7 +315,8 @@ onMounted(() => {
         <div style="display: flex; font-size: 15px; color: #8a8a98; font-weight: bold">input=</div>
       </div>
       <div style="padding: 5px 30px">
-        <el-input v-model="input" style="min-width: 240px" autosize type="textarea" placeholder="请输入测试样例" />
+        <el-input v-model="input" style="min-width: 240px" autosize type="textarea" placeholder="请输入测试样例" 
+          @input="handleInputChange" />
 
       </div>
     </div>

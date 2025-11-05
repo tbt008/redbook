@@ -54,7 +54,11 @@ request.interceptors.request.use((config) => {
       delete config.headers['auth-token'];
     }
   }
-  // console.log(config); 
+  // 打印请求URL，验证参数是否正确添加到URL中
+  if (config.url && config.url.includes('/contest/record/get/all')) {
+    console.log('Request URL:', config.baseURL + config.url);
+    console.log('Request params:', config.params);
+  }
   return config
 })
 function getAuthToken() {
@@ -64,4 +68,6 @@ function getAuthToken() {
   }
   return null
 }
+
+export { getAuthToken }
 export default request

@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import request from '@/util/request'
 import { useRouter, useRoute } from 'vue-router'
 import questionSolve from '@/components/questionSolve.vue'
+import { ElMessage } from 'element-plus'
 const currentTab = ref(0)
 const clickToLike = ref(false)
 const router = useRouter()
@@ -101,7 +102,15 @@ const goToSubmissionDetail = (row) => {
   } else {
     router.push(`/submission/${row.submitId}`)
   }
+}
 
+// 复制文本到剪贴板
+const copyToClipboard = (text, type) => {
+  navigator.clipboard.writeText(text).then(() => {
+    ElMessage.success(`已复制${type}内容`)
+  }).catch(() => {
+    ElMessage.error('复制失败，请手动复制')
+  })
 }
 </script>
 
@@ -189,29 +198,52 @@ const goToSubmissionDetail = (row) => {
                   previewBackground="#ffffff" :defaultOpen="'preview'" :toolbarsFlag="false" :editable="false"
                   :scrollStyle="true" :ishljs="true" />
               </div>
-              <div style="padding: 10px" v-for="(item, index) in article.example" :key="index">
-                <div style="font: 14px sans-serif; font-weight: bold">示例 {{ index + 1 }}</div>
-
-                <div style="
-                    margin: 15px;
-                    background-color: rgb(247, 248, 249);
-                    border-radius: 10px;
-                    padding: 15px;
-                  ">
-                  <div style="display: flex">
-                    <div style="font: 16px sans-serif; font-weight: bold">输入:</div>
-
-                    <div style="white-space: pre-line; margin-left: 10px">{{ item.input }}</div>
+              <div class="example-container" v-for="(item, index) in article.example" :key="index">
+                <div class="example-header">
+                  <h3>示例 {{ index + 1 }}</h3>
+                </div>
+                <div class="example-content">
+                  <div class="example-input">
+                    <div class="example-label">
+                      输入:
+                      <el-button 
+                        type="text" 
+                        size="small" 
+                        @click="copyToClipboard(item.input, '输入')"
+                        class="copy-button"
+                      >
+                        复制
+                      </el-button>
+                    </div>
+                    <pre class="example-text">{{ item.input }}</pre>
                   </div>
-                  <div style="display: flex">
-                    <div style="font: 16px sans-serif; font-weight: bold">输出:</div>
-
-                    <div style="white-space: pre-line; margin-left: 10px">{{ item.output }}</div>
+                  <div class="example-output">
+                    <div class="example-label">
+                      输出:
+                      <el-button 
+                        type="text" 
+                        size="small" 
+                        @click="copyToClipboard(item.output, '输出')"
+                        class="copy-button"
+                      >
+                        复制
+                      </el-button>
+                    </div>
+                    <pre class="example-text">{{ item.output }}</pre>
                   </div>
-                  <div style="display: flex">
-                    <div style="font: 16px sans-serif; font-weight: bold">解释:</div>
-
-                    <div style="white-space: pre-line; margin-left: 10px">{{ item.explain }}</div>
+                  <div class="example-explain" v-if="item.explain">
+                    <div class="example-label">
+                      解释:
+                      <el-button 
+                        type="text" 
+                        size="small" 
+                        @click="copyToClipboard(item.explain, '解释')"
+                        class="copy-button"
+                      >
+                        复制
+                      </el-button>
+                    </div>
+                    <pre class="example-text">{{ item.explain }}</pre>
                   </div>
                 </div>
               </div>
@@ -326,18 +358,100 @@ const goToSubmissionDetail = (row) => {
 }
 
 .question-content,
-.question-tip {
-  padding: 15px;
-  height: auto;
+  .question-tip {
+    padding: 15px;
+    height: auto;
 
-  // 强制把最小高度和高度都设置为自适应
-  :deep(.v-note-wrapper) {
-    min-height: auto !important;
-    height: auto !important;
+    // 强制把最小高度和高度都设置为自适应
+    :deep(.v-note-wrapper) {
+      min-height: auto !important;
+      height: auto !important;
+    }
+
+    :deep(.v-note-panel) {
+      height: auto !important;
+    }
   }
 
-  :deep(.v-note-panel) {
-    height: auto !important;
+  /* 优化后的样例展示样式 */
+  .example-container {
+    background-color: #ffffff;
+    border: 1px solid #e4e7ed;
+    border-radius: 8px;
+    margin: 10px 30px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
   }
-}
+
+  .example-container:hover {
+    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .example-header {
+    background-color: #fafafa;
+    padding: 8px 25px;
+    border-bottom: 1px solid #e4e7ed;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .example-content {
+    padding: 10px 25px;
+  }
+
+  .example-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    color: #303133;
+  }
+
+  .example-content {
+    padding: 10px 25px;
+  }
+
+  .example-input,
+  .example-output,
+  .example-explain {
+    margin-bottom: 4px;
+  }
+
+  .example-input:last-child,
+  .example-output:last-child,
+  .example-explain:last-child {
+    margin-bottom: 0;
+  }
+
+  .example-label {
+    font-weight: 500;
+    color: #606266;
+    margin-bottom: 2px;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .copy-button {
+    font-size: 12px;
+    color: #409eff;
+  }
+
+  .copy-button:hover {
+    color: #66b1ff;
+  }
+
+  .example-text {
+    background-color: #f5f7fa;
+    border: 1px solid #e4e7ed;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin: 0;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.3;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: #303133;
+  }
 </style>

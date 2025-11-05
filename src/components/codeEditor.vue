@@ -4,6 +4,7 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.main.js'
 // import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 // import 'monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution'
 import { debounce } from '@/utils/optimizeUtils'
+import { ElMessage } from 'element-plus'
 // }
 export default {
   props: {
@@ -49,6 +50,18 @@ export default {
       // 监听值变化
       monacoEditor.onDidChangeModelContent(() => {
         const currenValue = monacoEditor?.getValue()
+        // 检查代码大小是否超过30KB
+        const codeSize = new Blob([currenValue]).size
+        const maxSize = 30 * 1024 // 30KB
+        
+        if (codeSize > maxSize) {
+          // 截断到最大限制
+          const truncatedValue = currenValue.substring(0, maxSize)
+          monacoEditor.setValue(truncatedValue)
+          ElMessage.warning(`代码大小不能超过30KB`)
+          return
+        }
+        
         emit('updateCode', currenValue)
       })
       monacoEditor.layout({

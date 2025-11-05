@@ -44,9 +44,10 @@
       <section class="main-content">
         <form action="">
           <input v-model="id" type="username" placeholder="学号" />
-          <!-- <div class="line"></div> -->
           <input v-model="password" type="password" placeholder="密码" />
-
+          <div style="margin: 15px 0;">
+            <Captcha ref="captchaRef" v-model="captchaCode" @captchaIdChange="handleCaptchaIdChange" />
+          </div>
           <input type="button" class="login-button" value="登录" @click="login" />
         </form>
       </section>
@@ -64,10 +65,16 @@ import request from '@/util/request'
 import { useRouter } from 'vue-router'
 import store from '@/views/var.js'
 import ojHeader from '@/components/OJHeader.vue'
+import Captcha from '@/components/Captcha.vue'
 const router = useRouter()
+
+// 验证码组件引用
+const captchaRef = ref(null);
 
 const id = ref()
 const password = ref('')
+const captchaCode = ref('')
+const captchaId = ref('')
 const getInit = async () => {
 
   request.get('/article/likes/update', {
@@ -78,10 +85,22 @@ const getInit = async () => {
   });
 
 }
+const handleCaptchaIdChange = (id) => {
+  captchaId.value = id
+}
+
 const login = async () => {
+  // 验证验证码是否填写
+  if (!captchaCode.value) {
+    ElMessage.warning('请输入验证码')
+    return
+  }
+  
   let obj = {
     uid: id.value,
-    password: password.value
+    password: password.value,
+    captchaId: captchaId.value,
+    captchaCode: captchaCode.value
   }
   const uid = id.value
   request.post('/user/login', obj).then((res) => {
@@ -102,6 +121,10 @@ const login = async () => {
       }
     } else {
       ElMessage.error(res.msg)
+      // 验证码错误时自动刷新
+      if (captchaRef.value && res.msg.includes('验证码')) {
+        captchaRef.value.refreshCaptcha();
+      }
     }
   })
 }
