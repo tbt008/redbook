@@ -13,123 +13,10 @@ const router = createRouter({
       name: 'Home',
       component: Home
     },
-    // 独立的题目编辑和创建页面
-    { path: '/admin/question-edit', name: 'questionEditPage', component: () => import('@/views/questionEditorPage.vue'), meta: { requiresAdmin: true } },
-    // 独立的竞赛编辑和创建页面
-    { path: '/admin/contest-edit', name: 'contestEditPage', component: () => import('@/views/contestEditorPage.vue'), meta: { requiresAdmin: true } },
-
-    {
-      path: '/problems',
-      name: 'problemList',
-      component: () => import('@/views/problemList.vue')
-    },
-    {
-      path: '/contest',
-      name: 'contest',
-      component: () => import('@/views/contest.vue')
-    },
-
-    {
-      path: '/contest/detail/:id',
-      name: 'contestInfo',
-      component: () => import('@/views/contestInfo.vue')
-    },
-    {
-      path: '/question',
-      name: 'question',
-
-      component: () => import('@/views/problems.vue')
-    },
-    // {
-    //   path: '/circle',
-    //   name: 'circle',
-    //   component: () => import('@/views/circle.vue')
-    // },
-    {
-      path: '/about',
-      name: 'about',
-      component: () => import('@/views/about.vue')
-    },
     {
       path: '/login',
       name: 'login',
       component: () => import('@/views/login.vue')
-    },
-    {
-      path: '/user/:id',
-      name: 'user',
-      component: () => import('@/views/person/profile.vue')
-    },
-    {
-      path: '/admin',
-      name: 'admin',
-      component: () => import('@/views/admin/admin.vue'),
-      meta: { requiresAdmin: true },
-      children: [
-        {
-          path: 'problem',
-          name: 'problemManage',
-          component: () => import('@/views/admin/problemManage.vue')
-        },
-        {
-          path: 'contest',
-          name: 'contestManage',
-          component: () => import('@/views/admin/contestManage.vue')
-        },
-        {
-          path: 'user',
-          name: 'userManage',
-          component: () => import('@/views/admin/userManage.vue')
-        },
-        {
-          path: 'discussion',
-          name: 'discussionManage',
-          component: () => import('@/views/admin/discussionManage.vue')
-        },
-        {
-          path: 'excel',
-          name: 'excelManager',
-          component: () => import('@/views/admin/excelManager.vue')
-        },
-        {
-          path: 'class',
-          name: 'classManager',
-          component: () => import('@/views/admin/classManager.vue')
-        },
-        {
-          path: 'role',
-          name: 'roleManager',
-          component: () => import('@/views/admin/roleManager.vue')
-        },
-        {
-          path: 'system',
-          name: 'SystemManager',
-          component: () => import('@/views/admin/systemManager.vue'),
-          // meta: { title: '系统管理' }
-        },
-        {
-          path: 'notice',
-          name: 'noticeManage',
-          component: () => import('@/views/admin/noticeManage.vue')
-        },
-
-      ]
-    },
-    {
-      path: '/ai',
-      name: 'ai',
-      component: () => import('@/views/Ai.vue')
-    },
-    { path: '/discuss', name: 'discussion', component: () => import('@/views/Discussion.vue') },
-    {
-      path: '/discuss/:id',
-      name: 'discussionDetail',
-      component: () => import('@/views/DiscussionDetail.vue')
-    },
-    {
-      path: '/files/problemid=:problemid',
-      name: 'ListFile',
-      component: () => import('@/components/ListFiles.vue')
     },
     {
       path: '/register',
@@ -137,19 +24,213 @@ const router = createRouter({
       component: () => import('@/views/register.vue')
     },
     {
-      path: '/submission/:id',
-      name: 'submissionDetail',
-      component: () => import('@/views/SubmissionDetail.vue')
+      path: '/content/:id',
+      name: 'contentDetail',
+      component: () => import('@/views/ContentDetail.vue')
     },
     {
-      path: '/message',
-      name: 'Message',
-      component: () => import('@/views/message/message.vue')
+      path: '/search',
+      name: 'search',
+      component: () => import('@/views/Search.vue')
+    },
+    // 个人主页路由
+    {
+      path: '/profile',
+      component: () => import('@/views/person/personMain.vue'),
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: 'notes',
+          name: 'personNotes',
+          component: () => import('@/views/person/child/personNote.vue')
+        },
+        {
+          path: 'info',
+          name: 'personInfo',
+          component: () => import('@/views/person/child/personInfo.vue')
+        },
+        {
+          path: 'favour',
+          name: 'personFavour',
+          component: () => import('@/views/person/child/personFavour.vue')
+        }
+      ]
     },
     {
-      path: '/systemUpdate',
-      name: 'systemUpdate',
-      component: () => import('@/views/error/systemUpdate.vue')
+      path: '/user/center',
+      name: 'userCenter',
+      component: () => import('@/views/UserCenter.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/publish',
+      name: 'publish',
+      component: () => import('@/views/PublishContent.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/merchant/publish',
+      name: 'merchantPublish',
+      component: () => import('@/views/MerchantPublish.vue'),
+      meta: { requiresAuth: true, requiresMerchant: true }
+    },
+    {
+      path: '/attraction/:id',
+      name: 'attractionDetail',
+      component: () => import('@/views/AttractionDetail.vue')
+    },
+    {
+      path: '/food/:id',
+      name: 'foodDetail',
+      component: () => import('@/views/FoodDetail.vue')
+    },
+    {
+      path: '/hotel/:id',
+      name: 'hotelDetail',
+      component: () => import('@/views/HotelDetail.vue')
+    },
+    {
+      path: '/orders',
+      name: 'myOrders',
+      component: () => import('@/views/MyOrders.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/ai-assistant',
+      name: 'aiAssistant',
+      component: () => import('@/views/AIAssistant.vue')
+    },
+    {
+      path: '/ai-itinerary',
+      name: 'aiItinerary',
+      component: () => import('@/views/AIItineraryAssistant.vue')
+    },
+    {
+      path: '/ai-map',
+      name: 'aiMapPlanner',
+      component: () => import('@/views/AIMapPlanner.vue')
+    },
+    {
+      path: '/eticket/:orderNo',
+      name: 'eticketView',
+      component: () => import('@/views/ETicketView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/itinerary/create',
+      name: 'itineraryCreate',
+      component: () => import('@/views/ItineraryCreate.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/itinerary/editor',
+      name: 'itineraryEditor',
+      component: () => import('@/views/ItineraryEditor.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/itinerary/list',
+      name: 'myItineraries',
+      component: () => import('@/views/MyItineraries.vue'),
+      meta: { requiresAuth: true }
+    },
+    // 管理后台路由
+    {
+      path: '/admin',
+      component: () => import('@/views/admin/AdminLayout.vue'),
+      meta: { requiresAuth: true, requiresAdminOrMerchant: true },
+      children: [
+        {
+          path: '',
+          redirect: '/admin/dashboard'
+        },
+        {
+          path: 'dashboard',
+          name: 'adminDashboard',
+          component: () => import('@/views/admin/Dashboard.vue')
+        },
+        {
+          path: 'users',
+          name: 'adminUsers',
+          component: () => import('@/views/admin/UserManagement.vue')
+        },
+        {
+          path: 'user-certification',
+          name: 'adminUserCertification',
+          component: () => import('@/views/admin/UserManagement.vue')
+        },
+        {
+          path: 'audit-content',
+          name: 'adminAuditContent',
+          component: () => import('@/views/admin/ContentAudit.vue')
+        },
+        {
+          path: 'audit-records',
+          name: 'adminAuditRecords',
+          component: () => import('@/views/admin/AuditRecords.vue')
+        },
+        {
+          path: 'statistics-user',
+          name: 'adminStatisticsUser',
+          component: () => import('@/views/admin/UserStatistics.vue')
+        },
+        {
+          path: 'statistics-content',
+          name: 'adminStatisticsContent',
+          component: () => import('@/views/admin/ContentStatistics.vue')
+        },
+        {
+          path: 'statistics-hot',
+          name: 'adminStatisticsHot',
+          component: () => import('@/views/admin/HotStatistics.vue')
+        },
+        {
+          path: 'announcements',
+          name: 'adminAnnouncements',
+          component: () => import('@/views/admin/AnnouncementManagement.vue')
+        },
+        {
+          path: 'manage-content',
+          name: 'adminManageContent',
+          component: () => import('@/views/admin/ContentManagement.vue')
+        },
+        {
+          path: 'manage-hotel',
+          name: 'adminManageHotel',
+          component: () => import('@/views/admin/HotelManagement.vue')
+        },
+        {
+          path: 'manage-food',
+          name: 'adminManageFood',
+          component: () => import('@/views/admin/FoodManagement.vue')
+        },
+        {
+          path: 'manage-attraction',
+          name: 'adminManageAttraction',
+          component: () => import('@/views/admin/AttractionManagement.vue')
+        },
+        // 商家管理路由
+        {
+          path: 'merchant-foods',
+          name: 'merchantFoods',
+          component: () => import('@/views/admin/MerchantFoods.vue')
+        },
+        {
+          path: 'merchant-hotels',
+          name: 'merchantHotels',
+          component: () => import('@/views/admin/MerchantHotels.vue')
+        },
+        {
+          path: 'merchant-attractions',
+          name: 'merchantAttractions',
+          component: () => import('@/views/admin/MerchantAttractions.vue')
+        },
+        {
+          path: 'merchant-orders',
+          name: 'merchantOrders',
+          component: () => import('@/views/admin/MerchantOrders.vue')
+        }
+      ]
     },
     {
       path: '/404',
@@ -165,32 +246,71 @@ const router = createRouter({
 
 // 添加路由守卫
 router.beforeEach(async (to, from, next) => {
-  // 检查该路由是否需要管理员权限或是否访问 /admin 路径
-  if (to.matched.some(record => record.meta.requiresAdmin) || to.path.startsWith('/admin')) {
+  // 检查该路由是否需要登录
+  if (to.matched.some(record => record.meta.requiresAuth)) {
     // 检查是否有token
-    const token = localStorage.getItem('authToken')
+    const token = localStorage.getItem('auth-token')
     if (!token) {
       ElMessage.error('请先登录')
       next('/login')
       return
     }
 
-    try {
-      // 获取用户信息检查权限
-      const res = await request.get('/user/get/user') as any
-      if (res.code === 200 && res.data.permissionList &&
-        (res.data.permissionList.includes(5006) || res.data.permissionList.includes(5007))) {
-        next() // 是管理员，允许访问
+    // 检查是否需要管理员权限
+    if (to.matched.some(record => record.meta.requiresAdmin)) {
+      const userInfoStr = localStorage.getItem('userInfo')
+      if (userInfoStr) {
+        const userInfo = JSON.parse(userInfoStr)
+        if (userInfo.userType !== 4) {
+          ElMessage.error('无管理员权限')
+          next('/')
+          return
+        }
       } else {
-        ElMessage.error('您没有管理员权限')
-        next('/home') // 不是管理员，跳转到首页
+        ElMessage.error('请先登录')
+        next('/login')
+        return
       }
-    } catch (error) {
-      ElMessage.error('获取用户信息失败')
-      next('/login')
     }
+
+    // 检查是否需要管理员或商家权限
+    if (to.matched.some(record => record.meta.requiresAdminOrMerchant)) {
+      const userInfoStr = localStorage.getItem('userInfo')
+      if (userInfoStr) {
+        const userInfo = JSON.parse(userInfoStr)
+        // 允许userType=2(商家)或userType=4(管理员)访问
+        if (userInfo.userType !== 2 && userInfo.userType !== 4) {
+          ElMessage.error('无权限访问管理后台')
+          next('/')
+          return
+        }
+      } else {
+        ElMessage.error('请先登录')
+        next('/login')
+        return
+      }
+    }
+
+    // 检查是否需要商家权限
+    if (to.matched.some(record => record.meta.requiresMerchant)) {
+      const userInfoStr = localStorage.getItem('userInfo')
+      if (userInfoStr) {
+        const userInfo = JSON.parse(userInfoStr)
+        if (userInfo.userType !== 2 && userInfo.userType !== 4) {
+          ElMessage.error('只有商家才能访问此页面')
+          next('/')
+          return
+        }
+      } else {
+        ElMessage.error('请先登录')
+        next('/login')
+        return
+      }
+    }
+
+    next()
   } else {
-    next() // 不需要管理员权限的路由直接放行
+    next()
   }
 })
 

@@ -43,7 +43,7 @@ const handleAvatarUpload = (file) => {
   var url = ''
   data.append('file', file)
   request
-    .post('/oss/upload/user/avatar', data, {
+    .post('/api/file/upload?directory=avatar', data, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -139,6 +139,7 @@ const getUserInfo = () => {
   })
 }
 const starArticles = ref([])
+const browseHistory = ref([])
 
 const getStarArticles = () => {
   // 判断是否为当前登录用户
@@ -147,13 +148,124 @@ const getStarArticles = () => {
     return
   }
 
-  request.get('/article/user/stars').then((res) => {
-    if (res.code === 200) {
-      starArticles.value = res.data
-    } else {
-      ElMessage.error('获取收藏文章失败')
+  // 检查是否登录
+  const token = localStorage.getItem('auth-token')
+  if (!token) {
+    console.log('未登录，跳过获取收藏')
+    return
+  }
+
+  // 使用UserCenterController的API
+  request({
+    method: 'get',
+    url: '/userCenter/collections',
+    params: {
+      pageNum: 1,
+      pageSize: 100
     }
+  }).then((res) => {
+    if (res.code === 200) {
+      starArticles.value = res.data.list || []
+    } else {
+      ElMessage.error('获取收藏失败: ' + res.message)
+    }
+  }).catch((err) => {
+    console.error('获取收藏失败', err)
   })
+}
+
+const getBrowseHistory = () => {
+  // 判断是否为当前登录用户
+  const loginUserId = localStorage.getItem('uid')
+  if (loginUserId !== uid.value) {
+    return
+  }
+
+  // 检查是否登录
+  const token = localStorage.getItem('auth-token')
+  if (!token) {
+    console.log('未登录，跳过获取浏览历史')
+    return
+  }
+
+  // 使用UserCenterController的API
+  request({
+    method: 'get',
+    url: '/userCenter/browseHistory',
+    params: {
+      pageNum: 1,
+      pageSize: 100
+    }
+  }).then((res) => {
+    if (res.code === 200) {
+      browseHistory.value = res.data.list || []
+    } else {
+      ElMessage.error('获取浏览历史失败: ' + res.message)
+    }
+  }).catch((err) => {
+    console.error('获取浏览历史失败', err)
+  })
+}
+
+// 内容类型标签颜色映射
+const getContentTypeTag = (item) => {
+  // 判断是景点、美食还是酒店
+  if (item.address && item.rating) {
+    if (item.price && item.price > 100) {
+      return 'danger' // 酒店
+    } else if (item.cuisine) {
+      return 'warning' // 美食
+    } else {
+      return 'success' // 景点
+    }
+  }
+  return 'info' // 内容
+}
+
+// 内容类型名称映射
+const getContentTypeName = (item) => {
+  if (item.address && item.rating) {
+    if (item.price && item.price > 100) {
+      return '酒店'
+    } else if (item.cuisine) {
+      return '美食'
+    } else {
+      return '景点'
+    }
+  }
+  return '内容'
+}
+
+// 处理浏览历史项点击
+const handleBrowseItemClick = (item) => {
+  // 根据类型跳转到不同页面
+  if (item.address && item.rating) {
+    if (item.price && item.price > 100) {
+      router.push(`/hotel/${item.id}`)
+    } else if (item.cuisine) {
+      router.push(`/food/${item.id}`)
+    } else {
+      router.push(`/attraction/${item.id}`)
+    }
+  } else {
+    router.push(`/content/${item.id}`)
+  }
+}
+
+// 处理收藏项点击
+const handleCollectionItemClick = (item) => {
+  // 根据类型跳转到不同页面
+  if (item.address && item.rating) {
+    if (item.price && item.price > 100) {
+      router.push(`/hotel/${item.id}`)
+    } else if (item.cuisine) {
+      router.push(`/food/${item.id}`)
+    } else {
+      router.push(`/attraction/${item.id}`)
+    }
+  } else {
+    router.push(`/content/${item.id}`)
+  }
 }
 //添加路由参数变化的监听
 watch(
@@ -165,6 +277,7 @@ watch(
       getUserInfo()
       getCodeRecord()
       getStarArticles()
+      getBrowseHistory()
     }
   }
 )
@@ -177,6 +290,7 @@ onMounted(async () => {
   getUserInfo()
   getCodeRecord()
   getStarArticles()
+  getBrowseHistory()
 })
 const codeRecord = ref([])
 // 分页大小改变处理
@@ -372,23 +486,44 @@ const formatDate = (dateArray) => {
           <!-- <div class="leidaChart"> -->
           <!-- <radarChart></radarChart> -->
           <!-- </div> -->
-          <div style="font-weight: bold; margin-left: 15px ; margin-bottom:-15px">收藏的文章</div>
+          <div style="font-weight: bold; margin-left: 15px ; margin-bottom:-15px">浏览历史</div>
           <div class="languageset">
             <div style="padding: 20px">
               <el-empty v-if="userId !== uid" description="无权查看" />
-              <el-empty v-else-if="starArticles.length === 0" description="暂无收藏文章" />
+              <el-empty v-else-if="browseHistory.length === 0" description="暂无浏览记录" />
               <div v-else class="article-list-container">
-                <div v-for="article in starArticles" :key="article.id" class="article-item"
-                  @click="router.push(`/discuss/${article.id}`)">
+                <div v-for="item in browseHistory" :key="item.id" class="article-item"
+                  @click="handleBrowseItemClick(item)">
                   <div class="article-header">
-                    <el-tag :type="getArticleTypeTag(article.articleType)" class="article-type-tag" effect="light">
-                      {{ getArticleTypeName(article.articleType) }}
+                    <el-tag :type="getContentTypeTag(item)" class="article-type-tag" effect="light">
+                      {{ getContentTypeName(item) }}
                     </el-tag>
-                    <div class="article-title">{{ article.title }}</div>
+                    <div class="article-title">{{ item.title || item.name }}</div>
                   </div>
                   <div class="article-info">
-                    <span class="author">作者:<br />{{ article.userId }}</span>
-                    <span class="time">发布于<br />{{ formatDate(article.createTime) }}</span>
+                    <span class="time">浏览于<br />{{ formatDate(item.createTime) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-weight: bold; margin-left: 15px ; margin-bottom:-15px; margin-top: 20px">收藏的内容</div>
+          <div class="languageset">
+            <div style="padding: 20px">
+              <el-empty v-if="userId !== uid" description="无权查看" />
+              <el-empty v-else-if="starArticles.length === 0" description="暂无收藏内容" />
+              <div v-else class="article-list-container">
+                <div v-for="item in starArticles" :key="item.id" class="article-item"
+                  @click="handleCollectionItemClick(item)">
+                  <div class="article-header">
+                    <el-tag :type="getContentTypeTag(item)" class="article-type-tag" effect="light">
+                      {{ getContentTypeName(item) }}
+                    </el-tag>
+                    <div class="article-title">{{ item.title || item.name }}</div>
+                  </div>
+                  <div class="article-info">
+                    <span class="time">收藏于<br />{{ formatDate(item.createTime) }}</span>
                   </div>
                 </div>
               </div>
@@ -734,7 +869,7 @@ const formatDate = (dateArray) => {
           gap: 15px;
           flex-direction: column;
 
-          max-height: 800px;
+          max-height: 400px;
           overflow-y: auto;
 
           //最大高度和滚动

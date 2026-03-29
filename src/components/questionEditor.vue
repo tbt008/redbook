@@ -227,8 +227,8 @@ const handleImgAdd = (pos, $file) => {
   const formData = new FormData()
   formData.append('file', $file)
 
-  // 使用与contestEditor.vue中相同的上传接口
-  request.post('/oss/upload/user/avatar', formData, {
+  // 使用新的OSS上传接口
+  request.post('/file/upload?directory=content', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }

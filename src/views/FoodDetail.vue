@@ -21,7 +21,7 @@
       <!-- 图片画廊 -->
       <section class="gallery-section">
         <div class="gallery-main">
-          <el-carousel height="500px" indicator-position="none" arrow="always">
+          <el-carousel height="480px" indicator-position="none" arrow="always">
             <el-carousel-item v-for="(image, index) in imageList" :key="index">
               <el-image :src="image" fit="cover" class="gallery-image" />
             </el-carousel-item>
@@ -31,6 +31,10 @@
             <span class="badge food-badge">
               <el-icon><Food /></el-icon>
               美食
+            </span>
+            <span v-if="food.packageCount && food.packageCount > 0" class="badge combo-badge">
+              <el-icon><Tickets /></el-icon>
+              {{ food.packageCount }}个套餐
             </span>
           </div>
         </div>
@@ -55,10 +59,6 @@
               <span class="tag">
                 <el-icon><Location /></el-icon>
                 {{ food.region }}
-              </span>
-              <span class="tag" v-if="food.category">
-                <el-icon><Grid /></el-icon>
-                {{ food.category }}
               </span>
             </div>
 
@@ -87,7 +87,7 @@
 
             <el-divider />
 
-            <!-- 基本信息 -->
+            <!-- 基本信息卡片 -->
             <div class="info-cards">
               <div class="info-card">
                 <div class="card-icon">
@@ -118,6 +118,102 @@
               </div>
             </div>
 
+            <!-- 商家信息（增强版） -->
+            <div v-if="food.merchantId" class="merchant-section">
+              <h3 class="section-title">
+                <span class="title-icon">🏪</span>
+                商家信息
+              </h3>
+              <div class="merchant-card" @click="goToMerchantHome">
+                <div class="merchant-avatar">
+                  <el-image v-if="merchantInfo.avatar" :src="merchantInfo.avatar" fit="cover" style="width:100%;height:100%;border-radius:50%;" />
+                  <el-icon v-else><Shop /></el-icon>
+                </div>
+                <div class="merchant-info">
+                  <div class="merchant-name">{{ merchantInfo.nickname || merchantInfo.username || '商家' }}</div>
+                  <div class="merchant-meta">
+                    <el-tag v-if="merchantInfo.isCertified === 1" type="warning" size="small" effect="plain">
+                      <el-icon><CircleCheck /></el-icon> 认证商家
+                    </el-tag>
+                    <span class="meta-text" v-if="merchantInfo.location">{{ merchantInfo.location }}</span>
+                    <span class="meta-text" v-if="food.commentCount">{{ food.commentCount }}条评价</span>
+                  </div>
+                </div>
+                <div class="merchant-arrow">
+                  <el-icon><ArrowRight /></el-icon>
+                </div>
+              </div>
+            </div>
+
+            <!-- 套餐专区 -->
+            <div class="packages-section" v-if="packageList.length > 0">
+              <h3 class="section-title">
+                <span class="title-icon">🎁</span>
+                推荐套餐
+                <span class="package-count">{{ packageList.length }}个套餐可选</span>
+              </h3>
+              <div class="package-tabs">
+                <template v-for="tab in packageTabs" :key="tab.value">
+                  <div
+                    v-if="getPackagesByType(tab.value).length > 0"
+                    :class="['package-tab', { active: activePackageTab === tab.value }]"
+                    @click="activePackageTab = tab.value"
+                  >
+                    {{ tab.label }}
+                  </div>
+                </template>
+              </div>
+              <div class="package-grid">
+                <div
+                  v-for="pkg in filteredPackages"
+                  :key="pkg.id"
+                  :class="['package-card', { selected: selectedPackageId === pkg.id }]"
+                  @click="selectPackage(pkg)"
+                >
+                  <div class="package-image" v-if="pkg.image">
+                    <el-image :src="pkg.image" fit="cover" />
+                  </div>
+                  <div class="package-no-image" v-else>
+                    <el-icon><Food /></el-icon>
+                  </div>
+                  <div class="package-info">
+                    <div class="package-header">
+                      <el-tag v-if="pkg.packageType === 1" type="primary" size="small">单人</el-tag>
+                      <el-tag v-else-if="pkg.packageType === 2" type="success" size="small">双人</el-tag>
+                      <el-tag v-else-if="pkg.packageType === 3" type="warning" size="small">家庭</el-tag>
+                      <el-tag v-else-if="pkg.packageType === 4" type="danger" size="small">豪华</el-tag>
+                      <span class="package-name">{{ pkg.packageName }}</span>
+                    </div>
+                    <div class="package-desc" v-if="pkg.description">{{ pkg.description }}</div>
+                    <div class="package-price-row">
+                      <div class="package-price">
+                        <span class="currency">¥</span>
+                        <span class="amount">{{ pkg.price }}</span>
+                        <span v-if="pkg.originalPrice" class="original">¥{{ pkg.originalPrice }}</span>
+                      </div>
+                      <el-button
+                        v-if="selectedPackageId === pkg.id"
+                        type="primary"
+                        size="small"
+                        round
+                        @click.stop="quickOrder(pkg)"
+                      >
+                        立即购买
+                      </el-button>
+                      <el-button
+                        v-else
+                        size="small"
+                        round
+                        @click.stop="selectPackage(pkg)"
+                      >
+                        选择
+                      </el-button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 店铺介绍 -->
             <div class="description-section">
               <h3 class="section-title">
@@ -135,11 +231,10 @@
                 <span class="title-icon">🗺️</span>
                 店铺位置
               </h3>
-              <div id="map" class="map-container">
-                <div class="map-placeholder">
-                  <el-icon><MapLocation /></el-icon>
-                  <span>地图加载中...</span>
-                </div>
+              <div id="food-map" class="map-container"></div>
+              <div class="map-address">
+                <el-icon><Location /></el-icon>
+                <span>{{ food.address }}</span>
               </div>
             </div>
           </div>
@@ -156,42 +251,33 @@
                 </div>
               </div>
 
-              <div class="booking-features">
-                <div class="feature-item">
-                  <el-icon><Calendar /></el-icon>
-                  <span>在线预订</span>
+              <div class="order-type-tabs">
+                <div
+                  :class="['order-tab', { active: orderType === 'dinein' }]"
+                  @click="orderType = 'dinein'"
+                >
+                  <el-icon><Food /></el-icon>
+                  <span>到店用餐</span>
                 </div>
-                <div class="feature-item">
-                  <el-icon><Ticket /></el-icon>
-                  <span>优惠活动</span>
-                </div>
-                <div class="feature-item">
-                  <el-icon><Present /></el-icon>
-                  <span>会员专享</span>
+                <div
+                  :class="['order-tab', { active: orderType === 'takeout' }]"
+                  @click="orderType = 'takeout'"
+                  v-if="food.isTakeout === 1"
+                >
+                  <el-icon><ShoppingBag /></el-icon>
+                  <span>外卖配送</span>
                 </div>
               </div>
-
-              <!-- 剩余座位显示 -->
-              <div v-if="food.totalTables && food.totalTables > 0" class="seats-info">
-                <el-icon><OfficeBuilding /></el-icon>
-                <span>剩余座位: <strong>{{ remainingTables }}</strong> / {{ food.totalTables }}座</span>
-              </div>
-
-              <!-- 外卖功能入口 -->
-              <div v-if="food.isTakeout === 1" class="takeout-info">
-                <el-icon><ShoppingBag /></el-icon>
-                <span>支持外卖配送</span>
-                <el-button size="small" type="warning" @click="showTakeoutDialog">
-                  立即下单
-                </el-button>
-              </div>
-
-              <el-button type="primary" size="large" class="booking-btn" @click="showBookingDialog">
-                <el-icon><Calendar /></el-icon>
-                预订座位
-              </el-button>
 
               <div class="action-buttons">
+                <el-button
+                  type="primary"
+                  size="large"
+                  class="order-btn"
+                  @click="handleMainOrder"
+                >
+                  {{ orderType === 'dinein' ? '去下单' : '外卖下单' }}
+                </el-button>
                 <el-button
                   :class="['collect-btn', { collected: isCollected }]"
                   @click="toggleCollect"
@@ -199,10 +285,21 @@
                   <el-icon><component :is="isCollected ? 'StarFilled' : 'Star'" /></el-icon>
                   {{ isCollected ? '已收藏' : '收藏' }}
                 </el-button>
-                <el-button class="share-btn" @click="showMap">
-                  <el-icon><Position /></el-icon>
-                  查看地图
-                </el-button>
+              </div>
+
+              <div class="booking-features">
+                <div class="feature-item">
+                  <el-icon><Clock /></el-icon>
+                  <span>营业中</span>
+                </div>
+                <div class="feature-item">
+                  <el-icon><Tickets /></el-icon>
+                  <span>多套餐</span>
+                </div>
+                <div class="feature-item">
+                  <el-icon><Present /></el-icon>
+                  <span>优惠多</span>
+                </div>
               </div>
             </div>
 
@@ -220,6 +317,15 @@
                 </div>
               </div>
             </div>
+
+            <!-- 座位信息 -->
+            <div class="table-card" v-if="food.totalTables && food.totalTables > 0">
+              <h4><el-icon><Tickets /></el-icon>座位信息</h4>
+              <div class="table-status">
+                <span class="available">{{ food.totalTables - (food.reservedTables || 0) }}个可用</span>
+                <span class="total">共{{ food.totalTables }}桌</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -228,8 +334,7 @@
       <section class="comments-section">
         <div class="section-container">
           <div class="section-header">
-            <h3 class="section-title">
-              <span class="title-bar"></span>
+            <h3 class="section-title-bar">
               用户评价
               <span class="comment-count">({{ commentList.length }})</span>
             </h3>
@@ -294,138 +399,166 @@
       </template>
     </el-dialog>
 
-    <!-- 预订对话框 -->
-    <el-dialog v-model="bookingDialogVisible" title="预订座位" width="700px" :close-on-click-modal="false" class="booking-dialog">
+    <!-- ========== 到店用餐下单对话框 ========== -->
+    <el-dialog
+      v-model="dineinDialogVisible"
+      title="到店用餐下单"
+      width="800px"
+      :close-on-click-modal="false"
+      class="order-dialog dinein-dialog"
+    >
       <div class="dialog-content">
-        <el-steps :active="currentStep" align-center finish-status="success">
-          <el-step title="填写信息" />
+        <el-steps :active="dineinStep" align-center finish-status="success">
+          <el-step title="选择套餐" />
+          <el-step title="预约信息" />
           <el-step title="确认订单" />
-          <el-step title="完成支付" />
+          <el-step title="完成下单" />
         </el-steps>
 
         <div class="step-content">
-          <!-- 步骤1: 填写预订信息 -->
-          <div v-show="currentStep === 0" class="step-panel">
-            <el-form :model="bookingForm" label-position="top" class="booking-form">
-              <div class="form-row">
-                <el-form-item label="预订日期" required>
-                  <el-date-picker
-                    v-model="bookingForm.bookingDate"
-                    type="date"
-                    placeholder="选择预订日期"
-                    :disabled-date="disabledDate"
-                    value-format="YYYY-MM-DD"
-                    style="width: 100%"
+          <!-- 步骤1: 选择套餐 -->
+          <div v-show="dineinStep === 0" class="step-panel">
+            <div class="package-choose-list">
+              <div
+                v-for="pkg in packageList"
+                :key="pkg.id"
+                :class="['package-choose-item', { selected: dineinForm.packageId === pkg.id }]"
+                @click="dineinForm.packageId = pkg.id"
+              >
+                <div class="pkg-radio">
+                  <el-radio :model-value="dineinForm.packageId === pkg.id" />
+                </div>
+                <div class="pkg-image" v-if="pkg.image">
+                  <el-image :src="pkg.image" fit="cover" />
+                </div>
+                <div class="pkg-no-image" v-else>
+                  <el-icon><Food /></el-icon>
+                </div>
+                <div class="pkg-info">
+                  <div class="pkg-type-row">
+                    <el-tag v-if="pkg.packageType === 1" size="small" type="primary">单人</el-tag>
+                    <el-tag v-else-if="pkg.packageType === 2" size="small" type="success">双人</el-tag>
+                    <el-tag v-else-if="pkg.packageType === 3" size="small" type="warning">家庭</el-tag>
+                    <el-tag v-else-if="pkg.packageType === 4" size="small" type="danger">豪华</el-tag>
+                  </div>
+                  <div class="pkg-name">{{ pkg.packageName }}</div>
+                  <div class="pkg-desc" v-if="pkg.description">{{ pkg.description }}</div>
+                </div>
+                <div class="pkg-price">
+                  <div class="current-price">¥{{ pkg.price }}</div>
+                  <div v-if="pkg.originalPrice" class="original-price">¥{{ pkg.originalPrice }}</div>
+                </div>
+              </div>
+              <el-empty v-if="packageList.length === 0" description="该商家暂无可选套餐" />
+            </div>
+          </div>
+
+          <!-- 步骤2: 预约信息 -->
+          <div v-show="dineinStep === 1" class="step-panel">
+            <el-form :model="dineinForm" label-position="top" class="dinein-form">
+              <el-form-item label="用餐日期" required>
+                <el-date-picker
+                  v-model="dineinForm.bookingDate"
+                  type="date"
+                  placeholder="请选择用餐日期"
+                  :disabled-date="disablePastDate"
+                  style="width: 100%"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                />
+              </el-form-item>
+              <el-form-item label="用餐时段" required>
+                <el-radio-group v-model="dineinForm.mealTime">
+                  <el-radio-button label="午餐" />
+                  <el-radio-button label="晚餐" />
+                </el-radio-group>
+              </el-form-item>
+              <el-form-item label="用餐人数" required>
+                <el-select v-model="dineinForm.dinerCount" placeholder="请选择人数" style="width: 100%">
+                  <el-option v-for="n in 12" :key="n" :label="n + '人'" :value="n" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="预约桌位" v-if="tableList.length > 0">
+                <el-select v-model="dineinForm.tableId" placeholder="请选择桌位（可选）" clearable style="width: 100%">
+                  <el-option
+                    v-for="t in tableList"
+                    :key="t.id"
+                    :label="`${t.tableName || ''} - ${t.tableNumber}桌 (${t.capacity}人位)`"
+                    :value="t.id"
                   />
-                </el-form-item>
-                <el-form-item label="用餐时间" required>
-                  <el-select v-model="bookingForm.mealTime" placeholder="选择用餐时间" style="width: 100%">
-                    <el-option label="早餐" value="早餐" />
-                    <el-option label="午餐" value="午餐" />
-                    <el-option label="晚餐" value="晚餐" />
-                  </el-select>
-                </el-form-item>
-              </div>
-              <div class="form-row">
-                <el-form-item label="用餐人数" required>
-                  <div class="quantity-selector">
-                    <el-button circle @click="bookingForm.dinerCount > 1 && bookingForm.dinerCount--">
-                      <el-icon><Minus /></el-icon>
-                    </el-button>
-                    <span class="quantity">{{ bookingForm.dinerCount }} 人</span>
-                    <el-button circle @click="bookingForm.dinerCount < 20 && bookingForm.dinerCount++">
-                      <el-icon><Plus /></el-icon>
-                    </el-button>
-                  </div>
-                </el-form-item>
-              </div>
-
-              <!-- 桌位选择 -->
-              <div v-if="availableTables.length > 0" class="table-selection">
-                <el-form-item label="选择桌位" required>
-                  <div class="table-grid">
-                    <div
-                      v-for="table in availableTables"
-                      :key="table.id"
-                      :class="['table-item', { selected: bookingForm.tableId === table.id }]"
-                      @click="selectTable(table)"
-                    >
-                      <div class="table-number">{{ table.tableNumber }}</div>
-                      <div class="table-name">{{ table.tableName || table.tableNumber }}</div>
-                      <div class="table-capacity">容纳{{ table.capacity }}人</div>
-                    </div>
-                  </div>
-                </el-form-item>
-              </div>
-
-              <el-form-item label="联系人姓名" required>
-                <el-input v-model="bookingForm.contactName" placeholder="请输入联系人姓名" />
+                </el-select>
               </el-form-item>
-              <el-form-item label="联系电话" required>
-                <el-input v-model="bookingForm.contactPhone" placeholder="请输入联系电话" />
-              </el-form-item>
-              <el-form-item label="特殊要求">
+              <el-form-item label="备注">
                 <el-input
-                  v-model="bookingForm.specialRequest"
+                  v-model="dineinForm.remark"
                   type="textarea"
-                  :rows="2"
-                  placeholder="如需要包间、婴儿椅等"
+                  :rows="3"
+                  placeholder="口味要求、忌口、特殊需求等"
                 />
               </el-form-item>
             </el-form>
           </div>
 
-          <!-- 步骤2: 确认订单 -->
-          <div v-show="currentStep === 1" class="step-panel">
-            <div class="order-summary">
+          <!-- 步骤3: 确认订单 -->
+          <div v-show="dineinStep === 2" class="step-panel">
+            <div class="order-confirm">
               <div class="confirm-section">
-                <h4><el-icon><Calendar /></el-icon>预订信息</h4>
-                <div class="confirm-item">
-                  <span class="label">餐厅名称</span>
-                  <span class="value">{{ food.name }}</span>
+                <h4><el-icon><Food /></el-icon>套餐信息</h4>
+                <div class="confirm-item" v-if="selectedPackage">
+                  <span class="label">套餐名称</span>
+                  <span class="value">{{ selectedPackage.packageName }}</span>
                 </div>
                 <div class="confirm-item">
-                  <span class="label">预订日期</span>
-                  <span class="value">{{ bookingForm.bookingDate }}</span>
-                </div>
-                <div class="confirm-item">
-                  <span class="label">用餐时间</span>
-                  <span class="value">{{ bookingForm.mealTime }}</span>
-                </div>
-                <div class="confirm-item">
-                  <span class="label">用餐人数</span>
-                  <span class="value">{{ bookingForm.dinerCount }} 人</span>
-                </div>
-                <div class="confirm-item">
-                  <span class="label">人均消费</span>
-                  <span class="value">¥{{ food.avgPrice }}</span>
-                </div>
-                <div class="confirm-item total">
-                  <span class="label">预计消费</span>
-                  <span class="value price">¥{{ estimatedAmount }}</span>
+                  <span class="label">单价</span>
+                  <span class="value">¥{{ selectedPackage ? selectedPackage.price : food.avgPrice }}</span>
                 </div>
               </div>
               <el-divider />
               <div class="confirm-section">
-                <h4><el-icon><User /></el-icon>联系人信息</h4>
+                <h4><el-icon><Calendar /></el-icon>预约信息</h4>
                 <div class="confirm-item">
-                  <span class="label">姓名</span>
-                  <span class="value">{{ bookingForm.contactName }}</span>
+                  <span class="label">用餐日期</span>
+                  <span class="value">{{ dineinForm.bookingDate }}</span>
                 </div>
                 <div class="confirm-item">
-                  <span class="label">电话</span>
-                  <span class="value">{{ bookingForm.contactPhone }}</span>
+                  <span class="label">用餐时段</span>
+                  <span class="value">{{ dineinForm.mealTime }}</span>
                 </div>
-                <div v-if="bookingForm.specialRequest" class="confirm-item">
-                  <span class="label">特殊要求</span>
-                  <span class="value">{{ bookingForm.specialRequest }}</span>
+                <div class="confirm-item">
+                  <span class="label">用餐人数</span>
+                  <span class="value">{{ dineinForm.dinerCount }}人</span>
                 </div>
+                <div class="confirm-item" v-if="dineinForm.tableId">
+                  <span class="label">预约桌位</span>
+                  <span class="value">{{ getTableLabel(dineinForm.tableId) }}</span>
+                </div>
+                <div class="confirm-item" v-if="dineinForm.remark">
+                  <span class="label">备注</span>
+                  <span class="value">{{ dineinForm.remark }}</span>
+                </div>
+              </div>
+              <el-divider />
+              <div class="confirm-section">
+                <h4><el-icon><Shop /></el-icon>商家信息</h4>
+                <div class="confirm-item">
+                  <span class="label">商家名称</span>
+                  <span class="value">{{ food.name }}</span>
+                </div>
+                <div class="confirm-item">
+                  <span class="label">商家地址</span>
+                  <span class="value">{{ food.address }}</span>
+                </div>
+              </div>
+              <el-divider />
+              <div class="confirm-total">
+                <span class="total-label">应付金额</span>
+                <span class="total-amount">¥{{ selectedPackage ? selectedPackage.price : food.avgPrice }}</span>
               </div>
             </div>
           </div>
 
-          <!-- 步骤3: 支付 -->
-          <div v-show="currentStep === 2" class="step-panel">
+          <!-- 步骤4: 完成 -->
+          <div v-show="dineinStep === 3" class="step-panel">
             <div class="payment-panel">
               <div class="success-icon">
                 <el-icon><CircleCheck /></el-icon>
@@ -434,33 +567,35 @@
               <p class="order-no">订单号：{{ orderNo }}</p>
               <div class="payment-amount">
                 <span class="label">应付金额</span>
-                <span class="amount">¥{{ estimatedAmount }}</span>
+                <span class="amount">¥{{ dineinTotalAmount }}</span>
               </div>
-              <div v-if="countdown > 0" class="countdown-tip">
-                <el-icon><Clock /></el-icon>
-                请在 <span class="countdown-time">{{ formatCountdown }}</span> 内完成支付
-              </div>
-              <el-button type="primary" size="large" class="pay-btn" @click="handlePay">
+              <el-button type="primary" size="large" class="pay-btn" @click="handleDineinPay">
                 立即支付
               </el-button>
-              <el-button size="large" @click="handleCancelOrder">取消订单</el-button>
+              <p class="pay-tip">支付成功后，请按时到店消费，凭订单核销</p>
             </div>
           </div>
         </div>
       </div>
 
       <template #footer>
-        <el-button @click="closeBookingDialog">取消</el-button>
-        <el-button v-if="currentStep > 0 && currentStep < 2" @click="prevStep">上一步</el-button>
-        <el-button v-if="currentStep < 1" type="primary" @click="nextStep">下一步</el-button>
-        <el-button v-if="currentStep === 1" type="primary" @click="createOrder" :loading="creating">
-          确认订单
+        <el-button @click="dineinDialogVisible = false">取消</el-button>
+        <el-button v-if="dineinStep > 0 && dineinStep < 3" @click="prevDineinStep">上一步</el-button>
+        <el-button v-if="dineinStep < 2" type="primary" @click="nextDineinStep">下一步</el-button>
+        <el-button v-if="dineinStep === 2" type="primary" @click="createDineinOrder" :loading="creating">
+          确认下单
         </el-button>
       </template>
     </el-dialog>
 
-    <!-- 外卖对话框 -->
-    <el-dialog v-model="takeoutDialogVisible" title="外卖下单" width="700px" :close-on-click-modal="false" class="takeout-dialog">
+    <!-- ========== 外卖下单对话框 ========== -->
+    <el-dialog
+      v-model="takeoutDialogVisible"
+      title="外卖下单"
+      width="800px"
+      :close-on-click-modal="false"
+      class="order-dialog takeout-dialog"
+    >
       <div class="dialog-content">
         <el-steps :active="takeoutStep" align-center finish-status="success">
           <el-step title="选择商品" />
@@ -472,28 +607,50 @@
         <div class="step-content">
           <!-- 步骤1: 选择商品 -->
           <div v-show="takeoutStep === 0" class="step-panel">
-            <el-form :model="takeoutForm" label-position="top" class="takeout-form">
-              <el-form-item label="选择商品">
-                <div class="food-menu">
-                  <div class="menu-item">
-                    <div class="menu-info">
-                      <div class="menu-name">{{ food.name }} - 标准套餐</div>
-                      <div class="menu-desc">经典美食组合</div>
-                    </div>
-                    <div class="menu-price">¥{{ food.avgPrice }}</div>
-                    <div class="menu-quantity">
-                      <el-button circle size="small" @click="takeoutForm.quantity > 1 && takeoutForm.quantity--">
-                        <el-icon><Minus /></el-icon>
-                      </el-button>
-                      <span>{{ takeoutForm.quantity }}</span>
-                      <el-button circle size="small" @click="takeoutForm.quantity++">
-                        <el-icon><Plus /></el-icon>
-                      </el-button>
-                    </div>
-                  </div>
+            <div class="package-tabs-small">
+              <template v-for="tab in packageTabs" :key="tab.value">
+                <div
+                  v-if="getPackagesByType(tab.value).length > 0"
+                  :class="['pkg-tab-small', { active: activePackageTab === tab.value }]"
+                  @click="activePackageTab = tab.value"
+                >
+                  {{ tab.label }}
                 </div>
-              </el-form-item>
-            </el-form>
+              </template>
+            </div>
+            <div class="package-choose-list">
+              <div
+                v-for="pkg in filteredPackages"
+                :key="pkg.id"
+                :class="['package-choose-item', { selected: takeoutForm.packageId === pkg.id }]"
+                @click="takeoutForm.packageId = pkg.id"
+              >
+                <div class="pkg-radio">
+                  <el-radio :model-value="takeoutForm.packageId === pkg.id" />
+                </div>
+                <div class="pkg-image" v-if="pkg.image">
+                  <el-image :src="pkg.image" fit="cover" />
+                </div>
+                <div class="pkg-no-image" v-else>
+                  <el-icon><Food /></el-icon>
+                </div>
+                <div class="pkg-info">
+                  <div class="pkg-type-row">
+                    <el-tag v-if="pkg.packageType === 1" size="small" type="primary">单人</el-tag>
+                    <el-tag v-else-if="pkg.packageType === 2" size="small" type="success">双人</el-tag>
+                    <el-tag v-else-if="pkg.packageType === 3" size="small" type="warning">家庭</el-tag>
+                    <el-tag v-else-if="pkg.packageType === 4" size="small" type="danger">豪华</el-tag>
+                  </div>
+                  <div class="pkg-name">{{ pkg.packageName }}</div>
+                  <div class="pkg-desc" v-if="pkg.description">{{ pkg.description }}</div>
+                </div>
+                <div class="pkg-price">
+                  <div class="current-price">¥{{ pkg.price }}</div>
+                  <div v-if="pkg.originalPrice" class="original-price">¥{{ pkg.originalPrice }}</div>
+                </div>
+              </div>
+              <el-empty v-if="filteredPackages.length === 0" description="该分类暂无套餐" />
+            </div>
           </div>
 
           <!-- 步骤2: 填写地址 -->
@@ -509,27 +666,36 @@
                 <el-input v-model="takeoutForm.address" placeholder="请输入详细收货地址" />
               </el-form-item>
               <el-form-item label="备注">
-                <el-input v-model="takeoutForm.remark" type="textarea" :rows="2" placeholder="口味要求、忌口等" />
+                <el-input
+                  v-model="takeoutForm.remark"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="口味要求、忌口等"
+                />
               </el-form-item>
             </el-form>
           </div>
 
           <!-- 步骤3: 确认订单 -->
           <div v-show="takeoutStep === 2" class="step-panel">
-            <div class="order-summary">
+            <div class="order-confirm">
               <div class="confirm-section">
-                <h4><el-icon><ShoppingBag /></el-icon>订单信息</h4>
-                <div class="confirm-item">
-                  <span class="label">商品</span>
-                  <span class="value">{{ food.name }} - 标准套餐 x {{ takeoutForm.quantity }}</span>
+                <h4><el-icon><Food /></el-icon>商品信息</h4>
+                <div class="confirm-item" v-if="takeoutSelectedPackage">
+                  <span class="label">套餐名称</span>
+                  <span class="value">{{ takeoutSelectedPackage.packageName }}</span>
+                </div>
+                <div class="confirm-item" v-else>
+                  <span class="label">美食名称</span>
+                  <span class="value">{{ food.name }}</span>
                 </div>
                 <div class="confirm-item">
                   <span class="label">单价</span>
-                  <span class="value">¥{{ food.avgPrice }}</span>
+                  <span class="value">¥{{ takeoutSelectedPackage ? takeoutSelectedPackage.price : food.avgPrice }}</span>
                 </div>
                 <div class="confirm-item">
                   <span class="label">配送费</span>
-                  <span class="value">¥5</span>
+                  <span class="value">¥{{ deliveryFee }}</span>
                 </div>
                 <div class="confirm-item total">
                   <span class="label">总计</span>
@@ -570,6 +736,7 @@
               <el-button type="primary" size="large" class="pay-btn" @click="handleTakeoutPay">
                 立即支付
               </el-button>
+              <p class="pay-tip">支付成功后，等待商家发货配送</p>
             </div>
           </div>
         </div>
@@ -588,31 +755,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
-  Location,
-  Money,
-  Phone,
-  Star,
-  StarFilled,
-  MapLocation,
-  Calendar,
-  ArrowLeft,
-  Food,
-  Grid,
-  Clock,
-  Ticket,
-  Present,
-  Position,
-  Edit,
-  User,
-  Minus,
-  Plus,
-  CircleCheck,
-  OfficeBuilding,
-  ShoppingBag
+  Location, Money, Phone, Star, StarFilled,
+  Clock, Ticket, Present, Edit, User,
+  CircleCheck, ArrowLeft, ArrowRight,
+  Food, Grid, Shop, ShoppingBag,
+  Ticket as Tickets, Calendar
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import dayjs from 'dayjs'
@@ -628,122 +779,346 @@ const isCollected = ref(false)
 const commentDialogVisible = ref(false)
 const submitting = ref(false)
 
-// 预订相关变量
-const bookingDialogVisible = ref(false)
-const currentStep = ref(0)
+// 商家信息（直接从 food 详情获取）
+const merchantInfo = computed(() => ({
+  nickname: food.value.merchantName,
+  username: food.value.merchantName,
+  avatar: food.value.merchantAvatar,
+  bio: food.value.merchantBio,
+  location: food.value.merchantLocation,
+  isCertified: food.value.merchantCertified
+}))
+
+// 套餐相关
+const packageList = ref<any[]>([])
+const activePackageTab = ref(1)
+const selectedPackageId = ref<number | null>(null)
+
+const packageTabs = [
+  { label: '全部', value: 0 },
+  { label: '单人套餐', value: 1 },
+  { label: '双人套餐', value: 2 },
+  { label: '家庭套餐', value: 3 },
+  { label: '豪华套餐', value: 4 }
+]
+
+const filteredPackages = computed(() => {
+  if (activePackageTab.value === 0) return packageList.value
+  return packageList.value.filter(p => p.packageType === activePackageTab.value)
+})
+
+const getPackagesByType = (type: number) => {
+  if (type === 0) return packageList.value
+  return packageList.value.filter(p => p.packageType === type)
+}
+
+const selectPackage = (pkg: any) => {
+  selectedPackageId.value = pkg.id
+}
+
+// 座位列表
+const tableList = ref<any[]>([])
+
+// 下单类型
+const orderType = ref<'dinein' | 'takeout'>('dinein')
+
+// ===== 到店用餐 =====
+const dineinDialogVisible = ref(false)
+const dineinStep = ref(0)
 const creating = ref(false)
 const orderNo = ref('')
-const countdown = ref(0)
-let countdownTimer: any = null
 
-// 外卖相关变量
+const dineinForm = reactive({
+  packageId: null as number | null,
+  bookingDate: '',
+  mealTime: '午餐',
+  dinerCount: 2,
+  tableId: null as number | null,
+  remark: ''
+})
+
+const selectedPackage = computed(() => packageList.value.find(p => p.id === dineinForm.packageId))
+const dineinTotalAmount = computed(() => {
+  if (selectedPackage.value) return selectedPackage.value.price
+  return food.value.avgPrice
+})
+
+const getTableLabel = (tableId: number) => {
+  const t = tableList.value.find(t => t.id === tableId)
+  if (!t) return ''
+  return `${t.tableName || ''} - ${t.tableNumber}桌 (${t.capacity}人位)`
+}
+
+const disablePastDate = (date: Date) => {
+  return date < new Date(new Date().setHours(0, 0, 0, 0))
+}
+
+const handleMainOrder = () => {
+  if (orderType.value === 'dinein') {
+    openDineinDialog()
+  } else {
+    openTakeoutDialog()
+  }
+}
+
+const openDineinDialog = async () => {
+  dineinDialogVisible.value = true
+  dineinStep.value = 0
+  orderNo.value = ''
+  dineinForm.packageId = selectedPackageId.value
+  // 如果只有一个套餐，直接选中
+  if (packageList.value.length === 1 && !dineinForm.packageId) {
+    dineinForm.packageId = packageList.value[0].id
+  }
+  await loadTables()
+}
+
+const loadTables = async () => {
+  try {
+    const res: any = await request.get(`/food/table/list/${foodId.value}`)
+    if (res && res.code === 200) {
+      tableList.value = res.data || []
+    }
+  } catch (e) {
+    tableList.value = []
+  }
+}
+
+const prevDineinStep = () => {
+  if (dineinStep.value > 0) dineinStep.value--
+}
+
+const nextDineinStep = () => {
+  if (dineinStep.value === 0 && !dineinForm.packageId && packageList.value.length > 0) {
+    ElMessage.warning('请选择一个套餐')
+    return
+  }
+  if (dineinStep.value === 1) {
+    if (!dineinForm.bookingDate) { ElMessage.warning('请选择用餐日期'); return }
+    if (!dineinForm.mealTime) { ElMessage.warning('请选择用餐时段'); return }
+    if (!dineinForm.dinerCount) { ElMessage.warning('请选择用餐人数'); return }
+  }
+  dineinStep.value++
+}
+
+const createDineinOrder = async () => {
+  creating.value = true
+  try {
+    const tableInfo = dineinForm.tableId ? tableList.value.find(t => t.id === dineinForm.tableId) : null
+    const res: any = await request.post('/order/create', {
+      orderType: 3,
+      foodId: foodId.value,
+      foodName: food.value.name,
+      foodPackageId: dineinForm.packageId,
+      foodPackageName: selectedPackage.value ? selectedPackage.value.packageName : null,
+      bookingDate: dineinForm.bookingDate,
+      mealTime: dineinForm.mealTime,
+      dinerCount: dineinForm.dinerCount,
+      tableId: dineinForm.tableId,
+      tableNumber: tableInfo ? tableInfo.tableNumber : null,
+      totalAmount: dineinTotalAmount.value,
+      specialRequest: dineinForm.remark
+    })
+    if (res && res.code === 200) {
+      orderNo.value = res.data
+      dineinStep.value = 3
+      ElMessage.success('订单创建成功')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '创建订单失败')
+  } finally {
+    creating.value = false
+  }
+}
+
+const handleDineinPay = async () => {
+  try {
+    const res: any = await request.post(`/order/pay/${orderNo.value}`)
+    if (res && res.code === 200) {
+      ElMessage.success('支付成功')
+      dineinDialogVisible.value = false
+      ElMessage.info('您已下单成功，请按时到店消费，凭订单核销！')
+      resetDineinForm()
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '支付失败')
+  }
+}
+
+const resetDineinForm = () => {
+  dineinForm.packageId = null
+  dineinForm.bookingDate = ''
+  dineinForm.mealTime = '午餐'
+  dineinForm.dinerCount = 2
+  dineinForm.tableId = null
+  dineinForm.remark = ''
+  dineinStep.value = 0
+}
+
+// ===== 外卖下单 =====
 const takeoutDialogVisible = ref(false)
 const takeoutStep = ref(0)
 const takeoutForm = reactive({
-  quantity: 1,
+  packageId: null as number | null,
   receiverName: '',
   receiverPhone: '',
   address: '',
   remark: ''
 })
 
-const bookingForm = reactive({
-  bookingDate: '',
-  mealTime: '午餐',
-  dinerCount: 2,
-  tableId: null as number | null,
-  contactName: '',
-  contactPhone: '',
-  specialRequest: ''
-})
-
-const commentForm = reactive({
-  rating: 5,
-  content: ''
-})
-
-const estimatedAmount = computed(() => {
-  if (food.value.avgPrice && bookingForm.dinerCount) {
-    return (food.value.avgPrice * bookingForm.dinerCount).toFixed(2)
-  }
-  return '0.00'
-})
-
-// 剩余座位数
-const remainingTables = computed(() => {
-  if (food.value.totalTables && food.value.reservedTables !== undefined) {
-    return food.value.totalTables - food.value.reservedTables
-  }
-  return 0
-})
-
-// 外卖总金额
+const deliveryFee = ref(5)
+const takeoutSelectedPackage = computed(() => packageList.value.find(p => p.id === takeoutForm.packageId))
 const takeoutTotalAmount = computed(() => {
-  if (food.value.avgPrice && takeoutForm.quantity) {
-    return ((food.value.avgPrice * takeoutForm.quantity) + 5).toFixed(2)
+  const pkgPrice = takeoutSelectedPackage.value ? takeoutSelectedPackage.value.price : (food.value.avgPrice || 0)
+  return (Number(pkgPrice) + deliveryFee.value).toFixed(2)
+})
+
+const openTakeoutDialog = async () => {
+  takeoutDialogVisible.value = true
+  takeoutStep.value = 0
+  orderNo.value = ''
+  takeoutForm.packageId = selectedPackageId.value
+  if (packageList.value.length === 1 && !takeoutForm.packageId) {
+    takeoutForm.packageId = packageList.value[0].id
   }
-  return '0.00'
-})
+}
 
-const formatCountdown = computed(() => {
-  const minutes = Math.floor(countdown.value / 60)
-  const seconds = countdown.value % 60
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-})
+const prevTakeoutStep = () => {
+  if (takeoutStep.value > 0) takeoutStep.value--
+}
 
-// 加载美食详情
+const nextTakeoutStep = () => {
+  if (takeoutStep.value === 0 && !takeoutForm.packageId && packageList.value.length > 0) {
+    ElMessage.warning('请选择一个套餐')
+    return
+  }
+  if (takeoutStep.value === 1) {
+    if (!takeoutForm.receiverName) { ElMessage.warning('请输入收货人姓名'); return }
+    if (!takeoutForm.receiverPhone) { ElMessage.warning('请输入联系电话'); return }
+    if (!takeoutForm.address) { ElMessage.warning('请输入收货地址'); return }
+  }
+  takeoutStep.value++
+}
+
+const createTakeoutOrder = async () => {
+  creating.value = true
+  try {
+    const res: any = await request.post('/order/create', {
+      orderType: 3,
+      foodId: foodId.value,
+      foodName: food.value.name,
+      foodPackageId: takeoutForm.packageId,
+      foodPackageName: takeoutSelectedPackage.value ? takeoutSelectedPackage.value.packageName : null,
+      totalAmount: takeoutTotalAmount.value,
+      visitorName: takeoutForm.receiverName,
+      visitorPhone: takeoutForm.receiverPhone,
+      visitorIdCard: '',
+      specialRequest: takeoutForm.remark,
+      deliveryStatus: 0
+    })
+    if (res && res.code === 200) {
+      orderNo.value = res.data
+      takeoutStep.value = 3
+      ElMessage.success('订单创建成功')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '创建订单失败')
+  } finally {
+    creating.value = false
+  }
+}
+
+const handleTakeoutPay = async () => {
+  try {
+    const res: any = await request.post(`/order/pay/${orderNo.value}`)
+    if (res && res.code === 200) {
+      ElMessage.success('支付成功')
+      takeoutDialogVisible.value = false
+      ElMessage.info('您的外卖订单已下单，等待商家发货！')
+      resetTakeoutForm()
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '支付失败')
+  }
+}
+
+const resetTakeoutForm = () => {
+  takeoutForm.packageId = null
+  takeoutForm.receiverName = ''
+  takeoutForm.receiverPhone = ''
+  takeoutForm.address = ''
+  takeoutForm.remark = ''
+  takeoutStep.value = 0
+}
+
+// 快捷下单
+const quickOrder = (pkg: any) => {
+  selectedPackageId.value = pkg.id
+  if (orderType.value === 'dinein') {
+    dineinForm.packageId = pkg.id
+    openDineinDialog()
+  } else {
+    takeoutForm.packageId = pkg.id
+    openTakeoutDialog()
+  }
+}
+
+// ===== 加载数据 =====
 const loadFoodDetail = async () => {
   try {
     const res: any = await request.get(`/food/${foodId.value}`)
-    if (res && res.data) {
+    if (res && res.code === 200 && res.data) {
       food.value = res.data
       isCollected.value = res.data.isCollected === 1
       if (res.data.images) {
         imageList.value = res.data.images.split(',')
       }
-      // 加载可用桌位
-      if (res.data.totalTables && res.data.totalTables > 0) {
-        loadAvailableTables()
-      }
+      nextTick(() => initMap())
     }
   } catch (error) {
     console.error('加载美食详情失败', error)
   }
 }
 
-// 可用桌位列表
-const availableTables = ref<any[]>([])
-const loadAvailableTables = async () => {
-  if (!bookingForm.bookingDate || !bookingForm.mealTime) return
+const loadPackages = async () => {
   try {
-    const res: any = await request.get('/food/table/available', {
-      params: {
-        foodId: foodId.value,
-        bookingDate: bookingForm.bookingDate,
-        mealTime: bookingForm.mealTime,
-        dinerCount: bookingForm.dinerCount
-      }
-    })
-    if (res && res.data) {
-      availableTables.value = res.data
+    const res: any = await request.get(`/food/${foodId.value}/packages`)
+    if (res && res.code === 200) {
+      packageList.value = res.data || []
     }
-  } catch (error) {
-    console.error('加载可用桌位失败', error)
+  } catch (e) {
+    packageList.value = []
   }
 }
 
-// 加载评论列表
+const initMap = () => {
+  if (!food.value.longitude || !food.value.latitude) return
+  if (!window.AMap) return
+  const container = document.getElementById('food-map')
+  if (!container) return
+  const map = new window.AMap.Map('food-map', {
+    zoom: 15,
+    center: [food.value.longitude, food.value.latitude],
+    mapStyle: 'amap://styles/normal'
+  })
+  const marker = new window.AMap.Marker({
+    position: [food.value.longitude, food.value.latitude],
+    title: food.value.name
+  })
+  map.add(marker)
+  const infoWindow = new window.AMap.InfoWindow({
+    content: `<div style="padding:8px;font-size:14px;"><h4 style="margin:0 0 8px 0;">${food.value.name}</h4><p style="margin:0;color:#666;">${food.value.address}</p></div>`,
+    offset: new window.AMap.Pixel(0, -30)
+  })
+  marker.on('click', () => infoWindow.open(map, marker.getPosition()))
+}
+
 const loadCommentList = async () => {
   try {
     const res: any = await request.get('/comment/list', {
-      params: {
-        contentId: foodId.value,
-        contentType: 5,
-        pageNum: 1,
-        pageSize: 10
-      }
+      params: { contentId: foodId.value, contentType: 5, pageNum: 1, pageSize: 10 }
     })
-    if (res && res.data && res.data.list) {
+    if (res && res.code === 200 && res.data && res.data.list) {
       commentList.value = res.data.list
     }
   } catch (error) {
@@ -751,7 +1126,7 @@ const loadCommentList = async () => {
   }
 }
 
-// 收藏/取消收藏
+// 收藏
 const toggleCollect = async () => {
   try {
     if (isCollected.value) {
@@ -768,25 +1143,17 @@ const toggleCollect = async () => {
   }
 }
 
-// 显示评论对话框
-const showCommentDialog = () => {
-  commentDialogVisible.value = true
-}
+// 评论
+const commentForm = reactive({ rating: 5, content: '' })
 
-// 提交评论
+const showCommentDialog = () => { commentDialogVisible.value = true }
+
 const submitComment = async () => {
-  if (!commentForm.content.trim()) {
-    ElMessage.warning('请输入评价内容')
-    return
-  }
-
+  if (!commentForm.content.trim()) { ElMessage.warning('请输入评价内容'); return }
   submitting.value = true
   try {
     const res: any = await request.post('/comment/add', {
-      contentId: foodId.value,
-      contentType: 5,
-      content: commentForm.content,
-      rating: commentForm.rating
+      contentId: foodId.value, contentType: 5, content: commentForm.content, rating: commentForm.rating
     })
     if (res && res.code === 200) {
       ElMessage.success('评价成功')
@@ -802,266 +1169,22 @@ const submitComment = async () => {
   }
 }
 
-// 显示地图
-const showMap = () => {
-  ElMessage.info('地图功能开发中')
-}
-
-// 格式化时间
-const formatTime = (time: string) => {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
-}
-
-// 禁用今天之前的日期
-const disabledDate = (time: Date) => {
-  return time.getTime() < Date.now() - 8.64e7
-}
-
-// 显示预订对话框
-const showBookingDialog = () => {
-  bookingDialogVisible.value = true
-  currentStep.value = 0
-  orderNo.value = ''
-  countdown.value = 0
-}
-
-// 预订日期变化时重新加载可用桌位
-const handleDateChange = () => {
-  if (food.value.totalTables && food.value.totalTables > 0 && bookingForm.bookingDate && bookingForm.mealTime) {
-    loadAvailableTables()
-  }
-}
-
-// 选择桌位
-const selectTable = (table: any) => {
-  bookingForm.tableId = table.id
-}
-
-// 关闭预订对话框
-const closeBookingDialog = () => {
-  bookingDialogVisible.value = false
-  if (countdownTimer) {
-    clearInterval(countdownTimer)
-  }
-  countdown.value = 0
-  currentStep.value = 0
-  orderNo.value = ''
-  bookingForm.bookingDate = ''
-  bookingForm.mealTime = '午餐'
-  bookingForm.dinerCount = 2
-  bookingForm.contactName = ''
-  bookingForm.contactPhone = ''
-  bookingForm.specialRequest = ''
-}
-
-// 上一步
-const prevStep = () => {
-  if (currentStep.value > 0) {
-    currentStep.value--
-  }
-}
-
-// 下一步
-const nextStep = () => {
-  if (currentStep.value === 0) {
-    if (!bookingForm.bookingDate) {
-      ElMessage.warning('请选择预订日期')
-      return
-    }
-    if (!bookingForm.mealTime) {
-      ElMessage.warning('请选择用餐时间')
-      return
-    }
-    if (!bookingForm.contactName || !bookingForm.contactPhone) {
-      ElMessage.warning('请填写联系人信息')
-      return
-    }
-    currentStep.value = 1
-  }
-}
-
-// 创建订单
-const createOrder = async () => {
-  creating.value = true
-  try {
-    const res: any = await request.post('/order/create', {
-      foodId: foodId.value,
-      foodName: food.value.name,
-      bookingDate: bookingForm.bookingDate,
-      mealTime: bookingForm.mealTime,
-      dinerCount: bookingForm.dinerCount,
-      unitPrice: food.value.avgPrice,
-      totalAmount: estimatedAmount.value,
-      guestName: bookingForm.contactName,
-      guestPhone: bookingForm.contactPhone,
-      specialRequest: bookingForm.specialRequest,
-      orderType: 3
-    })
-    if (res && res.code === 200) {
-      orderNo.value = res.data
-      currentStep.value = 2
-      ElMessage.success('订单创建成功')
-      startCountdown()
-    }
-  } catch (error: any) {
-    ElMessage.error(error.message || '创建订单失败')
-  } finally {
-    creating.value = false
-  }
-}
-
-// 启动倒计时
-const startCountdown = () => {
-  countdown.value = 15 * 60
-  if (countdownTimer) {
-    clearInterval(countdownTimer)
-  }
-  countdownTimer = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) {
-      clearInterval(countdownTimer)
-      ElMessage.warning('订单已超时自动取消')
-      currentStep.value = 0
-      orderNo.value = ''
-      closeBookingDialog()
-    }
-  }, 1000)
-}
-
-// 支付
-const handlePay = async () => {
-  try {
-    const res: any = await request.post(`/api/order/pay/${orderNo.value}`)
-    if (res && res.code === 200) {
-      ElMessage.success('支付成功')
-      if (countdownTimer) {
-        clearInterval(countdownTimer)
-      }
-      countdown.value = 0
-      bookingDialogVisible.value = false
-      closeBookingDialog()
-      ElMessage.info('您的预订已成功！')
-    }
-  } catch (error: any) {
-    ElMessage.error(error.message || '支付失败')
-  }
-}
-
-// 取消订单
-const handleCancelOrder = async () => {
-  try {
-    await ElMessageBox.confirm('确定要取消该订单吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    const res: any = await request.post(`/api/order/cancel/${orderNo.value}`)
-    if (res && res.code === 200) {
-      ElMessage.success('订单已取消')
-      if (countdownTimer) {
-        clearInterval(countdownTimer)
-      }
-      currentStep.value = 0
-      orderNo.value = ''
-      closeBookingDialog()
-    }
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '取消订单失败')
-    }
-  }
-}
-
-// 显示外卖对话框
-const showTakeoutDialog = () => {
-  takeoutDialogVisible.value = true
-  takeoutStep.value = 0
-  orderNo.value = ''
-}
-
-// 外卖上一步
-const prevTakeoutStep = () => {
-  if (takeoutStep.value > 0) {
-    takeoutStep.value--
-  }
-}
-
-// 外卖下一步
-const nextTakeoutStep = () => {
-  if (takeoutStep.value === 1) {
-    if (!takeoutForm.receiverName || !takeoutForm.receiverPhone || !takeoutForm.address) {
-      ElMessage.warning('请填写完整的配送信息')
-      return
-    }
-  }
-  takeoutStep.value++
-}
-
-// 创建外卖订单
-const createTakeoutOrder = async () => {
-  creating.value = true
-  try {
-    const res: any = await request.post('/order/create', {
-      foodId: foodId.value,
-      foodName: food.value.name,
-      quantity: takeoutForm.quantity,
-      unitPrice: food.value.avgPrice,
-      totalAmount: takeoutTotalAmount.value,
-      receiverName: takeoutForm.receiverName,
-      receiverPhone: takeoutForm.receiverPhone,
-      address: takeoutForm.address,
-      remark: takeoutForm.remark,
-      orderType: 3,
-      isTakeout: 1
-    })
-    if (res && res.code === 200) {
-      orderNo.value = res.data
-      takeoutStep.value = 3
-      ElMessage.success('订单创建成功')
-    }
-  } catch (error: any) {
-    ElMessage.error(error.message || '创建订单失败')
-  } finally {
-    creating.value = false
-  }
-}
-
-// 外卖支付
-const handleTakeoutPay = async () => {
-  try {
-    const res: any = await request.post(`/api/order/pay/${orderNo.value}`)
-    if (res && res.code === 200) {
-      ElMessage.success('支付成功')
-      takeoutDialogVisible.value = false
-      ElMessage.info('您的外卖订单已下单，等待商家发货！')
-      resetTakeoutForm()
-    }
-  } catch (error: any) {
-    ElMessage.error(error.message || '支付失败')
-  }
-}
-
-// 重置外卖表单
-const resetTakeoutForm = () => {
-  takeoutForm.quantity = 1
-  takeoutForm.receiverName = ''
-  takeoutForm.receiverPhone = ''
-  takeoutForm.address = ''
-  takeoutForm.remark = ''
-  takeoutStep.value = 0
-}
+const formatTime = (time: string) => dayjs(time).format('YYYY-MM-DD HH:mm')
 
 const goHome = () => router.push('/')
 const goBack = () => router.back()
+const goToMerchantHome = () => {
+  if (food.value.merchantId) router.push(`/merchant/${food.value.merchantId}`)
+}
 
 onMounted(() => {
   loadFoodDetail()
+  loadPackages()
   loadCommentList()
 })
 </script>
 
 <style scoped lang="scss">
-// 主题色
 $primary: #1a5f4a;
 $primary-light: #2d8b6f;
 $primary-dark: #0f3d2f;
@@ -1075,1067 +1198,189 @@ $white: #fff;
 $shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
 $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
 
-.food-detail {
-  min-height: 100vh;
-  background: $bg-light;
-}
+.food-detail { min-height: 100vh; background: $bg-light; }
+.detail-header { background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); box-shadow: $shadow-sm; position: sticky; top: 0; z-index: 100; }
+.header-inner { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 14px 40px; }
+.logo-section { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.logo-icon { font-size: 28px; }
+.logo-text { font-size: 20px; font-weight: 700; color: $primary; }
+.back-btn { border-radius: 20px; padding: 8px 20px; }
+.gallery-section { background: $white; }
+.gallery-main { position: relative; max-width: 1400px; margin: 0 auto; }
+.gallery-image { width: 100%; height: 100%; }
+.gallery-overlay { position: absolute; bottom: 0; left: 0; right: 0; height: 100px; background: linear-gradient(transparent, rgba(0,0,0,0.4)); }
+.gallery-badges { position: absolute; bottom: 20px; left: 40px; display: flex; gap: 10px; }
+.gallery-badges .badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: rgba(255,255,255,0.95); border-radius: 20px; font-size: 14px; font-weight: 600; }
+.gallery-badges .food-badge { color: #f5576c; }
+.gallery-badges .combo-badge { color: $primary; }
+.gallery-main :deep(.el-carousel__arrow) { width: 50px; height: 50px; font-size: 24px; background: rgba(255,255,255,0.9); }
+.gallery-main :deep(.el-carousel__arrow:hover) { background: $white; }
+.info-section { padding: 32px 0; }
+.info-container { max-width: 1400px; margin: 0 auto; padding: 0 40px; display: grid; grid-template-columns: 1fr 380px; gap: 32px; }
+.breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 14px; }
+.breadcrumb-item { color: $text-muted; cursor: pointer; }
+.breadcrumb-item:hover { color: $primary; }
+.breadcrumb-item.current { color: $text-primary; font-weight: 500; }
+.breadcrumb-separator { color: $border; }
+.food-title { font-size: 36px; font-weight: 700; color: $text-primary; margin: 0 0 16px; }
+.food-tags { display: flex; gap: 12px; margin-bottom: 20px; }
+.food-tag { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: rgba(245,87,108,0.08); color: #f5576c; border-radius: 20px; font-size: 13px; }
+.food-stats { display: flex; align-items: center; gap: 24px; padding: 20px 24px; background: $bg-light; border-radius: 12px; margin-bottom: 24px; }
+.stat-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.stat-value { font-size: 24px; font-weight: 700; color: $text-primary; }
+.stat-label { font-size: 12px; color: $text-muted; }
+.stat-divider { width: 1px; height: 40px; background: $border; }
+.merchant-section { margin-top: 32px; }
+.section-title { font-size: 18px; font-weight: 600; color: $text-primary; display: flex; align-items: center; gap: 10px; margin: 0 0 20px; }
+.section-title .title-icon { font-size: 20px; }
+.section-title .package-count { font-size: 13px; font-weight: 400; color: $text-muted; margin-left: 8px; }
+.merchant-card { display: flex; align-items: center; gap: 16px; padding: 16px; background: linear-gradient(135deg,#fff9e6 0%,#fff3cc 100%); border-radius: 12px; border: 1px solid #ffe58f; cursor: pointer; transition: all 0.3s; }
+.merchant-card:hover { box-shadow: 0 4px 16px rgba(255,169,64,0.2); transform: translateY(-2px); }
+.merchant-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg,#ffa940 0%,#fa8c16 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; overflow: hidden; }
+.merchant-info { flex: 1; }
+.merchant-name { font-size: 16px; font-weight: 600; color: #d46b08; margin-bottom: 6px; }
+.merchant-badge { display: flex; gap: 8px; }
+.merchant-meta { display: flex; align-items: center; gap: 10px; }
+.meta-text { font-size: 12px; color: $text-muted; }
+.merchant-arrow { color: #d46b08; font-size: 18px; }
+.packages-section { margin-top: 32px; }
+.package-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.package-tab { padding: 8px 18px; background: $white; border: 1px solid $border; border-radius: 20px; font-size: 13px; color: $text-secondary; cursor: pointer; transition: all 0.2s; }
+.package-tab:hover { border-color: $primary; color: $primary; }
+.package-tab.active { background: $primary; color: $white; border-color: $primary; }
+.package-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.package-card { background: $white; border: 2px solid $border; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.2s; }
+.package-card:hover { border-color: $primary; box-shadow: 0 4px 16px rgba(26,95,74,0.1); }
+.package-card.selected { border-color: $primary; background: rgba(26,95,74,0.02); }
+.package-image { height: 140px; overflow: hidden; }
+.package-image .el-image { width: 100%; height: 100%; }
+.package-no-image { height: 140px; background: linear-gradient(135deg,$bg-light 0%,#e8e8e8 100%); display: flex; align-items: center; justify-content: center; font-size: 48px; color: $text-muted; }
+.package-info { padding: 14px; }
+.package-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.package-name { font-size: 15px; font-weight: 600; color: $text-primary; }
+.package-desc { font-size: 12px; color: $text-muted; margin-bottom: 10px; line-height: 1.4; }
+.package-price-row { display: flex; align-items: center; justify-content: space-between; }
+.package-price { display: flex; align-items: baseline; gap: 2px; }
+.package-price .currency { font-size: 14px; color: #f5576c; }
+.package-price .amount { font-size: 22px; font-weight: 700; color: #f5576c; }
+.package-price .original { font-size: 12px; color: $text-muted; text-decoration: line-through; margin-left: 4px; }
+.description-section { margin-top: 32px; }
+.description-content p { line-height: 1.8; color: $text-secondary; font-size: 15px; }
+.map-section { margin-top: 32px; }
+.map-container { height: 300px; background: $bg-light; border-radius: 12px; overflow: hidden; }
+.map-address { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 12px; background: $bg-light; border-radius: 8px; color: $text-secondary; font-size: 14px; }
+.info-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.info-card { display: flex; align-items: flex-start; gap: 14px; padding: 18px; background: $white; border-radius: 12px; border: 1px solid $border; }
+.card-icon { width: 44px; height: 44px; background: linear-gradient(135deg,rgba(245,87,108,0.1),rgba(245,87,108,0.05)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #f5576c; }
+.card-content { flex: 1; }
+.card-label { font-size: 12px; color: $text-muted; margin-bottom: 4px; }
+.card-value { font-size: 14px; font-weight: 500; }
+.card-value.price { color: #f5576c; font-size: 18px; font-weight: 700; }
+.info-right { position: sticky; top: 80px; height: fit-content; display: flex; flex-direction: column; gap: 20px; }
+.booking-card { background: $white; border-radius: 16px; padding: 24px; box-shadow: $shadow-md; }
+.booking-header { text-align: center; padding-bottom: 20px; border-bottom: 1px solid $border; margin-bottom: 16px; }
+.price-label { font-size: 14px; color: $text-muted; margin-bottom: 8px; }
+.price-value { display: flex; align-items: baseline; justify-content: center; gap: 2px; }
+.price-value .currency { font-size: 18px; color: #f5576c; font-weight: 600; }
+.price-value .amount { font-size: 42px; font-weight: 800; color: #f5576c; }
+.price-value .unit { font-size: 14px; color: $text-muted; }
+.order-type-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.order-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; background: $bg-light; border: 2px solid $border; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+.order-tab.active { background: rgba(26,95,74,0.08); border-color: $primary; color: $primary; }
+.action-buttons { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.order-btn { width: 100%; height: 48px; font-size: 16px; border-radius: 24px; background: linear-gradient(135deg,$primary 0%,$primary-light 100%); border: none; }
+.collect-btn { width: 100%; border-radius: 24px; }
+.collect-btn.collected { color: $accent; border-color: $accent; }
+.booking-features { display: flex; justify-content: space-around; }
+.feature-item { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: $text-muted; }
+.feature-item .el-icon { font-size: 22px; color: $primary; }
+.hours-card { background: $white; border-radius: 16px; padding: 20px; box-shadow: $shadow-sm; }
+.hours-card h4 { display: flex; align-items: center; gap: 8px; font-size: 15px; margin: 0 0 16px; color: $text-primary; }
+.hours-card h4 .el-icon { color: $primary; }
+.hours-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid $border; }
+.hours-item:last-child { border-bottom: none; }
+.hours-item .day { color: $text-secondary; font-size: 14px; }
+.hours-item .time { color: $text-primary; font-weight: 500; font-size: 14px; }
+.table-card { background: $white; border-radius: 16px; padding: 20px; box-shadow: $shadow-sm; }
+.table-card h4 { display: flex; align-items: center; gap: 8px; font-size: 15px; margin: 0 0 16px; color: $text-primary; }
+.table-card h4 .el-icon { color: $primary; }
+.table-status { display: flex; justify-content: space-between; align-items: center; }
+.table-status .available { font-size: 16px; font-weight: 600; color: $primary; }
+.table-status .total { font-size: 13px; color: $text-muted; }
+.comments-section { padding: 40px 0; margin-top: 24px; background: $white; }
+.section-container { max-width: 1400px; margin: 0 auto; padding: 0 40px; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.section-title-bar { font-size: 20px; font-weight: 600; color: $text-primary; margin: 0; }
+.section-title-bar .comment-count { font-size: 14px; color: $text-muted; font-weight: 400; }
+.comment-item { display: flex; gap: 16px; padding: 20px; background: $bg-light; border-radius: 12px; margin-bottom: 16px; }
+.comment-body { flex: 1; }
+.comment-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.username { font-weight: 600; color: $text-primary; margin-right: 12px; }
+.comment-time { font-size: 13px; color: $text-muted; }
+.comment-content { line-height: 1.7; color: $text-secondary; margin-bottom: 12px; }
+.comment-images { display: flex; gap: 10px; }
+.comment-img { width: 80px; height: 80px; border-radius: 8px; }
+.empty-comments { padding: 60px; }
+.comment-dialog .comment-form .rating-select { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.comment-dialog .comment-form .label { font-weight: 500; color: $text-secondary; }
+.order-dialog :deep(.el-dialog) { border-radius: 16px; max-width: 800px; }
+.order-dialog :deep(.el-dialog__header) { background: linear-gradient(135deg, $primary 0%, $primary-light 100%); border-radius: 16px 16px 0 0; padding: 20px 24px; margin: 0; }
+.order-dialog :deep(.el-dialog__title) { color: $white; font-size: 18px; font-weight: 600; }
+.order-dialog :deep(.el-dialog__headerbtn .el-dialog__close) { color: rgba(255,255,255,0.8); }
+.dialog-content { padding: 24px; }
+.dialog-content :deep(.el-steps) { margin-bottom: 28px; }
+.step-content { min-height: 320px; }
+.package-choose-list { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; }
+.package-choose-item { display: flex; align-items: center; gap: 14px; padding: 16px; background: $bg-light; border: 2px solid $border; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+.package-choose-item:hover { border-color: $primary-light; }
+.package-choose-item.selected { border-color: $primary; background: rgba(26,95,74,0.04); }
+.pkg-radio { flex-shrink: 0; }
+.pkg-image { width: 72px; height: 72px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.pkg-image .el-image { width: 100%; height: 100%; }
+.pkg-no-image { width: 72px; height: 72px; border-radius: 8px; background: #e8e8e8; display: flex; align-items: center; justify-content: center; font-size: 28px; color: $text-muted; flex-shrink: 0; }
+.pkg-info { flex: 1; min-width: 0; }
+.pkg-type-row { margin-bottom: 4px; }
+.pkg-name { font-size: 15px; font-weight: 600; color: $text-primary; margin-bottom: 4px; }
+.pkg-desc { font-size: 12px; color: $text-muted; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pkg-price { text-align: right; flex-shrink: 0; }
+.pkg-price .current-price { font-size: 18px; font-weight: 700; color: #f5576c; }
+.pkg-price .original-price { font-size: 12px; color: $text-muted; text-decoration: line-through; }
+.dinein-form { padding: 8px 0; }
+.takeout-form { padding: 8px 0; }
+.package-tabs-small { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.pkg-tab-small { padding: 6px 14px; background: $white; border: 1px solid $border; border-radius: 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.pkg-tab-small.active { background: $primary; color: $white; border-color: $primary; }
+.order-confirm { background: $bg-light; border-radius: 12px; padding: 20px; }
+.confirm-section h4 { display: flex; align-items: center; gap: 8px; font-size: 15px; color: $text-primary; margin: 0 0 16px; }
+.confirm-item { display: flex; justify-content: space-between; padding: 8px 0; }
+.confirm-item .label { color: $text-muted; }
+.confirm-item .value { color: $text-primary; font-weight: 500; }
+.confirm-item.total { border-top: 1px dashed $border; padding-top: 16px; margin-top: 8px; }
+.confirm-item .value.price { color: #f5576c; font-size: 18px; }
+.confirm-total { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; }
+.total-label { font-size: 15px; font-weight: 600; }
+.total-amount { font-size: 28px; font-weight: 800; color: #f5576c; }
+.payment-panel { text-align: center; padding: 40px 20px; }
+.success-icon { width: 80px; height: 80px; background: linear-gradient(135deg,rgba(82,196,26,0.1),rgba(82,196,26,0.05)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 40px; color: #52c41a; }
+.payment-panel h3 { font-size: 22px; margin: 0 0 8px; }
+.payment-panel .order-no { color: $text-muted; margin-bottom: 24px; }
+.payment-amount { margin-bottom: 24px; }
+.payment-amount .label { display: block; font-size: 14px; color: $text-muted; margin-bottom: 8px; }
+.payment-amount .amount { font-size: 42px; font-weight: 700; color: #f5576c; }
+.pay-btn { width: 200px; height: 48px; font-size: 16px; border-radius: 24px; background: linear-gradient(135deg,#ff9a56,#ff6b6b); border: none; }
+.pay-tip { font-size: 13px; color: $text-muted; margin-top: 12px; }
 
-// 顶部导航
-.detail-header {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
-  box-shadow: $shadow-sm;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-
-  .header-inner {
-    max-width: 1400px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 40px;
-  }
-
-  .logo-section {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-
-    .logo-icon {
-      font-size: 28px;
-    }
-
-    .logo-text {
-      font-size: 20px;
-      font-weight: 700;
-      color: $primary;
-    }
-  }
-
-  .back-btn {
-    border-radius: 20px;
-    padding: 8px 20px;
-
-    .el-icon {
-      margin-right: 4px;
-    }
-  }
-}
-
-// 画廊
-.gallery-section {
-  background: $white;
-
-  .gallery-main {
-    position: relative;
-    max-width: 1400px;
-    margin: 0 auto;
-
-    :deep(.el-carousel__arrow) {
-      width: 50px;
-      height: 50px;
-      font-size: 24px;
-      background: rgba(255, 255, 255, 0.9);
-
-      &:hover {
-        background: $white;
-      }
-    }
-
-    .gallery-image {
-      width: 100%;
-      height: 100%;
-    }
-
-    .gallery-overlay {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 100px;
-      background: linear-gradient(transparent, rgba(0, 0, 0, 0.4));
-    }
-
-    .gallery-badges {
-      position: absolute;
-      bottom: 20px;
-      left: 40px;
-
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 16px;
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-
-        &.food-badge {
-          color: #f5576c;
-        }
-      }
-    }
-  }
-}
-
-// 信息区域
-.info-section {
-  padding: 32px 0;
-}
-
-.info-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 40px;
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 32px;
-}
-
-.info-left {
-  .breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-    font-size: 14px;
-
-    .breadcrumb-item {
-      color: $text-muted;
-      cursor: pointer;
-
-      &:hover {
-        color: $primary;
-      }
-
-      &.current {
-        color: $text-primary;
-        font-weight: 500;
-      }
-    }
-
-    .breadcrumb-separator {
-      color: $border;
-    }
-  }
-
-  .food-title {
-    font-size: 36px;
-    font-weight: 700;
-    color: $text-primary;
-    margin: 0 0 16px;
-  }
-
-  .food-tags {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-
-    .tag {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      background: rgba(245, 87, 108, 0.08);
-      color: #f5576c;
-      border-radius: 20px;
-      font-size: 13px;
-    }
-  }
-
-  .food-stats {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    padding: 20px 24px;
-    background: $bg-light;
-    border-radius: 12px;
-    margin-bottom: 24px;
-
-    .stat-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-
-      .stat-value {
-        font-size: 24px;
-        font-weight: 700;
-        color: $text-primary;
-      }
-
-      .stat-label {
-        font-size: 12px;
-        color: $text-muted;
-      }
-    }
-
-    .stat-divider {
-      width: 1px;
-      height: 40px;
-      background: $border;
-    }
-  }
-
-  .description-section,
-  .map-section {
-    margin-top: 32px;
-
-    .section-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: $text-primary;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 0 0 20px;
-
-      .title-icon {
-        font-size: 20px;
-      }
-    }
-
-    .description-content p {
-      line-height: 1.8;
-      color: $text-secondary;
-      font-size: 15px;
-    }
-
-    .map-container {
-      height: 300px;
-      background: $bg-light;
-      border-radius: 12px;
-
-      .map-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        color: $text-muted;
-
-        .el-icon {
-          font-size: 40px;
-        }
-      }
-    }
-  }
-
-  .info-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-
-    .info-card {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      padding: 18px;
-      background: $white;
-      border-radius: 12px;
-      border: 1px solid $border;
-
-      .card-icon {
-        width: 44px;
-        height: 44px;
-        background: linear-gradient(135deg, rgba(245, 87, 108, 0.1), rgba(245, 87, 108, 0.05));
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        .el-icon {
-          font-size: 20px;
-          color: #f5576c;
-        }
-      }
-
-      .card-content {
-        flex: 1;
-
-        .card-label {
-          font-size: 12px;
-          color: $text-muted;
-          margin-bottom: 4px;
-        }
-
-        .card-value {
-          font-size: 14px;
-          font-weight: 500;
-
-          &.price {
-            color: #f5576c;
-            font-size: 18px;
-            font-weight: 700;
-          }
-        }
-      }
-    }
-  }
-}
-
-// 右侧卡片
-.info-right {
-  position: sticky;
-  top: 80px;
-  height: fit-content;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-
-  .booking-card {
-    background: $white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: $shadow-md;
-
-    .booking-header {
-      text-align: center;
-      padding-bottom: 20px;
-      border-bottom: 1px solid $border;
-      margin-bottom: 20px;
-
-      .price-label {
-        font-size: 14px;
-        color: $text-muted;
-        margin-bottom: 8px;
-      }
-
-      .price-value {
-        display: flex;
-        align-items: baseline;
-        justify-content: center;
-        gap: 2px;
-
-        .currency {
-          font-size: 18px;
-          color: #f5576c;
-          font-weight: 600;
-        }
-
-        .amount {
-          font-size: 42px;
-          font-weight: 800;
-          color: #f5576c;
-        }
-
-        .unit {
-          font-size: 14px;
-          color: $text-muted;
-        }
-      }
-    }
-
-    .booking-features {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 20px;
-
-      .feature-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        color: $text-muted;
-
-        .el-icon {
-          font-size: 24px;
-          color: $primary;
-        }
-      }
-    }
-
-    .seats-info {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px;
-      background: linear-gradient(135deg, rgba(26, 95, 74, 0.1), rgba(26, 95, 74, 0.05));
-      border-radius: 10px;
-      margin-bottom: 16px;
-      color: $primary;
-
-      .el-icon {
-        font-size: 20px;
-      }
-
-      strong {
-        font-size: 18px;
-        color: $primary;
-      }
-    }
-
-    .takeout-info {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px;
-      background: linear-gradient(135deg, rgba(245, 87, 108, 0.1), rgba(245, 87, 108, 0.05));
-      border-radius: 10px;
-      margin-bottom: 16px;
-      color: #f5576c;
-
-      .el-icon {
-        font-size: 20px;
-      }
-    }
-
-    .booking-btn {
-      width: 100%;
-      height: 48px;
-      font-size: 16px;
-      border-radius: 24px;
-      background: linear-gradient(135deg, #f5576c, #f093fb);
-      border: none;
-      margin-bottom: 16px;
-
-      .el-icon {
-        margin-right: 8px;
-      }
-
-      &:hover {
-        opacity: 0.9;
-      }
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 12px;
-
-      .el-button {
-        flex: 1;
-        border-radius: 20px;
-      }
-
-      .collect-btn {
-        &.collected {
-          color: $accent;
-          border-color: $accent;
-        }
-      }
-
-      .share-btn {
-        background: $bg-light;
-        border-color: $border;
-      }
-    }
-  }
-
-  .hours-card {
-    background: $white;
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: $shadow-sm;
-
-    h4 {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 15px;
-      margin: 0 0 16px;
-      color: $text-primary;
-
-      .el-icon {
-        color: $primary;
-      }
-    }
-
-    .hours-list {
-      .hours-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px 0;
-        border-bottom: 1px solid $border;
-
-        &:last-child {
-          border-bottom: none;
-        }
-
-        .day {
-          color: $text-secondary;
-          font-size: 14px;
-        }
-
-        .time {
-          color: $text-primary;
-          font-weight: 500;
-          font-size: 14px;
-        }
-      }
-    }
-  }
-}
-
-// 评论区
-.comments-section {
-  padding: 40px 0;
-  margin-top: 24px;
-  background: $white;
-
-  .section-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 40px;
-  }
-
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
-
-  .section-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: $text-primary;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0;
-
-    .title-bar {
-      width: 5px;
-      height: 22px;
-      background: linear-gradient(180deg, #f5576c, #f093fb);
-      border-radius: 3px;
-    }
-
-    .comment-count {
-      font-size: 14px;
-      color: $text-muted;
-      font-weight: 400;
-    }
-  }
-
-  .comment-list {
-    .comment-item {
-      display: flex;
-      gap: 16px;
-      padding: 20px;
-      background: $bg-light;
-      border-radius: 12px;
-      margin-bottom: 16px;
-
-      .comment-body {
-        flex: 1;
-
-        .comment-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 12px;
-
-          .comment-user {
-            .username {
-              font-weight: 600;
-              color: $text-primary;
-              margin-right: 12px;
-            }
-          }
-
-          .comment-time {
-            font-size: 13px;
-            color: $text-muted;
-          }
-        }
-
-        .comment-content {
-          line-height: 1.7;
-          color: $text-secondary;
-          margin-bottom: 12px;
-        }
-
-        .comment-images {
-          display: flex;
-          gap: 10px;
-
-          .comment-img {
-            width: 80px;
-            height: 80px;
-            border-radius: 8px;
-          }
-        }
-      }
-    }
-  }
-
-  .empty-comments {
-    padding: 60px;
-  }
-}
-
-// 对话框样式
-.comment-dialog {
-  .comment-form {
-    .rating-select {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 20px;
-
-      .label {
-        font-weight: 500;
-        color: $text-secondary;
-      }
-    }
-  }
-}
-
-.booking-dialog {
-  :deep(.el-dialog) {
-    border-radius: 16px;
-
-    .el-dialog__header {
-      background: linear-gradient(135deg, #f5576c, #f093fb);
-      border-radius: 16px 16px 0 0;
-      padding: 20px 24px;
-      margin: 0;
-
-      .el-dialog__title {
-        color: $white;
-        font-size: 18px;
-        font-weight: 600;
-      }
-
-      .el-dialog__headerbtn {
-        top: 20px;
-
-        .el-dialog__close {
-          color: rgba(255, 255, 255, 0.8);
-        }
-      }
-    }
-  }
-
-  .dialog-content {
-    padding: 24px;
-
-    :deep(.el-steps) {
-      margin-bottom: 32px;
-    }
-
-    .step-content {
-      min-height: 300px;
-    }
-
-    .booking-form {
-      .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-      }
-
-      .quantity-selector {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-
-        .quantity {
-          font-size: 18px;
-          font-weight: 600;
-          min-width: 80px;
-          text-align: center;
-        }
-      }
-
-      .table-selection {
-        margin-bottom: 20px;
-
-        .table-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 12px;
-        }
-
-        .table-item {
-          padding: 12px;
-          border: 2px solid $border;
-          border-radius: 8px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.3s;
-
-          &:hover {
-            border-color: #f5576c;
-          }
-
-          &.selected {
-            border-color: #f5576c;
-            background: rgba(245, 87, 108, 0.1);
-          }
-
-          .table-number {
-            font-size: 18px;
-            font-weight: 700;
-            color: #f5576c;
-          }
-
-          .table-name {
-            font-size: 12px;
-            color: $text-secondary;
-            margin: 4px 0;
-          }
-
-          .table-capacity {
-            font-size: 11px;
-            color: $text-muted;
-          }
-        }
-      }
-    }
-
-    .order-summary {
-      background: $bg-light;
-      border-radius: 12px;
-      padding: 24px;
-
-      .confirm-section {
-        h4 {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 15px;
-          margin: 0 0 16px;
-        }
-
-        .confirm-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 10px 0;
-
-          .label {
-            color: $text-muted;
-          }
-
-          .value {
-            font-weight: 500;
-
-            &.price {
-              color: #f5576c;
-              font-size: 18px;
-            }
-          }
-
-          &.total {
-            border-top: 1px dashed $border;
-            padding-top: 16px;
-            margin-top: 8px;
-          }
-        }
-      }
-    }
-
-    .payment-panel {
-      text-align: center;
-      padding: 40px;
-
-      .success-icon {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, rgba(82, 196, 26, 0.1), rgba(82, 196, 26, 0.05));
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px;
-
-        .el-icon {
-          font-size: 40px;
-          color: #52c41a;
-        }
-      }
-
-      h3 {
-        font-size: 22px;
-        margin: 0 0 8px;
-      }
-
-      .order-no {
-        color: $text-muted;
-        margin-bottom: 24px;
-      }
-
-      .payment-amount {
-        margin-bottom: 16px;
-
-        .label {
-          display: block;
-          font-size: 14px;
-          color: $text-muted;
-          margin-bottom: 8px;
-        }
-
-        .amount {
-          font-size: 42px;
-          font-weight: 700;
-          color: #f5576c;
-        }
-      }
-
-      .countdown-tip {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        margin-bottom: 24px;
-        color: $accent;
-
-        .countdown-time {
-          font-size: 20px;
-          font-weight: 700;
-        }
-      }
-
-      .pay-btn {
-        width: 200px;
-        height: 48px;
-        font-size: 16px;
-        border-radius: 24px;
-        background: linear-gradient(135deg, #f5576c, #f093fb);
-        border: none;
-      }
-    }
-  }
-}
-
-// 响应式
 @media (max-width: 1200px) {
-  .info-container {
-    grid-template-columns: 1fr;
-  }
-
-  .info-right {
-    position: static;
-  }
+  .info-container { grid-template-columns: 1fr; }
+  .info-right { position: static; }
 }
-
 @media (max-width: 768px) {
-  .detail-header .header-inner {
-    padding: 14px 20px;
-  }
-
-  .gallery-section .gallery-main .gallery-badges {
-    left: 20px;
-  }
-
-  .info-container {
-    padding: 0 20px;
-  }
-
-  .info-left {
-    .info-cards {
-      grid-template-columns: 1fr;
-    }
-
-    .food-title {
-      font-size: 26px;
-    }
-  }
-
-  .comments-section .section-container {
-    padding: 0 20px;
-  }
-
-  .booking-dialog .dialog-content .booking-form .form-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-// 外卖对话框样式
-.takeout-dialog {
-  :deep(.el-dialog) {
-    border-radius: 16px;
-
-    .el-dialog__header {
-      background: linear-gradient(135deg, #ff9a56, #ff6b6b);
-      border-radius: 16px 16px 0 0;
-      padding: 20px 24px;
-      margin: 0;
-
-      .el-dialog__title {
-        color: $white;
-        font-size: 18px;
-        font-weight: 600;
-      }
-
-      .el-dialog__headerbtn {
-        top: 20px;
-
-        .el-dialog__close {
-          color: rgba(255, 255, 255, 0.8);
-        }
-      }
-    }
-  }
-
-  .dialog-content {
-    padding: 24px;
-
-    :deep(.el-steps) {
-      margin-bottom: 32px;
-    }
-
-    .step-content {
-      min-height: 300px;
-    }
-
-    .takeout-form {
-      .food-menu {
-        .menu-item {
-          display: flex;
-          align-items: center;
-          padding: 16px;
-          background: $bg-light;
-          border-radius: 12px;
-
-          .menu-info {
-            flex: 1;
-
-            .menu-name {
-              font-size: 16px;
-              font-weight: 600;
-              color: $text-primary;
-              margin-bottom: 4px;
-            }
-
-            .menu-desc {
-              font-size: 13px;
-              color: $text-muted;
-            }
-          }
-
-          .menu-price {
-            font-size: 18px;
-            font-weight: 700;
-            color: #f5576c;
-            margin-right: 16px;
-          }
-
-          .menu-quantity {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-
-            span {
-              font-size: 16px;
-              font-weight: 600;
-              min-width: 30px;
-              text-align: center;
-            }
-          }
-        }
-      }
-    }
-
-    .order-summary {
-      background: $bg-light;
-      border-radius: 12px;
-      padding: 24px;
-
-      .confirm-section {
-        h4 {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 15px;
-          color: $text-primary;
-          margin: 0 0 16px;
-        }
-
-        .confirm-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 10px 0;
-
-          .label {
-            color: $text-muted;
-          }
-
-          .value {
-            color: $text-primary;
-            font-weight: 500;
-
-            &.price {
-              color: #f5576c;
-              font-size: 18px;
-            }
-          }
-
-          &.total {
-            border-top: 1px dashed $border;
-            padding-top: 16px;
-            margin-top: 8px;
-          }
-        }
-      }
-    }
-
-    .payment-panel {
-      text-align: center;
-      padding: 40px;
-
-      .success-icon {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, rgba(82, 196, 26, 0.1), rgba(82, 196, 26, 0.05));
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px;
-
-        .el-icon {
-          font-size: 40px;
-          color: #52c41a;
-        }
-      }
-
-      h3 {
-        font-size: 22px;
-        margin: 0 0 8px;
-      }
-
-      .order-no {
-        color: $text-muted;
-        margin-bottom: 24px;
-      }
-
-      .payment-amount {
-        margin-bottom: 24px;
-
-        .label {
-          display: block;
-          font-size: 14px;
-          color: $text-muted;
-          margin-bottom: 8px;
-        }
-
-        .amount {
-          font-size: 42px;
-          font-weight: 700;
-          color: #f5576c;
-        }
-      }
-
-      .pay-btn {
-        width: 200px;
-        height: 48px;
-        font-size: 16px;
-        border-radius: 24px;
-        background: linear-gradient(135deg, #ff9a56, #ff6b6b);
-        border: none;
-      }
-    }
-  }
+  .header-inner { padding: 14px 20px; }
+  .gallery-badges { left: 20px; }
+  .info-container { padding: 0 20px; }
+  .info-cards { grid-template-columns: 1fr; }
+  .food-title { font-size: 26px; }
+  .package-grid { grid-template-columns: 1fr; }
+  .section-container { padding: 0 20px; }
 }
 </style>

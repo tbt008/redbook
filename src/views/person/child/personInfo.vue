@@ -46,7 +46,7 @@ const judgeSexColor = (sex) => {
     }
 }
 const uploadAvatarSuccessMethod = (fileItem) => {
-    if (fileItem.response.data === 'failure') {
+    if (fileItem.response.code !== 200) {
         ElNotification({
             title: 'error',
             message: '上传头像失败',
@@ -55,8 +55,8 @@ const uploadAvatarSuccessMethod = (fileItem) => {
         return;
     }
     else {
-        props.userInfo.avatar = fileItem.response.data
-        // console.log(fileItem.response.data);
+        props.userInfo.avatar = fileItem.response.data.url
+        // console.log(fileItem.response.data.url);
     }
     setTimeout(() => {
         uploadPicLoading.value = false
@@ -127,7 +127,7 @@ onMounted(() => {
                     <div style="font-size: 14px; color: #2DB55D; text-align: center;">上传头像</div>
                     <a-upload accept="image/png, image/jpeg" style="display: flex; justify-content: center;"
                         @error="uploadAvatarFailedFun" @change="beginUploadImg" @success="uploadAvatarSuccessMethod"
-                        action="/api/questionAndPictrueCommon/uploadAndGetUrl" :headers="headers" />
+                        action="/file/upload?directory=avatar" :headers="headers" />
                 </div>
             </template>
         </a-popover>

@@ -186,7 +186,7 @@ const loadContent = async () => {
 // 加载评论
 const loadComments = async () => {
   try {
-    const res: any = await request.get('/api/comment/list', {
+    const res: any = await request.get('/comment/list', {
       params: {
         contentId: route.params.id,
         contentType: 1, // 1表示内容类型

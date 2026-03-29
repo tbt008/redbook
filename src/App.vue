@@ -1,38 +1,50 @@
+<template>
+  <router-view />
+</template>
+
 <script setup lang="ts">
-import Header from '@/components/OJHeader.vue'
 import { onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { useRouter } from 'vue-router'
-import request from './util/request'
-const router = useRouter()
-const route = useRoute()
-const hideHeaderPaths = ['/ai', '/login', '/systemUpdate'] // 在这里添加不需要显示导航栏的路径
 
-onMounted(async () => {
-  let st = true;
-  try {
-    const res = await request.get('/system/healthy') as any;
-    // console.log('请求响应:', res);
-
-    if (res.code === 200) {
-      if (res.data) {
-        st = false;
-      }
-    }
-  } catch (error) {
-    console.error('请求出错:', error);
-  }
-  if (st) {
-    router.push('/systemUpdate');
-  }
+onMounted(() => {
+  console.log('莆田文旅系统启动成功')
 })
 </script>
 
-<template>
-  <div id="main">
-    <Header v-if="!hideHeaderPaths.includes(route.path)"></Header>
-    <router-view></router-view>
-  </div>
-</template>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-<style scoped></style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+</style>

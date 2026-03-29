@@ -147,7 +147,7 @@ const handleAvatarUpload = (file) => {
   const data = new FormData()
   data.append('file', file.raw)
   request
-    .post('/oss/upload/user/avatar', data, {
+    .post('/api/file/upload?directory=content', data, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

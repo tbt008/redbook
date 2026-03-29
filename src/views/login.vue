@@ -1,275 +1,421 @@
 <template>
-  <oj-header></oj-header>
-  <section class="container">
-    <div class="svg-top">
-      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="1337"
-        width="1337">
-        <defs>
-          <path id="path-1" opacity="1" fill-rule="evenodd"
-            d="M1337,668.5 C1337,1037.455193874239 1037.455193874239,1337 668.5,1337 C523.6725684305388,1337 337,1236 370.50000000000006,1094 C434.03835568300906,824.6732385973953 6.906089672974592e-14,892.6277623047779 0,668.5000000000001 C0,299.5448061257611 299.5448061257609,1.1368683772161603e-13 668.4999999999999,0 C1037.455193874239,0 1337,299.544806125761 1337,668.5Z" />
-          <linearGradient id="linearGradient-2" x1="0.79" y1="0.62" x2="0.21" y2="0.86">
-            <stop offset="0" stop-color="rgb(88,62,213)" stop-opacity="1" />
-            <stop offset="1" stop-color="rgb(23,215,250)" stop-opacity="1" />
-          </linearGradient>
-        </defs>
-        <g opacity="1">
-          <use xlink:href="#path-1" fill="url(#linearGradient-2)" fill-opacity="1" />
-        </g>
-      </svg>
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <h2>欢迎来到莆田文旅</h2>
+        <p>发现莆田之美，分享旅行故事</p>
+      </div>
+
+      <el-tabs v-model="loginType" class="login-tabs">
+        <el-tab-pane label="密码登录" name="password">
+          <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" class="login-form">
+            <el-form-item prop="email">
+              <el-input
+                v-model="passwordForm.email"
+                placeholder="请输入邮箱"
+                :prefix-icon="Message"
+                size="large"
+              />
+            </el-form-item>
+            <el-form-item prop="password">
+              <el-input
+                v-model="passwordForm.password"
+                type="password"
+                placeholder="请输入密码"
+                :prefix-icon="Lock"
+                size="large"
+                show-password
+              />
+            </el-form-item>
+            <el-form-item>
+              <div class="form-footer">
+                <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+                <el-link type="primary" @click="showForgotPassword">忘记密码？</el-link>
+              </div>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" size="large" style="width: 100%" :loading="loading" @click="handlePasswordLogin">
+                登录
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+
+        <el-tab-pane label="验证码登录" name="code">
+          <el-form :model="codeForm" :rules="codeRules" ref="codeFormRef" class="login-form">
+            <el-form-item prop="email">
+              <el-input
+                v-model="codeForm.email"
+                placeholder="请输入邮箱"
+                :prefix-icon="Message"
+                size="large"
+              />
+            </el-form-item>
+            <el-form-item prop="code">
+              <div class="code-input">
+                <el-input
+                  v-model="codeForm.code"
+                  placeholder="请输入验证码"
+                  :prefix-icon="Key"
+                  size="large"
+                  maxlength="6"
+                />
+                <el-button
+                  :disabled="countdown > 0"
+                  @click="sendCode"
+                  size="large"
+                >
+                  {{ countdown > 0 ? `${countdown}秒后重试` : '获取验证码' }}
+                </el-button>
+              </div>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" size="large" style="width: 100%" :loading="loading" @click="handleCodeLogin">
+                登录
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
+
+      <div class="register-link">
+        还没有账号？<el-link type="primary" @click="goRegister">立即注册</el-link>
+      </div>
     </div>
-    <div class="svg-bottom">
-      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="896"
-        width="967.8852157128662">
-        <defs>
-          <path id="path-2" opacity="1" fill-rule="evenodd"
-            d="M896,448 C1142.6325445712241,465.5747656464056 695.2579309733121,896 448,896 C200.74206902668806,896 5.684341886080802e-14,695.2579309733121 0,448.0000000000001 C0,200.74206902668806 200.74206902668791,5.684341886080802e-14 447.99999999999994,0 C695.2579309733121,0 475,418 896,448Z" />
-          <linearGradient id="linearGradient-3" x1="0.5" y1="0" x2="0.5" y2="1">
-            <stop offset="0" stop-color="rgb(40,175,240)" stop-opacity="1" />
-            <stop offset="1" stop-color="rgb(18,15,196)" stop-opacity="1" />
-          </linearGradient>
-        </defs>
-        <g opacity="1">
-          <use xlink:href="#path-2" fill="url(#linearGradient-3)" fill-opacity="1" />
-        </g>
-      </svg>
-    </div>
-    <section class="wrapper">
-      <header>
-        <div class="logo">
-          <span>Logo</span>
-        </div>
-        <h1>Welcome back!</h1>
-        <p>User Login</p>
-      </header>
-      <section class="main-content">
-        <form action="">
-          <input v-model="id" type="username" placeholder="学号" />
-          <input v-model="password" type="password" placeholder="密码" />
-          <div style="margin: 15px 0;">
-            <Captcha ref="captchaRef" v-model="captchaCode" @captchaIdChange="handleCaptchaIdChange" />
+
+    <!-- 忘记密码对话框 -->
+    <el-dialog v-model="forgotPasswordVisible" title="重置密码" width="400px">
+      <el-form :model="forgotForm" :rules="forgotRules" ref="forgotFormRef">
+        <el-form-item prop="email">
+          <el-input v-model="forgotForm.email" placeholder="请输入邮箱" :prefix-icon="Message" />
+        </el-form-item>
+        <el-form-item prop="code">
+          <div class="code-input">
+            <el-input v-model="forgotForm.code" placeholder="验证码" :prefix-icon="Key" maxlength="6" />
+            <el-button :disabled="forgotCountdown > 0" @click="sendForgotCode">
+              {{ forgotCountdown > 0 ? `${forgotCountdown}秒` : '获取验证码' }}
+            </el-button>
           </div>
-          <input type="button" class="login-button" value="登录" @click="login" />
-        </form>
-      </section>
-      <footer>
-        <!-- <p><a href="" title="Forgot Password">忘记密码?</a></p> -->
-        <p><a href="/register" title="Register">注册</a></p>
-      </footer>
-    </section>
-  </section>
+        </el-form-item>
+        <el-form-item prop="newPassword">
+          <el-input
+            v-model="forgotForm.newPassword"
+            type="password"
+            placeholder="新密码"
+            :prefix-icon="Lock"
+            show-password
+          />
+        </el-form-item>
+        <el-form-item prop="confirmPassword">
+          <el-input
+            v-model="forgotForm.confirmPassword"
+            type="password"
+            placeholder="确认密码"
+            :prefix-icon="Lock"
+            show-password
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="forgotPasswordVisible = false">取消</el-button>
+        <el-button type="primary" :loading="loading" @click="handleResetPassword">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>
 </template>
-<script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import request from '@/util/request'
+
+<script setup lang="ts">
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import store from '@/views/var.js'
-import ojHeader from '@/components/OJHeader.vue'
-import Captcha from '@/components/Captcha.vue'
+import { ElMessage } from 'element-plus'
+import { Message, Lock, Key } from '@element-plus/icons-vue'
+import request from '@/util/request'
+
 const router = useRouter()
 
-// 验证码组件引用
-const captchaRef = ref(null);
+// 状态
+const loginType = ref('password')
+const loading = ref(false)
+const rememberMe = ref(false)
+const countdown = ref(0)
+const forgotCountdown = ref(0)
+const forgotPasswordVisible = ref(false)
 
-const id = ref()
-const password = ref('')
-const captchaCode = ref('')
-const captchaId = ref('')
-const getInit = async () => {
+// 表单
+const passwordForm = reactive({
+  email: '',
+  password: ''
+})
 
-  request.get('/article/likes/update', {
+const codeForm = reactive({
+  email: '',
+  code: ''
+})
 
-  });
-  request.get('/article/user/update', {
+const forgotForm = reactive({
+  email: '',
+  code: '',
+  newPassword: '',
+  confirmPassword: ''
+})
 
-  });
+// 表单引用
+const passwordFormRef = ref()
+const codeFormRef = ref()
+const forgotFormRef = ref()
 
+// 验证规则
+const passwordRules = {
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+  ]
 }
-const handleCaptchaIdChange = (id) => {
-  captchaId.value = id
+
+const codeRules = {
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+  ],
+  code: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { len: 6, message: '验证码为6位数字', trigger: 'blur' }
+  ]
 }
 
-const login = async () => {
-  // 验证验证码是否填写
-  if (!captchaCode.value) {
-    ElMessage.warning('请输入验证码')
-    return
-  }
-  
-  let obj = {
-    uid: id.value,
-    password: password.value,
-    captchaId: captchaId.value,
-    captchaCode: captchaCode.value
-  }
-  const uid = id.value
-  request.post('/user/login', obj).then((res) => {
-    if (res.code == 200) {
-      //保存jwt
-      localStorage.setItem('authToken', res.data)
+const forgotRules = {
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+  ],
+  code: [
+    { required: true, message: '请输入验证码', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认密码', trigger: 'blur' },
+    {
+      validator: (rule: any, value: any, callback: any) => {
+        if (value !== forgotForm.newPassword) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+}
 
-      localStorage.setItem('uid', uid)
-      getInit()
-      ElMessage.success('登录成功！欢迎回来!')
-      store.changeLoginStatus(true)
-
-      // 检查上一个路由是否为注册页
-      if (router.options.history.state.back === '/register') {
-        router.push('/home')
-      } else {
-        router.go(-1)
-      }
-    } else {
-      ElMessage.error(res.msg)
-      // 验证码错误时自动刷新
-      if (captchaRef.value && res.msg.includes('验证码')) {
-        captchaRef.value.refreshCaptcha();
+// 密码登录
+const handlePasswordLogin = async () => {
+  await passwordFormRef.value.validate(async (valid: boolean) => {
+    if (valid) {
+      loading.value = true
+      try {
+        const res: any = await request.post('/user/login/password', {
+          email: passwordForm.email,
+          password: passwordForm.password
+        })
+        localStorage.setItem('auth-token', res.data)
+        ElMessage.success('登录成功')
+        router.push('/')
+      } catch (error: any) {
+        console.error('登录错误：', error)
+      } finally {
+        loading.value = false
       }
     }
   })
 }
-</script>
-<style lang="scss" scoped>
-input {
-  border-bottom: 1px solid var(--el-border-color);
+
+// 验证码登录
+const handleCodeLogin = async () => {
+  await codeFormRef.value.validate(async (valid: boolean) => {
+    if (valid) {
+      loading.value = true
+      try {
+        const res: any = await request.post('/user/login/email', {
+          email: codeForm.email,
+          code: codeForm.code
+        })
+        localStorage.setItem('auth-token', res.data)
+        ElMessage.success('登录成功')
+        router.push('/')
+      } catch (error: any) {
+        console.error('登录错误：', error)
+      } finally {
+        loading.value = false
+      }
+    }
+  })
 }
 
-.container {
-  position: absolute;
+// 发送验证码
+const sendCode = async () => {
+  if (!codeForm.email) {
+    ElMessage.warning('请先输入邮箱')
+    return
+  }
+  try {
+    const res: any = await request.post('/user/send-code', null, {
+      params: {
+        email: codeForm.email,
+        type: 'login'
+      }
+    })
+    ElMessage.success('验证码已发送到邮箱')
+    countdown.value = 60
+    const timer = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+  } catch (error: any) {
+    console.error('发送验证码错误：', error)
+  }
+}
+
+// 显示忘记密码对话框
+const showForgotPassword = () => {
+  forgotPasswordVisible.value = true
+}
+
+// 发送重置密码验证码
+const sendForgotCode = async () => {
+  if (!forgotForm.email) {
+    ElMessage.warning('请先输入邮箱')
+    return
+  }
+  try {
+    const res: any = await request.post('/user/send-code', null, {
+      params: {
+        email: forgotForm.email,
+        type: 'reset'
+      }
+    })
+    ElMessage.success('验证码已发送到邮箱')
+    forgotCountdown.value = 60
+    const timer = setInterval(() => {
+      forgotCountdown.value--
+      if (forgotCountdown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+  } catch (error: any) {
+    console.error('发送验证码错误：', error)
+  }
+}
+
+// 重置密码
+const handleResetPassword = async () => {
+  await forgotFormRef.value.validate(async (valid: boolean) => {
+    if (valid) {
+      loading.value = true
+      try {
+        const res: any = await request.post('/user/forgot-password/reset', null, {
+          params: {
+            email: forgotForm.email,
+            code: forgotForm.code,
+            newPassword: forgotForm.newPassword
+          }
+        })
+        ElMessage.success('密码重置成功，请使用新密码登录')
+        forgotPasswordVisible.value = false
+        // 清空表单
+        forgotForm.email = ''
+        forgotForm.code = ''
+        forgotForm.newPassword = ''
+        forgotForm.confirmPassword = ''
+      } catch (error: any) {
+        console.error('重置密码错误：', error)
+      } finally {
+        loading.value = false
+      }
+    }
+  })
+}
+
+// 跳转注册
+const goRegister = () => {
+  router.push('/register')
+}
+</script>
+
+<style scoped lang="scss">
+.login-container {
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  overflow: hidden;
-  margin: 0 0 0 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-box {
   width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
 
-  .svg-top {
-    position: absolute;
-    top: -900px;
-    right: -300px;
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+
+  h2 {
+    margin: 0 0 8px 0;
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
   }
 
-  .svg-bottom {
-    position: absolute;
-    bottom: -500px;
-    left: -200px;
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: #999;
+  }
+}
+
+.login-tabs {
+  margin-bottom: 24px;
+}
+
+.login-form {
+  .form-footer {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
-  .wrapper {
-    padding: 40px;
-    background-color: #fff;
-    border-radius: 20px;
-    width: 350px;
-    border: 1px solid rgb(36, 184, 242);
-    z-index: 1;
+  .code-input {
+    display: flex;
+    gap: 8px;
 
-    header {
-      margin-bottom: 40px;
-
-      .logo {
-        width: 70px;
-        height: 70px;
-        border-radius: 50px;
-        background-color: #6065d9;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-
-        span {
-          font-size: 18px;
-          color: #fff;
-        }
-      }
-
-      h1 {
-        color: #6065d9;
-        font-size: 35px;
-        font-weight: 500;
-        margin-bottom: 0;
-        margin-top: 40px;
-      }
-
-      p {
-        color: #6065d9;
-        font-size: 18px;
-        font-weight: 300;
-        margin: 5px 0 0 0;
-      }
+    .el-input {
+      flex: 1;
     }
 
-    .main-content {
-      input {
-        border: none;
-        display: block;
-        width: 100%;
-        height: 50px;
-        margin: 15px 0;
-        font-size: 18px;
-        color: #999;
-
-        &::placeholder {
-          color: #999;
-          font-size: 18px;
-          font-weight: 300;
-        }
-
-        &:focus {
-          outline: none;
-        }
-      }
-
-      .line {
-        width: 100%;
-        height: 2px;
-        background-color: #99999955;
-      }
-
-      .login-button {
-        background: linear-gradient(to right, #6065d9, #17d7fa);
-        border: none;
-        border-radius: 50px;
-        font-size: 18px;
-        font-weight: 300;
-        color: #fff;
-        display: block;
-        width: 100px;
-        height: 40px;
-        margin: 0 auto;
-        outline: none;
-        cursor: pointer;
-      }
-    }
-
-    footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-top: 60px;
-
-      p {
-        margin: 0;
-        font-weight: 100;
-
-        a {
-          color: #6065d9;
-          text-decoration: none;
-        }
-      }
+    .el-button {
+      white-space: nowrap;
     }
   }
 }
 
-@media (min-width: 320px) and (max-width: 768px) {
-  .wrapper {
-    margin: 0 10px !important;
-    padding: 30px;
-
-    header {
-      h1 {
-        font-size: 30px;
-      }
-    }
-  }
+.register-link {
+  text-align: center;
+  font-size: 14px;
+  color: #666;
 }
 </style>
