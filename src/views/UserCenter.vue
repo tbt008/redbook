@@ -419,14 +419,8 @@
           <span class="amount">¥{{ payingOrder?.totalAmount }}</span>
         </div>
         <div class="pay-qrcode" v-if="payQrCodeUrl">
-          <el-image :src="payQrCodeUrl" fit="contain" style="width: 200px; height: 200px">
-            <template #error>
-              <div class="image-slot">
-                <el-icon><Picture /></el-icon>
-              </div>
-            </template>
-          </el-image>
-          <div class="qrcode-tip">请使用支付宝扫码支付</div>
+          <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
+          <div class="qrcode-tip">请使用支付宝沙箱 App 扫描二维码完成支付。</div>
         </div>
         <div v-if="payingOrder?.expireTime" class="pay-expire">
           <el-icon><Clock /></el-icon>
@@ -658,6 +652,7 @@ const isPollingPay = ref(false)
 const payPollProgress = ref(0)
 const payStatusMessage = ref('')
 const payStatusSuccess = ref(false)
+const paySuccess = ref(false)
 let payPollingTimer: any = null
 
 // 编辑中的内容
@@ -879,29 +874,33 @@ const handlePay = async (order: any) => {
   payStatusSuccess.value = false
   payQrCodeUrl.value = ''
   payPollProgress.value = 0
+  paySuccess.value = false
 
   await generatePayQrCode(order.orderNo)
 }
 
-// 生成支付二维码
+// 生成支付宝支付二维码
 const generatePayQrCode = async (orderNo: string) => {
   isGeneratingQrCode.value = true
-  payStatusMessage.value = '正在生成支付二维码...'
+  payStatusMessage.value = '正在生成支付宝支付二维码...'
 
   try {
     const res: any = await request.get(`/order/pay/qrcode/${orderNo}`)
     if (res && res.code === 200) {
       payQrCodeUrl.value = res.data.qrCodeUrl || ''
-      payStatusMessage.value = '请使用支付宝扫码支付'
+      if (!payQrCodeUrl.value) {
+        throw new Error('未获取到支付宝支付二维码')
+      }
+      payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
 
       // 开始轮询支付状态
       startPayPolling(orderNo)
     } else {
-      payStatusMessage.value = res.message || '生成二维码失败'
+      payStatusMessage.value = res.message || '生成支付二维码失败'
       payStatusSuccess.value = false
     }
   } catch (error: any) {
-    payStatusMessage.value = error.message || '生成二维码失败'
+    payStatusMessage.value = error.message || '生成支付二维码失败'
     payStatusSuccess.value = false
   } finally {
     isGeneratingQrCode.value = false
@@ -948,6 +947,7 @@ const startPayPolling = (orderNo: string) => {
           payPollProgress.value = 100
           payStatusMessage.value = '支付成功！'
           payStatusSuccess.value = true
+          paySuccess.value = true
 
           // 刷新订单列表
           setTimeout(() => {
@@ -976,6 +976,7 @@ const closePayDialog = () => {
   stopPayPolling()
   payDialogVisible.value = false
   payQrCodeUrl.value = ''
+  paySuccess.value = false
   payingOrder.value = null
 }
 
@@ -1918,4 +1919,3 @@ onUnmounted(() => {
   font-size: 30px;
 }
 </style>
-

@@ -27,10 +27,11 @@
         </el-form-item>
       </el-form>
       
-      <!-- 支付二维码显示区域 -->
-      <div v-if="payUrl" class="pay-container">
-        <h3>请使用支付宝沙箱APP扫码支付</h3>
-        <div v-html="payUrl" class="pay-form"></div>
+      <!-- 支付表单显示区域 -->
+      <div v-if="payQrCodeUrl" class="pay-container">
+        <h3>请使用支付宝沙箱 App 扫码支付</h3>
+        <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
+        <div class="qrcode-tip">完成支付后返回此页查询状态。</div>
         <el-button type="success" @click="checkPaymentStatus" class="check-btn">
           我已支付，查询状态
         </el-button>
@@ -137,7 +138,7 @@ export default {
         subject: '测试商品'
       },
       loading: false,
-      payUrl: '',
+      payQrCodeUrl: '',
       paymentStatus: null,
       activeNames: ['1', '2', '3']
     };
@@ -150,7 +151,7 @@ export default {
       }
       
       this.loading = true;
-      this.payUrl = '';
+      this.payQrCodeUrl = '';
       this.paymentStatus = null;
       
       try {
@@ -164,8 +165,11 @@ export default {
         const response = await axios.get(`/api/order/pay/qrcode/${this.orderForm.orderNo}`);
         
         if (response.data.code === 200) {
-          this.payUrl = response.data.data.qrCodeUrl;
-          this.$message.success('订单创建成功，请扫码支付');
+          this.payQrCodeUrl = response.data.data.qrCodeUrl || '';
+          if (!this.payQrCodeUrl) {
+            throw new Error('未获取到支付宝支付二维码');
+          }
+          this.$message.success('订单创建成功，请使用支付宝沙箱 App 扫码支付');
         } else {
           this.$message.error(response.data.message || '创建订单失败');
         }
@@ -176,7 +180,6 @@ export default {
         this.loading = false;
       }
     },
-    
     async checkPaymentStatus() {
       try {
         const response = await axios.get(`/api/order/pay/status/${this.orderForm.orderNo}`);
@@ -232,6 +235,11 @@ export default {
 .pay-form {
   margin: 20px 0;
   display: inline-block;
+}
+
+.qrcode-tip {
+  margin-top: 12px;
+  color: #666;
 }
 
 .check-btn {

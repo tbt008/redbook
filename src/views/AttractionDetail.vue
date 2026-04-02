@@ -429,10 +429,15 @@
                 <span class="label">应付金额</span>
                 <span class="amount">¥{{ totalAmount }}</span>
               </div>
-              <el-button type="primary" size="large" class="pay-btn" @click="handlePay">
-                立即支付
+              <div v-if="payQrCodeUrl" class="pay-qrcode">
+                <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
+                <div class="payment-tip">请使用支付宝沙箱 App 扫描二维码完成支付</div>
+              </div>
+              <el-button type="primary" size="large" class="pay-btn" :loading="isGeneratingQrCode" @click="handlePay">
+                {{ payQrCodeUrl ? '刷新二维码' : '立即支付' }}
               </el-button>
-              <p class="payment-tip">请在30分钟内完成支付</p>
+              <el-progress v-if="isPollingPay" :percentage="payPollProgress" :show-text="false" :stroke-width="6" />
+              <p class="payment-tip">{{ payStatusMessage || '请在30分钟内完成支付' }}</p>
             </div>
           </div>
         </div>
@@ -506,6 +511,12 @@ const creating = ref(false)
 const orderNo = ref('')
 const paySuccessVisible = ref(false)
 const selectedTicket = ref<any>(null)
+const payQrCodeUrl = ref('')
+const isGeneratingQrCode = ref(false)
+const isPollingPay = ref(false)
+const payPollProgress = ref(0)
+const payStatusMessage = ref('')
+let payPollingTimer: any = null
 
 const dialogTitle = computed(() => currentStep.value === 4 ? '完成支付' : '在线购票')
 
@@ -652,6 +663,9 @@ const showTicketDialog = () => {
   }
   ticketDialogVisible.value = true
   currentStep.value = 0
+  payQrCodeUrl.value = ''
+  payStatusMessage.value = ''
+  payPollProgress.value = 0
 }
 
 const nextStep = () => {
@@ -706,17 +720,68 @@ const createOrder = async () => {
 }
 
 const handlePay = async () => {
+  isGeneratingQrCode.value = true
+  payStatusMessage.value = '正在生成支付宝支付二维码...'
   try {
-    const res: any = await request.post(`/order/pay/${orderNo.value}`)
+    const res: any = await request.get(`/order/pay/qrcode/${orderNo.value}`)
     if (res && res.code === 200) {
-      ElMessage.success('支付成功')
-      ticketDialogVisible.value = false
-      paySuccessVisible.value = true
-      resetOrderForm()
+      payQrCodeUrl.value = res.data.qrCodeUrl || ''
+      if (!payQrCodeUrl.value) {
+        throw new Error('未获取到支付宝支付二维码')
+      }
+      payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
+      startPayPolling(orderNo.value)
     }
   } catch (error: any) {
+    payStatusMessage.value = error.message || '支付失败'
     ElMessage.error(error.message || '支付失败')
+  } finally {
+    isGeneratingQrCode.value = false
   }
+}
+
+const startPayPolling = (currentOrderNo: string) => {
+  if (payPollingTimer) {
+    clearInterval(payPollingTimer)
+  }
+
+  isPollingPay.value = true
+  payPollProgress.value = 0
+  let pollCount = 0
+
+  payPollingTimer = setInterval(async () => {
+    pollCount++
+    if (pollCount >= 60) {
+      stopPayPolling()
+      payStatusMessage.value = '支付超时，请重新生成二维码'
+      return
+    }
+
+    payPollProgress.value = Math.min((pollCount / 60) * 100, 95)
+
+    try {
+      const res: any = await request.get(`/order/pay/status/${currentOrderNo}`)
+      if (res && res.code === 200 && res.data && (res.data.paid || res.data.orderStatus === 1)) {
+        stopPayPolling()
+        payPollProgress.value = 100
+        payStatusMessage.value = '支付成功！'
+        ElMessage.success('支付成功')
+        ticketDialogVisible.value = false
+        paySuccessVisible.value = true
+        resetOrderForm()
+      }
+    } catch (error) {
+      console.error('轮询支付状态失败', error)
+    }
+  }, 3000)
+}
+
+const stopPayPolling = () => {
+  if (payPollingTimer) {
+    clearInterval(payPollingTimer)
+    payPollingTimer = null
+  }
+  isPollingPay.value = false
 }
 
 const viewETicket = () => {
@@ -748,6 +813,7 @@ const formatTime = (time: string) => {
 }
 
 const resetOrderForm = () => {
+  stopPayPolling()
   orderForm.ticketId = null
   orderForm.visitDate = ''
   orderForm.ticketCount = 1
@@ -757,6 +823,9 @@ const resetOrderForm = () => {
   orderForm.specialRequest = ''
   selectedTicket.value = null
   currentStep.value = 0
+  payQrCodeUrl.value = ''
+  payPollProgress.value = 0
+  payStatusMessage.value = ''
 }
 
 const goHome = () => router.push('/')

@@ -569,10 +569,15 @@
                 <span class="label">应付金额</span>
                 <span class="amount">¥{{ dineinTotalAmount }}</span>
               </div>
-              <el-button type="primary" size="large" class="pay-btn" @click="handleDineinPay">
-                立即支付
+              <div v-if="payQrCodeUrl" class="pay-qrcode">
+                <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
+                <div class="pay-tip">请使用支付宝沙箱 App 扫描二维码完成支付</div>
+              </div>
+              <el-button type="primary" size="large" class="pay-btn" :loading="isGeneratingQrCode" @click="handleDineinPay">
+                {{ payQrCodeUrl ? '刷新二维码' : '立即支付' }}
               </el-button>
-              <p class="pay-tip">支付成功后，请按时到店消费，凭订单核销</p>
+              <el-progress v-if="isPollingPay" :percentage="payPollProgress" :show-text="false" :stroke-width="6" />
+              <p class="pay-tip">{{ payStatusMessage || '支付成功后，请按时到店消费，凭订单核销' }}</p>
             </div>
           </div>
         </div>
@@ -733,10 +738,15 @@
                 <span class="label">应付金额</span>
                 <span class="amount">¥{{ takeoutTotalAmount }}</span>
               </div>
-              <el-button type="primary" size="large" class="pay-btn" @click="handleTakeoutPay">
-                立即支付
+              <div v-if="payQrCodeUrl" class="pay-qrcode">
+                <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
+                <div class="pay-tip">请使用支付宝沙箱 App 扫描二维码完成支付</div>
+              </div>
+              <el-button type="primary" size="large" class="pay-btn" :loading="isGeneratingQrCode" @click="handleTakeoutPay">
+                {{ payQrCodeUrl ? '刷新二维码' : '立即支付' }}
               </el-button>
-              <p class="pay-tip">支付成功后，等待商家发货配送</p>
+              <el-progress v-if="isPollingPay" :percentage="payPollProgress" :show-text="false" :stroke-width="6" />
+              <p class="pay-tip">{{ payStatusMessage || '支付成功后，等待商家发货配送' }}</p>
             </div>
           </div>
         </div>
@@ -827,6 +837,12 @@ const dineinDialogVisible = ref(false)
 const dineinStep = ref(0)
 const creating = ref(false)
 const orderNo = ref('')
+const payQrCodeUrl = ref('')
+const isGeneratingQrCode = ref(false)
+const isPollingPay = ref(false)
+const payPollProgress = ref(0)
+const payStatusMessage = ref('')
+let payPollingTimer: any = null
 
 const dineinForm = reactive({
   packageId: null as number | null,
@@ -865,6 +881,9 @@ const openDineinDialog = async () => {
   dineinDialogVisible.value = true
   dineinStep.value = 0
   orderNo.value = ''
+  payQrCodeUrl.value = ''
+  payStatusMessage.value = ''
+  payPollProgress.value = 0
   dineinForm.packageId = selectedPackageId.value
   // 如果只有一个套餐，直接选中
   if (packageList.value.length === 1 && !dineinForm.packageId) {
@@ -932,20 +951,28 @@ const createDineinOrder = async () => {
 }
 
 const handleDineinPay = async () => {
+  isGeneratingQrCode.value = true
+  payStatusMessage.value = '正在生成支付宝支付二维码...'
   try {
-    const res: any = await request.post(`/order/pay/${orderNo.value}`)
+    const res: any = await request.get(`/order/pay/qrcode/${orderNo.value}`)
     if (res && res.code === 200) {
-      ElMessage.success('支付成功')
-      dineinDialogVisible.value = false
-      ElMessage.info('您已下单成功，请按时到店消费，凭订单核销！')
-      resetDineinForm()
+      payQrCodeUrl.value = res.data.qrCodeUrl || ''
+      if (!payQrCodeUrl.value) {
+        throw new Error('未获取到支付宝支付二维码')
+      }
+      payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
+      startPayPolling(orderNo.value, 'dinein')
     }
   } catch (error: any) {
+    payStatusMessage.value = error.message || '支付失败'
     ElMessage.error(error.message || '支付失败')
+  } finally {
+    isGeneratingQrCode.value = false
   }
 }
 
 const resetDineinForm = () => {
+  stopPayPolling()
   dineinForm.packageId = null
   dineinForm.bookingDate = ''
   dineinForm.mealTime = '午餐'
@@ -953,6 +980,9 @@ const resetDineinForm = () => {
   dineinForm.tableId = null
   dineinForm.remark = ''
   dineinStep.value = 0
+  payQrCodeUrl.value = ''
+  payStatusMessage.value = ''
+  payPollProgress.value = 0
 }
 
 // ===== 外卖下单 =====
@@ -977,6 +1007,9 @@ const openTakeoutDialog = async () => {
   takeoutDialogVisible.value = true
   takeoutStep.value = 0
   orderNo.value = ''
+  payQrCodeUrl.value = ''
+  payStatusMessage.value = ''
+  payPollProgress.value = 0
   takeoutForm.packageId = selectedPackageId.value
   if (packageList.value.length === 1 && !takeoutForm.packageId) {
     takeoutForm.packageId = packageList.value[0].id
@@ -1029,26 +1062,87 @@ const createTakeoutOrder = async () => {
 }
 
 const handleTakeoutPay = async () => {
+  isGeneratingQrCode.value = true
+  payStatusMessage.value = '正在生成支付宝支付二维码...'
   try {
-    const res: any = await request.post(`/order/pay/${orderNo.value}`)
+    const res: any = await request.get(`/order/pay/qrcode/${orderNo.value}`)
     if (res && res.code === 200) {
-      ElMessage.success('支付成功')
-      takeoutDialogVisible.value = false
-      ElMessage.info('您的外卖订单已下单，等待商家发货！')
-      resetTakeoutForm()
+      payQrCodeUrl.value = res.data.qrCodeUrl || ''
+      if (!payQrCodeUrl.value) {
+        throw new Error('未获取到支付宝支付二维码')
+      }
+      payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
+      startPayPolling(orderNo.value, 'takeout')
     }
   } catch (error: any) {
+    payStatusMessage.value = error.message || '支付失败'
     ElMessage.error(error.message || '支付失败')
+  } finally {
+    isGeneratingQrCode.value = false
   }
 }
 
 const resetTakeoutForm = () => {
+  stopPayPolling()
   takeoutForm.packageId = null
   takeoutForm.receiverName = ''
   takeoutForm.receiverPhone = ''
   takeoutForm.address = ''
   takeoutForm.remark = ''
   takeoutStep.value = 0
+  payQrCodeUrl.value = ''
+  payStatusMessage.value = ''
+  payPollProgress.value = 0
+}
+
+const startPayPolling = (currentOrderNo: string, mode: 'dinein' | 'takeout') => {
+  if (payPollingTimer) {
+    clearInterval(payPollingTimer)
+  }
+
+  isPollingPay.value = true
+  payPollProgress.value = 0
+  let pollCount = 0
+
+  payPollingTimer = setInterval(async () => {
+    pollCount++
+    if (pollCount >= 60) {
+      stopPayPolling()
+      payStatusMessage.value = '支付超时，请重新生成二维码'
+      return
+    }
+
+    payPollProgress.value = Math.min((pollCount / 60) * 100, 95)
+
+    try {
+      const res: any = await request.get(`/order/pay/status/${currentOrderNo}`)
+      if (res && res.code === 200 && res.data && (res.data.paid || res.data.orderStatus === 1)) {
+        stopPayPolling()
+        payPollProgress.value = 100
+        payStatusMessage.value = '支付成功！'
+        ElMessage.success('支付成功')
+        if (mode === 'dinein') {
+          dineinDialogVisible.value = false
+          ElMessage.info('您已下单成功，请按时到店消费，凭订单核销！')
+          resetDineinForm()
+        } else {
+          takeoutDialogVisible.value = false
+          ElMessage.info('您的外卖订单已下单，等待商家发货！')
+          resetTakeoutForm()
+        }
+      }
+    } catch (error) {
+      console.error('轮询支付状态失败', error)
+    }
+  }, 3000)
+}
+
+const stopPayPolling = () => {
+  if (payPollingTimer) {
+    clearInterval(payPollingTimer)
+    payPollingTimer = null
+  }
+  isPollingPay.value = false
 }
 
 // 快捷下单

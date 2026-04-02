@@ -15,13 +15,13 @@
         
         <el-tabs v-model="activeTab" @tab-change="handleTabChange">
           <el-tab-pane label="全部订单" name="all" />
-          <el-tab-pane label="景点门票" name="1" />
-          <el-tab-pane label="酒店预订" name="2" />
-          <el-tab-pane label="美食预订" name="3" />
-          <el-tab-pane label="待支付" name="0" />
-          <el-tab-pane label="已支付" name="1" />
-          <el-tab-pane label="已使用" name="2" />
-          <el-tab-pane label="已取消" name="3" />
+          <el-tab-pane label="景点门票" name="type-1" />
+          <el-tab-pane label="酒店预订" name="type-2" />
+          <el-tab-pane label="美食预订" name="type-3" />
+          <el-tab-pane label="待支付" name="status-0" />
+          <el-tab-pane label="已支付" name="status-1" />
+          <el-tab-pane label="已使用" name="status-2" />
+          <el-tab-pane label="已取消" name="status-3" />
         </el-tabs>
 
         <div class="order-list">
@@ -152,8 +152,8 @@
           <span class="amount">¥{{ payingOrder?.totalAmount }}</span>
         </div>
         <div class="pay-qrcode" v-if="payQrCodeUrl">
-          <el-image :src="payQrCodeUrl" fit="contain" style="width: 200px; height: 200px" />
-          <div class="qrcode-tip">请使用支付宝扫码支付</div>
+          <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
+          <div class="qrcode-tip">请使用支付宝沙箱 App 扫描二维码完成支付。</div>
         </div>
         <div v-if="payingOrder?.expireTime" class="pay-expire">
           <el-icon><Clock /></el-icon>
@@ -208,13 +208,13 @@ const loadOrders = async () => {
   // 订单状态：0-待支付，1-已支付，2-已使用，3-已取消
   const typeStatusMap: Record<string, { type?: number; status?: number }> = {
     'all': {},
-    '1': { type: 1 },   // 景点门票
-    '2': { type: 2 },  // 酒店预订
-    '3': { type: 3 },  // 美食预订
-    '0': { status: 0 }, // 待支付
-    '1': { status: 1 }, // 已支付（作为状态时）
-    '2': { status: 2 }, // 已使用
-    '3': { status: 3 }  // 已取消
+    'type-1': { type: 1 },
+    'type-2': { type: 2 },
+    'type-3': { type: 3 },
+    'status-0': { status: 0 },
+    'status-1': { status: 1 },
+    'status-2': { status: 2 },
+    'status-3': { status: 3 }
   }
 
   const filter = typeStatusMap[activeTab.value] || {}
@@ -256,23 +256,26 @@ const handlePay = async (order: any) => {
   await generatePayQrCode(order.orderNo)
 }
 
-// 生成支付二维码
+// 生成支付宝支付二维码
 const generatePayQrCode = async (orderNo: string) => {
   isGeneratingQrCode.value = true
-  payStatusMessage.value = '正在生成支付二维码...'
+  payStatusMessage.value = '正在生成支付宝支付二维码...'
 
   try {
     const res: any = await request.get(`/order/pay/qrcode/${orderNo}`)
     if (res && res.code === 200) {
       payQrCodeUrl.value = res.data.qrCodeUrl || ''
-      payStatusMessage.value = '请使用支付宝扫码支付'
+      if (!payQrCodeUrl.value) {
+        throw new Error('未获取到支付宝支付二维码')
+      }
+      payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
       startPayPolling(orderNo)
     } else {
-      payStatusMessage.value = res.message || '生成二维码失败'
+      payStatusMessage.value = res.message || '生成支付二维码失败'
       payStatusSuccess.value = false
     }
   } catch (error: any) {
-    payStatusMessage.value = error.message || '生成二维码失败'
+    payStatusMessage.value = error.message || '生成支付二维码失败'
     payStatusSuccess.value = false
   } finally {
     isGeneratingQrCode.value = false
@@ -344,6 +347,7 @@ const closePayDialog = () => {
   stopPayPolling()
   payDialogVisible.value = false
   payQrCodeUrl.value = ''
+  paySuccess.value = false
   payingOrder.value = null
 }
 
@@ -702,4 +706,3 @@ onUnmounted(() => {
   }
 }
 </style>
-
