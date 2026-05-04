@@ -1,20 +1,6 @@
 <template>
   <div class="hotel-detail">
-    <!-- 顶部导航 -->
-    <header class="detail-header">
-      <div class="header-inner">
-        <div class="logo-section" @click="goHome">
-          <span class="logo-icon">🏝️</span>
-          <span class="logo-text">莆田文旅</span>
-        </div>
-        <div class="header-actions">
-          <el-button class="back-btn" @click="goBack">
-            <el-icon><ArrowLeft /></el-icon>
-            返回
-          </el-button>
-        </div>
-      </div>
-    </header>
+    <TourismTopNav />
 
     <!-- 主内容区 -->
     <main class="main-content">
@@ -52,6 +38,9 @@
             <h1 class="hotel-title">{{ hotel.name }}</h1>
 
             <div class="hotel-tags">
+              <span class="tag type-tag">
+                酒店
+              </span>
               <span class="tag">
                 <el-icon><Location /></el-icon>
                 {{ hotel.region }}
@@ -59,6 +48,13 @@
               <span class="tag star" v-if="hotel.starLevel">
                 <el-icon><Star /></el-icon>
                 {{ hotel.starLevel }}星级
+              </span>
+              <span
+                v-for="tag in hotelDisplayTags"
+                :key="tag"
+                class="tag extra-tag"
+              >
+                {{ tag }}
               </span>
             </div>
 
@@ -124,7 +120,7 @@
                 <span class="title-icon">🛏️</span>
                 房型与价格
               </h3>
-              <p class="room-section-hint">不同房型价格、床型与可住人数不同，请选择适合的一间下单。</p>
+              <p class="room-section-hint">不同房型价格、床型与可住人数不同，请选择合适的房型下单。</p>
               <div class="room-card-list">
                 <div
                   v-for="room in roomList"
@@ -240,7 +236,7 @@
             <!-- 地图 -->
             <div class="map-section">
               <h3 class="section-title">
-                <span class="title-icon">🗺️</span>
+                <span class="title-icon">📍</span>
                 酒店位置
               </h3>
               <div class="map-container" id="hotel-map-container">
@@ -256,7 +252,7 @@
           <div class="info-right">
             <div class="booking-card">
               <div class="booking-header">
-                <div class="price-label">{{ roomList.length ? '起价（所选房型为准）' : '参考价格' }}</div>
+                <div class="price-label">{{ roomList.length ? '起价（以所选房型为准）' : '参考价格' }}</div>
                 <div class="price-value">
                   <span class="currency">¥</span>
                   <span class="amount">{{ sidebarDisplayPrice }}</span>
@@ -350,7 +346,7 @@
       </section>
     </main>
 
-    <!-- 预订对话框 -->
+    <!-- 棰勮瀵硅瘽妗?-->
     <el-dialog v-model="bookingDialogVisible" title="预订酒店" width="750px" :close-on-click-modal="false" class="booking-dialog">
       <div class="dialog-content">
         <el-steps :active="currentStep" align-center finish-status="success">
@@ -361,7 +357,7 @@
         </el-steps>
 
         <div class="step-content">
-          <!-- 步骤1: 选择日期和房间数量 -->
+          <!-- 姝ラ1: 閫夋嫨鏃ユ湡鍜屾埧闂存暟閲?-->
           <div v-show="currentStep === 0" class="step-panel">
             <el-form :model="bookingForm" label-position="top" class="booking-form">
               <el-form-item v-if="roomList.length > 0" label="房型" required>
@@ -440,7 +436,7 @@
             </el-form>
           </div>
 
-          <!-- 步骤2: 填写入住人信息 -->
+          <!-- 姝ラ2: 濉啓鍏ヤ綇浜轰俊鎭?-->
           <div v-show="currentStep === 1" class="step-panel">
             <el-form :model="bookingForm" label-position="top" class="booking-form">
               <el-form-item label="入住人姓名" required>
@@ -480,7 +476,7 @@
                   v-model="bookingForm.specialRequest"
                   type="textarea"
                   :rows="2"
-                  placeholder="如需要加床、禁烟房等"
+                  placeholder="如需加床、禁烟房等"
                 />
               </el-form-item>
             </el-form>
@@ -557,7 +553,7 @@
               </div>
               <div v-if="countdown > 0" class="countdown-tip">
                 <el-icon><Clock /></el-icon>
-                请在 <span class="countdown-time">{{ formatCountdown }}</span> 内完成支付
+                璇峰湪 <span class="countdown-time">{{ formatCountdown }}</span> 鍐呭畬鎴愭敮浠?
               </div>
               <div v-if="payQrCodeUrl" class="pay-qrcode">
                 <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
@@ -599,7 +595,7 @@
       </template>
     </el-dialog>
 
-    <!-- 评论对话框 -->
+    <!-- 璇勮瀵硅瘽妗?-->
     <el-dialog v-model="commentDialogVisible" title="写评价" width="550px" class="comment-dialog">
       <div class="comment-form">
         <div class="rating-select">
@@ -627,13 +623,13 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import dayjs from 'dayjs'
 import {
   Location,
   Money,
   Phone,
   Star,
   StarFilled,
-  ArrowLeft,
   OfficeBuilding,
   Check,
   Shop,
@@ -649,7 +645,10 @@ import {
   SuccessFilled,
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
-import dayjs from 'dayjs'
+import { formatDateTime } from '@/util/datetime'
+import { extractDisplayTags } from '@/utils/contentTags'
+
+import TourismTopNav from '@/components/TourismTopNav.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -677,6 +676,10 @@ const isPollingPay = ref(false)
 const payPollProgress = ref(0)
 const payStatusMessage = ref('')
 let payPollingTimer: any = null
+const hotelDisplayTags = computed(() => {
+  const tags = extractDisplayTags(hotel.value, ['tags', 'tagList', 'tagNames', 'labels', 'keywords', 'facilities'])
+  return tags.filter((tag) => tag !== hotel.value.region && tag !== `${hotel.value.starLevel}星级`)
+})
 
 const ROOM_TYPE_LABELS: Record<number, string> = {
   1: '单人房',
@@ -716,10 +719,10 @@ const unitPricePerNight = computed(() => {
 
 const sidebarDisplayPrice = computed(() => {
   if (roomList.value.length === 0) {
-    return hotel.value.price ?? '—'
+    return hotel.value.price ?? '--'
   }
   const prices = roomList.value.map((r) => Number(r.price)).filter((n) => !Number.isNaN(n))
-  if (!prices.length) return hotel.value.price ?? '—'
+  if (!prices.length) return hotel.value.price ?? '--'
   return Math.min(...prices)
 })
 
@@ -738,7 +741,7 @@ const stayDays = computed(() => {
   return 0
 })
 
-// 计算总金额（展示用；服务端会再次按房型/天数重算）
+// 璁＄畻鎬婚噾棰濓紙灞曠ず鐢紱鏈嶅姟绔細鍐嶆鎸夋埧鍨?澶╂暟閲嶇畻锛?
 const totalAmount = computed(() => {
   const unit = unitPricePerNight.value
   if (unit > 0 && stayDays.value > 0) {
@@ -793,7 +796,7 @@ const loadHotelRooms = async () => {
   }
 }
 
-// 初始化地图
+// 鍒濆鍖栧湴鍥?
 const initMap = () => {
   if (!hotel.value.longitude || !hotel.value.latitude) {
     console.log('酒店无坐标信息')
@@ -801,7 +804,7 @@ const initMap = () => {
   }
   
   if (!window.AMap) {
-    console.error('高德地图API未加载')
+    console.error('高德地图 API 未加载')
     return
   }
   
@@ -913,13 +916,13 @@ const dialPhone = (tel: string) => {
   window.location.href = `tel:${tel.replace(/\s/g, '')}`
 }
 
-/** 从房型列表点击「订此房型」 */
+/** 浠庢埧鍨嬪垪琛ㄧ偣鍑汇€岃姝ゆ埧鍨嬨€?*/
 const openBookingWithRoom = (roomId: number) => {
   bookingForm.hotelRoomId = roomId
   showBookingDialog()
 }
 
-// 显示预订对话框
+// 鏄剧ず棰勮瀵硅瘽妗?
 const showBookingDialog = () => {
   const token = localStorage.getItem('auth-token')
   if (!token) {
@@ -941,7 +944,7 @@ const showBookingDialog = () => {
   bookingDialogVisible.value = true
 }
 
-// 关闭预订对话框
+// 鍏抽棴棰勮瀵硅瘽妗?
 const closeBookingDialog = () => {
   bookingDialogVisible.value = false
   if (countdownTimer) {
@@ -954,14 +957,14 @@ const closeBookingDialog = () => {
   resetBookingForm()
 }
 
-// 上一步
+// 涓婁竴姝?
 const prevStep = () => {
   if (currentStep.value > 0) {
     currentStep.value--
   }
 }
 
-// 下一步
+// 涓嬩竴姝?
 const nextStep = () => {
   if (currentStep.value === 0) {
     if (roomList.value.length > 0 && !bookingForm.hotelRoomId) {
@@ -1022,7 +1025,7 @@ const createOrder = async () => {
   }
 }
 
-// 启动倒计时
+// 鍚姩鍊掕鏃?
 const startCountdown = () => {
   countdown.value = 15 * 60
   if (countdownTimer) {
@@ -1111,7 +1114,7 @@ const startPayPolling = (currentOrderNo: string) => {
       if (res && res.code === 200 && res.data && (res.data.paid || res.data.orderStatus === 1)) {
         stopPayPolling()
         payPollProgress.value = 100
-        payStatusMessage.value = '支付成功！'
+        payStatusMessage.value = '支付成功'
         ElMessage.success('支付成功')
         if (countdownTimer) {
           clearInterval(countdownTimer)
@@ -1136,12 +1139,12 @@ const stopPayPolling = () => {
   isPollingPay.value = false
 }
 
-// 查看电子票
+// 鏌ョ湅鐢靛瓙绁?
 const viewETicket = () => {
   router.push(`/eticket/${orderNo.value}`)
 }
 
-// 显示评论对话框
+// 鏄剧ず璇勮瀵硅瘽妗?
 const showCommentDialog = () => {
   const token = localStorage.getItem('auth-token')
   if (!token) {
@@ -1183,15 +1186,15 @@ const submitComment = async () => {
 
 // 显示地图
 const showMap = () => {
-  ElMessage.info('地图功能开发中')
+  ElMessage.info('鍦板浘鍔熻兘寮€鍙戜腑')
 }
 
-// 禁用过去的日期
+// 绂佺敤杩囧幓鐨勬棩鏈?
 const disabledDate = (time: Date) => {
   return time.getTime() < Date.now() - 8.64e7
 }
 
-// 禁用退房日期
+// 绂佺敤閫€鎴挎棩鏈?
 const disabledCheckOutDate = (time: Date) => {
   if (!bookingForm.checkInDate) {
     return time.getTime() < Date.now() - 8.64e7
@@ -1199,9 +1202,9 @@ const disabledCheckOutDate = (time: Date) => {
   return time.getTime() <= new Date(bookingForm.checkInDate).getTime()
 }
 
-// 格式化时间
-const formatTime = (time: string) => {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
+// 鏍煎紡鍖栨椂闂?
+const formatTime = (time: string | number | string[] | number[]) => {
+  return formatDateTime(time, 'YYYY-MM-DD HH:mm')
 }
 
 // 重置预订表单
@@ -1215,12 +1218,12 @@ const resetBookingForm = () => {
   bookingForm.specialRequest = ''
 }
 
-// 添加入住人
+// 娣诲姞鍏ヤ綇浜?
 const addGuestName = () => {
   bookingForm.guestNames.push('')
 }
 
-// 删除入住人
+// 鍒犻櫎鍏ヤ綇浜?
 const removeGuestName = (index: number) => {
   bookingForm.guestNames.splice(index, 1)
 }
@@ -1235,7 +1238,7 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-// 主题色
+// 涓婚鑹?
 $primary: #1a5f4a;
 $primary-light: #2d8b6f;
 $primary-dark: #0f3d2f;
@@ -1299,7 +1302,7 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
 }
 
-// 画廊
+// 鐢诲粖
 .gallery-section {
   background: $white;
 
@@ -1408,6 +1411,7 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
     display: flex;
     gap: 12px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
 
     .tag {
       display: flex;
@@ -1422,6 +1426,17 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
       &.star {
         background: linear-gradient(135deg, rgba(232, 168, 56, 0.1), rgba(232, 168, 56, 0.05));
         color: $accent;
+      }
+
+      &.type-tag {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: $white;
+        font-weight: 600;
+      }
+
+      &.extra-tag {
+        background: rgba(59, 130, 246, 0.1);
+        color: #2456c9;
       }
     }
   }
@@ -1548,7 +1563,7 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
         margin-bottom: 8px;
 
         .meta-dot::before {
-          content: '·';
+          content: '路';
           margin: 0 6px;
           color: $border;
         }
@@ -1928,7 +1943,7 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
 }
 
-// 评论区
+// 璇勮鍖?
 .comments-section {
   padding: 40px 0;
   margin-top: 24px;
@@ -2027,7 +2042,7 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
 }
 
-// 对话框样式
+// 瀵硅瘽妗嗘牱寮?
 .comment-dialog {
   .comment-form {
     .rating-select {
@@ -2265,7 +2280,7 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
 }
 
-// 成功对话框
+// 鎴愬姛瀵硅瘽妗?
 .success-dialog {
   :deep(.el-dialog) {
     border-radius: 16px;
@@ -2302,7 +2317,7 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
 }
 
-// 响应式
+// 鍝嶅簲寮?
 @media (max-width: 1200px) {
   .info-container {
     grid-template-columns: 1fr;

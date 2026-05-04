@@ -1,20 +1,6 @@
 <template>
   <div class="food-detail">
-    <!-- 顶部导航 -->
-    <header class="detail-header">
-      <div class="header-inner">
-        <div class="logo-section" @click="goHome">
-          <span class="logo-icon">🏝️</span>
-          <span class="logo-text">莆田文旅</span>
-        </div>
-        <div class="header-actions">
-          <el-button class="back-btn" @click="goBack">
-            <el-icon><ArrowLeft /></el-icon>
-            返回
-          </el-button>
-        </div>
-      </div>
-    </header>
+    <TourismTopNav />
 
     <!-- 主内容区 -->
     <main class="main-content">
@@ -56,9 +42,19 @@
             <h1 class="food-title">{{ food.name }}</h1>
 
             <div class="food-tags">
+              <span class="tag type-tag">
+                美食
+              </span>
               <span class="tag">
                 <el-icon><Location /></el-icon>
                 {{ food.region }}
+              </span>
+              <span
+                v-for="tag in foodDisplayTags"
+                :key="tag"
+                class="tag extra-tag"
+              >
+                {{ tag }}
               </span>
             </div>
 
@@ -217,7 +213,7 @@
             <!-- 店铺介绍 -->
             <div class="description-section">
               <h3 class="section-title">
-                <span class="title-icon">🍽️</span>
+                <span class="title-icon">🍴</span>
                 店铺介绍
               </h3>
               <div class="description-content">
@@ -298,7 +294,7 @@
                 </div>
                 <div class="feature-item">
                   <el-icon><Present /></el-icon>
-                  <span>优惠多</span>
+                  <span>优惠大</span>
                 </div>
               </div>
             </div>
@@ -323,7 +319,7 @@
               <h4><el-icon><Tickets /></el-icon>座位信息</h4>
               <div class="table-status">
                 <span class="available">{{ food.totalTables - (food.reservedTables || 0) }}个可用</span>
-                <span class="total">共{{ food.totalTables }}桌</span>
+                <span class="total">共 {{ food.totalTables }} 桌</span>
               </div>
             </div>
           </div>
@@ -377,7 +373,7 @@
       </section>
     </main>
 
-    <!-- 评论对话框 -->
+    <!-- 璇勮瀵硅瘽妗?-->
     <el-dialog v-model="commentDialogVisible" title="写评价" width="550px" class="comment-dialog">
       <div class="comment-form">
         <div class="rating-select">
@@ -399,7 +395,7 @@
       </template>
     </el-dialog>
 
-    <!-- ========== 到店用餐下单对话框 ========== -->
+    <!-- ========== 鍒板簵鐢ㄩ涓嬪崟瀵硅瘽妗?========== -->
     <el-dialog
       v-model="dineinDialogVisible"
       title="到店用餐下单"
@@ -449,7 +445,7 @@
                   <div v-if="pkg.originalPrice" class="original-price">¥{{ pkg.originalPrice }}</div>
                 </div>
               </div>
-              <el-empty v-if="packageList.length === 0" description="该商家暂无可选套餐" />
+              <el-empty v-if="packageList.length === 0" description="该商家暂时没有可选套餐" />
             </div>
           </div>
 
@@ -475,7 +471,7 @@
               </el-form-item>
               <el-form-item label="用餐人数" required>
                 <el-select v-model="dineinForm.dinerCount" placeholder="请选择人数" style="width: 100%">
-                  <el-option v-for="n in 12" :key="n" :label="n + '人'" :value="n" />
+                  <el-option v-for="n in 12" :key="n" :label="`${n}人`" :value="n" />
                 </el-select>
               </el-form-item>
               <el-form-item label="预约桌位" v-if="tableList.length > 0">
@@ -493,7 +489,7 @@
                   v-model="dineinForm.remark"
                   type="textarea"
                   :rows="3"
-                  placeholder="口味要求、忌口、特殊需求等"
+                  placeholder="鍙ｅ懗瑕佹眰銆佸繉鍙ｃ€佺壒娈婇渶姹傜瓑"
                 />
               </el-form-item>
             </el-form>
@@ -593,7 +589,7 @@
       </template>
     </el-dialog>
 
-    <!-- ========== 外卖下单对话框 ========== -->
+    <!-- ========== 澶栧崠涓嬪崟瀵硅瘽妗?========== -->
     <el-dialog
       v-model="takeoutDialogVisible"
       title="外卖下单"
@@ -654,7 +650,7 @@
                   <div v-if="pkg.originalPrice" class="original-price">¥{{ pkg.originalPrice }}</div>
                 </div>
               </div>
-              <el-empty v-if="filteredPackages.length === 0" description="该分类暂无套餐" />
+              <el-empty v-if="filteredPackages.length === 0" description="该分类暂时没有套餐" />
             </div>
           </div>
 
@@ -668,7 +664,7 @@
                 <el-input v-model="takeoutForm.receiverPhone" placeholder="请输入联系电话" />
               </el-form-item>
               <el-form-item label="收货地址" required>
-                <el-input v-model="takeoutForm.address" placeholder="请输入详细收货地址" />
+                <el-input v-model="takeoutForm.address" placeholder="璇疯緭鍏ヨ缁嗘敹璐у湴鍧€" />
               </el-form-item>
               <el-form-item label="备注">
                 <el-input
@@ -768,15 +764,18 @@
 import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import dayjs from 'dayjs'
 import {
   Location, Money, Phone, Star, StarFilled,
   Clock, Ticket, Present, Edit, User,
-  CircleCheck, ArrowLeft, ArrowRight,
+  CircleCheck, ArrowRight,
   Food, Grid, Shop, ShoppingBag,
   Ticket as Tickets, Calendar
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
-import dayjs from 'dayjs'
+import { extractDisplayTags } from '@/utils/contentTags'
+
+import TourismTopNav from '@/components/TourismTopNav.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -788,6 +787,10 @@ const commentList = ref<any[]>([])
 const isCollected = ref(false)
 const commentDialogVisible = ref(false)
 const submitting = ref(false)
+const foodDisplayTags = computed(() => {
+  const tags = extractDisplayTags(food.value)
+  return tags.filter((tag) => tag !== food.value.region)
+})
 
 // 商家信息（直接从 food 详情获取）
 const merchantInfo = computed(() => ({
@@ -885,7 +888,7 @@ const openDineinDialog = async () => {
   payStatusMessage.value = ''
   payPollProgress.value = 0
   dineinForm.packageId = selectedPackageId.value
-  // 如果只有一个套餐，直接选中
+// 如果只有一个套餐，直接选中
   if (packageList.value.length === 1 && !dineinForm.packageId) {
     dineinForm.packageId = packageList.value[0].id
   }
@@ -1028,7 +1031,7 @@ const nextTakeoutStep = () => {
   if (takeoutStep.value === 1) {
     if (!takeoutForm.receiverName) { ElMessage.warning('请输入收货人姓名'); return }
     if (!takeoutForm.receiverPhone) { ElMessage.warning('请输入联系电话'); return }
-    if (!takeoutForm.address) { ElMessage.warning('请输入收货地址'); return }
+    if (!takeoutForm.address) { ElMessage.warning('璇疯緭鍏ユ敹璐у湴鍧€'); return }
   }
   takeoutStep.value++
 }
@@ -1119,15 +1122,15 @@ const startPayPolling = (currentOrderNo: string, mode: 'dinein' | 'takeout') => 
       if (res && res.code === 200 && res.data && (res.data.paid || res.data.orderStatus === 1)) {
         stopPayPolling()
         payPollProgress.value = 100
-        payStatusMessage.value = '支付成功！'
+        payStatusMessage.value = '支付成功'
         ElMessage.success('支付成功')
         if (mode === 'dinein') {
           dineinDialogVisible.value = false
-          ElMessage.info('您已下单成功，请按时到店消费，凭订单核销！')
+          ElMessage.info('您已下单成功，请按时到店消费并凭订单核销')
           resetDineinForm()
         } else {
           takeoutDialogVisible.value = false
-          ElMessage.info('您的外卖订单已下单，等待商家发货！')
+          ElMessage.info('您的外卖订单已下单，等待商家发货')
           resetTakeoutForm()
         }
       }
@@ -1317,8 +1320,10 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
 .breadcrumb-item.current { color: $text-primary; font-weight: 500; }
 .breadcrumb-separator { color: $border; }
 .food-title { font-size: 36px; font-weight: 700; color: $text-primary; margin: 0 0 16px; }
-.food-tags { display: flex; gap: 12px; margin-bottom: 20px; }
-.food-tag { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: rgba(245,87,108,0.08); color: #f5576c; border-radius: 20px; font-size: 13px; }
+.food-tags { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.food-tags .tag { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: rgba(245,87,108,0.08); color: #f5576c; border-radius: 20px; font-size: 13px; }
+.food-tags .tag.type-tag { background: linear-gradient(135deg, #f5576c 0%, #ff8a65 100%); color: #fff; font-weight: 600; }
+.food-tags .tag.extra-tag { background: rgba(255, 169, 64, 0.12); color: #c46a10; }
 .food-stats { display: flex; align-items: center; gap: 24px; padding: 20px 24px; background: $bg-light; border-radius: 12px; margin-bottom: 24px; }
 .stat-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .stat-value { font-size: 24px; font-weight: 700; color: $text-primary; }

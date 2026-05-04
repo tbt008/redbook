@@ -17,15 +17,7 @@
           </div>
         </template>
 
-        <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-          <el-form-item label="内容类型" prop="type">
-            <el-radio-group v-model="form.type">
-              <el-radio :label="1">攻略</el-radio>
-              <el-radio :label="2">笔记</el-radio>
-              <el-radio :label="3">视频</el-radio>
-            </el-radio-group>
-          </el-form-item>
-
+        <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
           <el-form-item label="标题" prop="title">
             <el-input v-model="form.title" placeholder="请输入标题" maxlength="50" show-word-limit />
           </el-form-item>
@@ -41,10 +33,10 @@
             />
           </el-form-item>
 
-          <el-form-item v-if="form.type !== 3" label="封面图片" prop="coverImage">
+          <el-form-item label="封面图片" prop="coverImage">
             <el-upload
               class="cover-uploader"
-              action="/file/upload?directory=content"
+              action="/api/file/upload?directory=content"
               :show-file-list="false"
               :on-success="handleCoverSuccess"
             >
@@ -53,10 +45,10 @@
             </el-upload>
           </el-form-item>
 
-          <el-form-item v-if="form.type !== 3" label="内容图片">
+          <el-form-item label="内容图片">
             <el-upload
               class="images-uploader"
-              action="/file/upload?directory=content"
+              action="/api/file/upload?directory=content"
               list-type="picture-card"
               :file-list="imageList"
               :on-success="handleImagesSuccess"
@@ -65,28 +57,20 @@
             >
               <el-icon class="uploader-icon"><Plus /></el-icon>
             </el-upload>
-          </el-form-item>
-
-          <el-form-item v-if="form.type === 3" label="视频" prop="videoUrl">
-            <el-upload
-              class="video-uploader"
-              action="/file/upload?directory=video"
-              :show-file-list="false"
-              :on-success="handleVideoSuccess"
-              accept="video/*"
-            >
-              <video v-if="form.videoUrl" :src="form.videoUrl" controls style="width: 400px; max-height: 300px"></video>
-              <el-button v-else type="primary">上传视频</el-button>
-            </el-upload>
+            <div class="upload-tip">上传后可在正文中直接插入，或复制图片链接用于 Markdown 语法。</div>
           </el-form-item>
 
           <el-form-item label="正文内容" prop="content">
-            <el-input
-              v-model="form.content"
-              type="textarea"
-              :rows="10"
-              placeholder="请输入正文内容"
-            />
+            <div class="editor-wrapper">
+              <mavon-editor
+                ref="mavonEditorRef"
+                v-model="form.content"
+                class="markdown-editor"
+                :ishljs="true"
+                :toolbars="toolbars"
+                @imgAdd="handleEditorImageAdd"
+              />
+            </div>
           </el-form-item>
 
           <el-form-item label="标签">
@@ -112,9 +96,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import type { FormInstance, UploadProps } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import request from '@/util/request'
 
@@ -124,6 +109,38 @@ const publishing = ref(false)
 const tagList = ref<any[]>([])
 const attractionList = ref<any[]>([])
 const imageList = ref<any[]>([])
+const formRef = ref<FormInstance>()
+const mavonEditorRef = ref<any>()
+
+const toolbars = {
+  bold: true,
+  italic: true,
+  header: true,
+  underline: true,
+  strikethrough: true,
+  mark: true,
+  superscript: true,
+  subscript: true,
+  quote: true,
+  ol: true,
+  ul: true,
+  link: true,
+  imagelink: true,
+  code: true,
+  table: true,
+  fullscreen: true,
+  readmodel: true,
+  htmlcode: true,
+  undo: true,
+  redo: true,
+  trash: true,
+  navigation: true,
+  alignleft: true,
+  aligncenter: true,
+  alignright: true,
+  subfield: true,
+  preview: true
+}
 
 const form = reactive({
   type: 1,
@@ -131,22 +148,18 @@ const form = reactive({
   description: '',
   coverImage: '',
   images: [] as string[],
-  videoUrl: '',
   content: '',
   tags: [] as number[],
   attractionId: null as number | null
 })
 
-const formRef = ref()
-
 const rules = {
-  type: [{ required: true, message: '请选择内容类型', trigger: 'change' }],
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
   description: [{ required: true, message: '请输入描述', trigger: 'blur' }],
+  coverImage: [{ required: true, message: '请上传封面图片', trigger: 'change' }],
   content: [{ required: true, message: '请输入正文内容', trigger: 'blur' }]
 }
 
-// 加载标签列表
 const loadTags = async () => {
   try {
     const res: any = await request.get('/interest-tag/list')
@@ -158,7 +171,6 @@ const loadTags = async () => {
   }
 }
 
-// 加载景点列表
 const loadAttractions = async () => {
   try {
     const res: any = await request.get('/attraction/list', {
@@ -172,62 +184,78 @@ const loadAttractions = async () => {
   }
 }
 
-// 封面上传成功
-const handleCoverSuccess = (response: any) => {
+const handleCoverSuccess: UploadProps['onSuccess'] = response => {
   if (response.code === 200) {
     form.coverImage = response.data.url
     ElMessage.success('上传成功')
   }
 }
 
-// 图片上传成功
-const handleImagesSuccess = (response: any, file: any) => {
+const handleImagesSuccess: UploadProps['onSuccess'] = (response: any, file: any) => {
   if (response.code === 200) {
     form.images.push(response.data.url)
     imageList.value.push({ url: response.data.url, name: file.name })
+    ElMessage.success('图片上传成功')
   }
 }
 
-// 删除图片
-const handleImageRemove = (file: any) => {
+const handleImageRemove: UploadProps['onRemove'] = (file: any) => {
   const index = form.images.indexOf(file.url)
   if (index > -1) {
     form.images.splice(index, 1)
   }
 }
 
-// 视频上传成功
-const handleVideoSuccess = (response: any) => {
-  if (response.code === 200) {
-    form.videoUrl = response.data.url
-    form.coverImage = response.data.coverUrl || ''
-    ElMessage.success('上传成功')
+const handleEditorImageAdd = async (pos: number, file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const res: any = await request.post('/api/file/upload?directory=content', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    if (res.code === 200) {
+      const imageUrl = res.data.url
+      form.images.push(imageUrl)
+      imageList.value.push({ url: imageUrl, name: file.name })
+      mavonEditorRef.value?.$img2Url(pos, imageUrl)
+      ElMessage.success('图片上传成功')
+      return
+    }
+
+    ElMessage.error(res.msg || '图片上传失败')
+  } catch (error) {
+    console.error('图片上传失败', error)
+    ElMessage.error('图片上传失败')
   }
 }
 
-// 发布
 const handlePublish = async () => {
-  await formRef.value.validate(async (valid: boolean) => {
-    if (valid) {
-      publishing.value = true
-      try {
-        const data = {
-          ...form,
-          images: JSON.stringify(form.images),
-          tags: JSON.stringify(form.tags)
-        }
-        const res: any = await request.post('/content/add', data)
-        if (res.code === 200) {
-          ElMessage.success('发布成功')
-          router.push('/')
-        }
-      } catch (error: any) {
-        ElMessage.error(error.message || '发布失败')
-      } finally {
-        publishing.value = false
-      }
+  if (!formRef.value) return
+
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid) return
+
+  publishing.value = true
+  try {
+    const data = {
+      ...form,
+      images: JSON.stringify(form.images),
+      tags: JSON.stringify(form.tags)
     }
-  })
+    const res: any = await request.post('/content/add', data)
+    if (res.code === 200) {
+      ElMessage.success('发布成功')
+      router.push('/')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '发布失败')
+  } finally {
+    publishing.value = false
+  }
 }
 
 const goHome = () => router.push('/')
@@ -271,7 +299,7 @@ onMounted(() => {
 }
 
 .main-content {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 20px;
 }
@@ -314,5 +342,24 @@ onMounted(() => {
     height: 148px;
   }
 }
-</style>
 
+.upload-tip {
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.editor-wrapper {
+  width: 100%;
+}
+
+.markdown-editor {
+  min-height: 520px;
+}
+
+.markdown-editor :deep(.v-note-wrapper) {
+  min-height: 520px;
+  z-index: 1;
+}
+</style>

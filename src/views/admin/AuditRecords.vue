@@ -1,8 +1,13 @@
 <template>
-  <div class="audit-records">
-    <h2 class="page-title">审核记录</h2>
+  <div class="audit-records admin-theme-page">
+    <div class="admin-hero">
+      <div class="admin-hero__content">
+        <div class="admin-hero__eyebrow">Admin Console</div>
+        <h2 class="page-title">审核记录</h2>
+        <p class="admin-hero__subtitle">查看内容、评论和认证审核的历史处理记录。</p>
+      </div>
+    </div>
 
-    <!-- 筛选 -->
     <el-card class="search-card">
       <el-form :inline="true" :model="searchForm">
         <el-form-item label="审核类型">
@@ -26,17 +31,16 @@
       </el-form>
     </el-card>
 
-    <!-- 审核记录列表 -->
     <el-card class="table-card">
       <template #header>
         <div class="card-header">
           <span>审核记录列表</span>
-          <el-tag>总计: {{ pagination.total }}</el-tag>
+          <el-tag>总计 {{ pagination.total }}</el-tag>
         </div>
       </template>
 
       <el-table :data="recordList" v-loading="loading" stripe>
-        <el-table-column prop="id" label="记录ID" width="80" />
+        <el-table-column prop="id" label="记录ID" width="90" />
         <el-table-column label="审核类型" width="120">
           <template #default="{ row }">
             <el-tag v-if="row.auditType === 1" type="success">内容</el-tag>
@@ -46,7 +50,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="targetId" label="目标ID" width="100" />
-        <el-table-column label="审核状态" width="100">
+        <el-table-column label="审核状态" width="110">
           <template #default="{ row }">
             <el-tag v-if="row.auditStatus === 0" type="warning">待审核</el-tag>
             <el-tag v-else-if="row.auditStatus === 1" type="success">通过</el-tag>
@@ -54,17 +58,20 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="auditorId" label="审核人ID" width="100" />
-        <el-table-column prop="auditComment" label="审核意见" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="auditorId" label="审核人ID" width="110" />
+        <el-table-column prop="auditComment" label="审核意见" min-width="220" show-overflow-tooltip />
         <el-table-column prop="auditTime" label="审核时间" width="180">
           <template #default="{ row }">
-            {{ row.auditTime || '-' }}
+            {{ formatDateTime(row.auditTime) }}
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column prop="createTime" label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <el-pagination
         v-model:current-page="pagination.pageNum"
         v-model:page-size="pagination.pageSize"
@@ -80,9 +87,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
+import { formatDateTime } from '@/util/datetime'
 
 const loading = ref(false)
 const recordList = ref<any[]>([])
@@ -138,24 +146,10 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .audit-records {
-  .page-title {
-    margin: 0 0 24px 0;
-    font-size: 24px;
-    font-weight: 600;
-    color: #333;
-  }
-
-  .search-card {
-    margin-bottom: 20px;
-  }
-
-  .table-card {
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 }
 </style>
-

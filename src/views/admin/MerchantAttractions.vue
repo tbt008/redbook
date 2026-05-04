@@ -1,5 +1,5 @@
-<template>
-  <div class="merchant-attractions">
+﻿<template>
+  <div class="merchant-attractions admin-theme-page">
     <div class="page-header">
       <h2 class="page-title">景点管理</h2>
       <el-button type="primary" @click="handleAdd">
@@ -95,7 +95,7 @@
     </el-card>
 
     <!-- 编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="750px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="750px">
       <el-form :model="attractionForm" :rules="formRules" ref="formRef" label-width="100px">
         <el-form-item label="景点名称" prop="name">
           <el-input v-model="attractionForm.name" placeholder="请输入景点名称" />
@@ -145,7 +145,7 @@
     </el-dialog>
 
     <!-- 票种管理对话框 -->
-    <el-dialog v-model="ticketDialogVisible" :title="`${currentAttractionName} - 票种管理`" width="900px" destroy-on-close>
+    <el-dialog v-model="ticketDialogVisible" :title="`${currentAttractionName} - 票种管理`" width="900px">
       <div class="ticket-header">
         <el-button type="primary" @click="handleAddTicket">
           <el-icon><Plus /></el-icon> 添加票种
@@ -199,7 +199,7 @@
     </el-dialog>
 
     <!-- 添加/编辑票种对话框 -->
-    <el-dialog v-model="ticketFormDialogVisible" :title="ticketFormTitle" width="600px" destroy-on-close>
+    <el-dialog v-model="ticketFormDialogVisible" :title="ticketFormTitle" width="600px">
       <el-form :model="ticketForm" :rules="ticketFormRules" ref="ticketFormRef" label-width="100px">
         <el-form-item label="票种名称" prop="ticketName">
           <el-input v-model="ticketForm.ticketName" placeholder="请输入票种名称" />
@@ -412,7 +412,13 @@ const handleStatusChange = async (row: any) => {
       type: 'warning'
     })
 
-    const res: any = await request.put(`/admin/merchant/attractions/status?id=${row.id}&status=${targetStatus}`)
+    const res: any = await request.put('/admin/merchant/attractions/status', null, {
+      params: {
+        id: row.id,
+        status: targetStatus,
+        _t: Date.now()
+      }
+    })
     if (res.code === 200) {
       ElMessage.success(`${action}成功`)
       setTimeout(() => {

@@ -1,16 +1,26 @@
-<script setup>
-import {ref, onMounted} from 'vue'
-onMounted(() => {
-    let obj = document.getElementsByClassName('sonstyle')[2]
-    obj.style.backgroundColor = '#EDEEF0'
-    obj.style.color = '#0A84FF'
-})
-</script>
-
 <template>
-
+  <div class="placeholder-page">
+    <h2>我的题解</h2>
+    <p>当前先保留稳定入口，后续可接入题解列表、点赞数和最近更新时间。</p>
+  </div>
 </template>
 
-<style lang="scss" scoped>
+<style scoped>
+.placeholder-page {
+  padding: 28px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 30px rgba(31, 41, 51, 0.06);
+}
 
+h2 {
+  margin: 0 0 10px;
+  color: #16342c;
+}
+
+p {
+  margin: 0;
+  color: #667085;
+}
 </style>

@@ -1,20 +1,24 @@
 <template>
-  <div class="announcement-management">
-    <h2 class="page-title">公告管理</h2>
+  <div class="announcement-management admin-theme-page">
+    <div class="admin-hero">
+      <div class="admin-hero__content">
+        <div class="admin-hero__eyebrow">Admin Console</div>
+        <h2 class="page-title">公告管理</h2>
+        <p class="admin-hero__subtitle">维护平台公告的创建、发布、下架和删除流程。</p>
+      </div>
+    </div>
 
-    <!-- 操作栏 -->
     <el-card class="action-card">
       <el-button type="primary" @click="handleCreate">
         <el-icon><Plus /></el-icon>
-        <span>发布公告</span>
+        发布公告
       </el-button>
     </el-card>
 
-    <!-- 公告列表 -->
     <el-card class="table-card">
       <el-table :data="announcementList" v-loading="loading" stripe>
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="title" label="标题" min-width="220" show-overflow-tooltip />
         <el-table-column label="类型" width="120">
           <template #default="{ row }">
             <el-tag v-if="row.type === 1" type="info">系统维护</el-tag>
@@ -37,19 +41,22 @@
             <el-tag v-else type="warning">已下架</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="publishTime" label="发布时间" width="180" />
+        <el-table-column prop="publishTime" label="发布时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.publishTime, 'YYYY-MM-DD HH:mm:ss', '未发布') }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleView(row)">查看</el-button>
             <el-button link type="warning" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="success" size="small" @click="handlePublish(row)" v-if="row.status !== 1">发布</el-button>
-            <el-button link type="info" size="small" @click="handleUnpublish(row)" v-if="row.status === 1">下架</el-button>
+            <el-button v-if="row.status !== 1" link type="success" size="small" @click="handlePublish(row)">发布</el-button>
+            <el-button v-if="row.status === 1" link type="info" size="small" @click="handleUnpublish(row)">下架</el-button>
             <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <el-pagination
         v-model:current-page="pagination.pageNum"
         v-model:page-size="pagination.pageSize"
@@ -62,18 +69,13 @@
       />
     </el-card>
 
-    <!-- 创建/编辑对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogMode === 'create' ? '发布公告' : '编辑公告'"
-      width="700px"
-    >
-      <el-form :model="announcementForm" :rules="rules" ref="formRef" label-width="80px">
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '发布公告' : '编辑公告'" width="720px">
+      <el-form ref="formRef" :model="announcementForm" :rules="rules" label-width="90px">
         <el-form-item label="标题" prop="title">
           <el-input v-model="announcementForm.title" placeholder="请输入公告标题" />
         </el-form-item>
         <el-form-item label="类型" prop="type">
-          <el-select v-model="announcementForm.type" placeholder="请选择类型" style="width: 100%">
+          <el-select v-model="announcementForm.type" placeholder="请选择公告类型" style="width: 100%">
             <el-option label="系统维护" :value="1" />
             <el-option label="平台活动" :value="2" />
             <el-option label="政策提醒" :value="3" />
@@ -88,22 +90,16 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="内容" prop="content">
-          <el-input
-            v-model="announcementForm.content"
-            type="textarea"
-            :rows="8"
-            placeholder="请输入公告内容"
-          />
+          <el-input v-model="announcementForm.content" type="textarea" :rows="8" placeholder="请输入公告内容" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="submitting">保存</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">保存</el-button>
       </template>
     </el-dialog>
 
-    <!-- 查看对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="公告详情" width="700px">
+    <el-dialog v-model="viewDialogVisible" title="公告详情" width="720px">
       <div v-if="currentAnnouncement" class="announcement-detail">
         <h3>{{ currentAnnouncement.title }}</h3>
         <div class="announcement-meta">
@@ -111,7 +107,7 @@
           <el-tag v-else-if="currentAnnouncement.type === 2" type="success">平台活动</el-tag>
           <el-tag v-else-if="currentAnnouncement.type === 3" type="warning">政策提醒</el-tag>
           <el-tag v-else>其他</el-tag>
-          <span>发布时间：{{ currentAnnouncement.publishTime || '未发布' }}</span>
+          <span>发布时间：{{ formatDateTime(currentAnnouncement.publishTime, 'YYYY-MM-DD HH:mm:ss', '未发布') }}</span>
         </div>
         <div class="announcement-content">{{ currentAnnouncement.content }}</div>
       </div>
@@ -123,10 +119,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import request from '@/util/request'
+import { formatDateTime } from '@/util/datetime'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -144,7 +141,7 @@ const pagination = reactive({
 })
 
 const announcementForm = reactive({
-  id: null,
+  id: null as number | null,
   title: '',
   content: '',
   type: 4,
@@ -178,13 +175,17 @@ const loadAnnouncementList = async () => {
   }
 }
 
-const handleCreate = () => {
-  dialogMode.value = 'create'
+const resetForm = () => {
   announcementForm.id = null
   announcementForm.title = ''
   announcementForm.content = ''
   announcementForm.type = 4
   announcementForm.priority = 2
+}
+
+const handleCreate = () => {
+  dialogMode.value = 'create'
+  resetForm()
   dialogVisible.value = true
 }
 
@@ -200,12 +201,11 @@ const handleEdit = (announcement: any) => {
 
 const handleSubmit = async () => {
   await formRef.value.validate()
-  
   submitting.value = true
   try {
+    const method = dialogMode.value === 'create' ? 'post' : 'put'
     const url = dialogMode.value === 'create' ? '/announcement/create' : '/announcement/update'
-    const res: any = await request[dialogMode.value === 'create' ? 'post' : 'put'](url, announcementForm)
-    
+    const res: any = await request[method](url, announcementForm)
     if (res.code === 200) {
       ElMessage.success(dialogMode.value === 'create' ? '创建成功' : '更新成功')
       dialogVisible.value = false
@@ -220,61 +220,52 @@ const handleSubmit = async () => {
 
 const handlePublish = async (announcement: any) => {
   try {
-    await ElMessageBox.confirm('确定要发布此公告吗？', '提示', {
+    await ElMessageBox.confirm('确定要发布这条公告吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
-
     const res: any = await request.post(`/announcement/publish/${announcement.id}`)
     if (res.code === 200) {
       ElMessage.success('发布成功')
       loadAnnouncementList()
     }
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '发布失败')
-    }
+    if (error !== 'cancel') ElMessage.error(error.message || '发布失败')
   }
 }
 
 const handleUnpublish = async (announcement: any) => {
   try {
-    await ElMessageBox.confirm('确定要下架此公告吗？', '提示', {
+    await ElMessageBox.confirm('确定要下架这条公告吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
-
     const res: any = await request.post(`/announcement/unpublish/${announcement.id}`)
     if (res.code === 200) {
       ElMessage.success('下架成功')
       loadAnnouncementList()
     }
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '下架失败')
-    }
+    if (error !== 'cancel') ElMessage.error(error.message || '下架失败')
   }
 }
 
 const handleDelete = async (announcement: any) => {
   try {
-    await ElMessageBox.confirm('确定要删除此公告吗？删除后无法恢复！', '警告', {
+    await ElMessageBox.confirm('确定删除这条公告吗？删除后无法恢复。', '警告', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'error'
     })
-
     const res: any = await request.delete(`/announcement/delete/${announcement.id}`)
     if (res.code === 200) {
       ElMessage.success('删除成功')
       loadAnnouncementList()
     }
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
-    }
+    if (error !== 'cancel') ElMessage.error(error.message || '删除失败')
   }
 }
 
@@ -290,39 +281,32 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .announcement-management {
-  .page-title {
-    margin: 0 0 24px 0;
-    font-size: 24px;
-    font-weight: 600;
-    color: #333;
-  }
-
   .action-card {
     margin-bottom: 20px;
   }
 
   .announcement-detail {
     h3 {
-      margin: 0 0 16px 0;
-      font-size: 20px;
-      font-weight: 600;
+      margin: 0 0 16px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #14213d;
     }
+  }
 
-    .announcement-meta {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      margin-bottom: 16px;
-      font-size: 14px;
-      color: #666;
-    }
+  .announcement-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    color: #667085;
+    font-size: 14px;
+  }
 
-    .announcement-content {
-      line-height: 1.8;
-      white-space: pre-wrap;
-      color: #333;
-    }
+  .announcement-content {
+    line-height: 1.8;
+    white-space: pre-wrap;
+    color: #344054;
   }
 }
 </style>
-

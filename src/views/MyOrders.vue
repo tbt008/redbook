@@ -1,172 +1,213 @@
 <template>
   <div class="my-orders">
-    <el-header class="header">
-      <div class="header-content">
-        <div class="logo" @click="goHome">
-          <h1>莆田文旅</h1>
+    <el-header class="header app-topbar">
+      <div class="header-content app-topbar__inner">
+        <div class="brand-block" @click="goHome">
+          <div class="brand-mark">PT</div>
+          <div>
+            <div class="brand-name">莆田文旅</div>
+            <div class="brand-subtitle">订单中心</div>
+          </div>
         </div>
-        <el-button @click="goBack">返回</el-button>
+        <el-button class="app-soft-button topbar-button" @click="goBack">返回上页</el-button>
       </div>
     </el-header>
 
-    <el-main class="main-content">
-      <div class="orders-container">
-        <h2>我的订单</h2>
-        
-        <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-          <el-tab-pane label="全部订单" name="all" />
-          <el-tab-pane label="景点门票" name="type-1" />
-          <el-tab-pane label="酒店预订" name="type-2" />
-          <el-tab-pane label="美食预订" name="type-3" />
-          <el-tab-pane label="待支付" name="status-0" />
-          <el-tab-pane label="已支付" name="status-1" />
-          <el-tab-pane label="已使用" name="status-2" />
-          <el-tab-pane label="已取消" name="status-3" />
-        </el-tabs>
+    <el-main class="main-content app-main">
+      <section class="orders-hero app-page-card">
+        <div class="hero-copy">
+          <p class="eyebrow">Travel Console</p>
+          <h1 class="hero-title">我的订单</h1>
+          <p class="hero-subtitle">
+            统一管理景点门票、酒店预订和美食订单，关键信息优先展示，状态、时间和金额一眼就能看清。
+          </p>
 
-        <div class="order-list">
-          <div v-for="order in orderList" :key="order.id" class="order-card">
-            <div class="order-header">
-              <span class="order-no">订单号：{{ order.orderNo }}</span>
-              <div class="header-tags">
-                <el-tag :type="getOrderTypeTag(order.orderType)" size="small">
+          <div class="hero-pills">
+            <span class="hero-pill">本地化时间格式</span>
+            <span class="hero-pill">更清晰的状态层级</span>
+            <span class="hero-pill">移动端自适应布局</span>
+          </div>
+        </div>
+
+        <div class="hero-aside">
+          <div class="hero-stat primary">
+            <span class="stat-label">订单总数</span>
+            <strong class="stat-value">{{ total }}</strong>
+            <span class="stat-note">已按当前筛选条件统计</span>
+          </div>
+
+          <div class="hero-stat">
+            <span class="stat-label">当前视图</span>
+            <strong class="stat-value stat-value--small">{{ getTabLabel(activeTab) }}</strong>
+            <span class="stat-note">{{ activeDescription }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="orders-shell app-page-card">
+        <div class="tabs-wrap">
+          <el-tabs v-model="activeTab" @tab-change="handleTabChange">
+            <el-tab-pane label="全部订单" name="all" />
+            <el-tab-pane label="景点门票" name="type-1" />
+            <el-tab-pane label="酒店预订" name="type-2" />
+            <el-tab-pane label="美食预订" name="type-3" />
+            <el-tab-pane label="待支付" name="status-0" />
+            <el-tab-pane label="已支付" name="status-1" />
+            <el-tab-pane label="已使用" name="status-2" />
+            <el-tab-pane label="已取消" name="status-3" />
+          </el-tabs>
+        </div>
+
+        <div v-if="orderList.length" class="order-list">
+          <article
+            v-for="order in orderList"
+            :key="order.id"
+            class="order-card"
+            :class="`order-card--type-${order.orderType || 0}`"
+          >
+            <div class="order-card__accent" />
+
+            <div class="order-card__head">
+              <div class="order-head-main">
+                <div class="order-meta-top">
+                  <span class="order-no">订单号 {{ order.orderNo }}</span>
+                  <span class="order-time">创建于 {{ formatTime(order.createTime) }}</span>
+                </div>
+                <h3 class="order-title">{{ getOrderTitle(order) }}</h3>
+                <p class="order-summary">{{ getOrderSummary(order) }}</p>
+              </div>
+
+              <div class="order-badges">
+                <el-tag :type="getOrderTypeTag(order.orderType)" effect="light" round>
                   {{ getOrderTypeText(order.orderType) }}
                 </el-tag>
-                <el-tag :type="getStatusType(order.orderStatus)" size="small">
+                <el-tag :type="getStatusType(order.orderStatus)" effect="light" round>
                   {{ getStatusText(order.orderStatus) }}
                 </el-tag>
               </div>
             </div>
 
-            <div class="order-body">
-              <div class="order-info">
-                <!-- 门票订单 -->
-                <template v-if="order.orderType === 1 || !order.orderType">
-                  <h4>{{ order.ticketName }}</h4>
-                  <div class="info-row">
-                    <span>游玩日期：{{ order.visitDate }}</span>
-                    <span>数量：{{ order.ticketCount }} 张</span>
-                  </div>
-                  <div class="info-row">
-                    <span>游客：{{ order.visitorName }}</span>
-                    <span>手机：{{ order.visitorPhone }}</span>
-                  </div>
-                </template>
-                <!-- 酒店订单 -->
-                <template v-else-if="order.orderType === 2">
-                  <h4>🏨 {{ order.hotelName }}</h4>
-                  <div class="info-row">
-                    <span v-if="order.roomName">房型：{{ order.roomName }}</span>
-                    <span v-else>房间数量：{{ order.roomCount }}间</span>
-                    <span>入住日期：{{ formatDate(order.checkInDate) }}</span>
-                  </div>
-                  <div class="info-row">
-                    <span>退房日期：{{ formatDate(order.checkOutDate) }}</span>
-                    <span>入住人：{{ order.guestName }}</span>
-                  </div>
-                  <div class="info-row">
-                    <span>电话：{{ order.guestPhone }}</span>
-                  </div>
-                </template>
-                <!-- 美食订单 -->
-                <template v-else-if="order.orderType === 3">
-                  <h4>🍜 {{ order.foodName }}</h4>
-                  <div v-if="order.foodPackageName" class="info-row package-info">
-                    <el-tag type="warning" size="small">套餐：{{ order.foodPackageName }}</el-tag>
-                  </div>
-                  <div class="info-row">
-                    <span>预订日期：{{ formatDate(order.bookingDate) }}</span>
-                    <span>用餐时间：{{ order.mealTime }}</span>
-                  </div>
-                  <div class="info-row">
-                    <span>用餐人数：{{ order.dinerCount }}人</span>
-                    <span>联系人：{{ order.guestName }}</span>
-                  </div>
-                  <div class="info-row">
-                    <span>电话：{{ order.guestPhone }}</span>
-                    <span>配送状态：
-                      <el-tag v-if="order.deliveryStatus === 0" type="info" size="small">待发货</el-tag>
-                      <el-tag v-else-if="order.deliveryStatus === 1" type="warning" size="small">已发货</el-tag>
-                      <el-tag v-else-if="order.deliveryStatus === 2" type="success" size="small">已收货</el-tag>
-                      <el-tag v-else-if="order.deliveryStatus === 3" type="danger" size="small">已取消</el-tag>
-                    </span>
-                  </div>
-                </template>
+            <div class="order-card__body">
+              <div class="order-details">
+                <div v-for="item in getOrderDetails(order)" :key="item.label" class="detail-chip">
+                  <span class="detail-chip__label">{{ item.label }}</span>
+                  <span class="detail-chip__value">{{ item.value }}</span>
+                </div>
               </div>
-              <div class="order-amount">
-                <div class="amount">¥{{ order.totalAmount }}</div>
-                <div class="time">{{ formatTime(order.createTime) }}</div>
-              </div>
+
+              <aside class="order-side">
+                <div class="order-side__panel">
+                  <span class="amount-label">订单金额</span>
+                  <strong class="amount-value">¥{{ formatAmount(order.totalAmount) }}</strong>
+                  <span class="amount-caption">{{ getAmountCaption(order) }}</span>
+                </div>
+
+                <div v-if="order.expireTime && order.orderStatus === 0" class="expire-banner">
+                  <el-icon><Clock /></el-icon>
+                  <span>支付截止 {{ formatTime(order.expireTime) }}</span>
+                </div>
+              </aside>
             </div>
 
-            <div class="order-footer">
-              <el-button v-if="order.orderStatus === 0" type="primary" @click="handlePay(order)">
-                立即支付
-              </el-button>
-              <el-button v-if="order.orderStatus === 0" @click="handleCancel(order)">
-                取消订单
-              </el-button>
-              <el-button v-if="order.orderStatus === 1 && order.orderType === 1" type="success" @click="viewETicket(order)">
-                查看电子票
-              </el-button>
-              <el-button v-if="order.orderStatus === 1 && order.orderType === 2" type="success" @click="viewHotelDetail(order)">
-                查看酒店
-              </el-button>
-              <el-button v-if="order.orderStatus === 1 && order.orderType === 3 && order.deliveryStatus === 1" type="success" @click="handleReceive(order)">
-                确认收货
-              </el-button>
-              <el-button v-if="order.orderStatus === 1 && order.orderType === 3 && order.deliveryStatus === 2" type="info" disabled>
-                已完成
-              </el-button>
-              <el-button @click="viewDetail(order)">订单详情</el-button>
-            </div>
-          </div>
+            <div class="order-card__foot">
+              <div class="foot-tip">{{ getOrderFootnote(order) }}</div>
 
-          <div v-if="orderList.length === 0" class="empty">
-            <el-empty description="暂无订单" />
-          </div>
+              <div class="order-actions">
+                <el-button v-if="order.orderStatus === 0" type="primary" class="app-soft-button" @click="handlePay(order)">
+                  立即支付
+                </el-button>
+                <el-button v-if="order.orderStatus === 0" class="app-soft-button" @click="handleCancel(order)">
+                  取消订单
+                </el-button>
+                <el-button
+                  v-if="order.orderStatus === 1 && order.orderType === 1"
+                  type="success"
+                  plain
+                  class="app-soft-button"
+                  @click="viewETicket(order)"
+                >
+                  查看电子票
+                </el-button>
+                <el-button
+                  v-if="order.orderStatus === 1 && order.orderType === 2"
+                  type="success"
+                  plain
+                  class="app-soft-button"
+                  @click="viewHotelDetail(order)"
+                >
+                  查看酒店
+                </el-button>
+                <el-button
+                  v-if="order.orderStatus === 1 && order.orderType === 3 && order.deliveryStatus === 1"
+                  type="success"
+                  plain
+                  class="app-soft-button"
+                  @click="handleReceive(order)"
+                >
+                  确认收货
+                </el-button>
+                <el-button class="app-soft-button" @click="viewDetail(order)">
+                  查看详情
+                </el-button>
+              </div>
+            </div>
+          </article>
         </div>
 
-        <el-pagination
-          v-if="total > 0"
-          v-model:current-page="pageNum"
-          v-model:page-size="pageSize"
-          :total="total"
-          layout="total, prev, pager, next"
-          @current-change="loadOrders"
-        />
-      </div>
+        <div v-else class="empty-state">
+          <el-empty description="暂无订单数据" />
+        </div>
+
+        <div v-if="total > 0" class="pagination-wrap">
+          <el-pagination
+            v-model:current-page="pageNum"
+            v-model:page-size="pageSize"
+            :total="total"
+            layout="total, prev, pager, next"
+            @current-change="loadOrders"
+          />
+        </div>
+      </section>
     </el-main>
 
-    <!-- 支付对话框 -->
     <el-dialog v-model="payDialogVisible" title="订单支付" width="420px" destroy-on-close :close-on-click-modal="false">
       <div class="pay-dialog-content">
         <div class="pay-order-info">
-          <div class="pay-order-title">
-            {{ payingOrder?.ticketName || payingOrder?.roomName || payingOrder?.hotelName || payingOrder?.foodName || '订单支付' }}
-          </div>
+          <div class="pay-order-title">{{ payingOrder ? getOrderTitle(payingOrder) : '订单支付' }}</div>
           <div class="pay-order-no">订单号：{{ payingOrder?.orderNo }}</div>
         </div>
+
         <div class="pay-amount">
           <span class="label">支付金额</span>
-          <span class="amount">¥{{ payingOrder?.totalAmount }}</span>
+          <span class="amount">¥{{ formatAmount(payingOrder?.totalAmount) }}</span>
         </div>
-        <div class="pay-qrcode" v-if="payQrCodeUrl">
+
+        <div v-if="payQrCodeUrl" class="pay-qrcode">
           <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
-          <div class="qrcode-tip">请使用支付宝沙箱 App 扫描二维码完成支付。</div>
+          <div class="qrcode-tip">请使用支付宝沙箱 App 扫码完成支付</div>
         </div>
+
         <div v-if="payingOrder?.expireTime" class="pay-expire">
           <el-icon><Clock /></el-icon>
-          支付过期时间：{{ dayjs(payingOrder.expireTime).format('YYYY-MM-DD HH:mm:ss') }}
+          <span>支付截止时间：{{ formatTime(payingOrder.expireTime) }}</span>
         </div>
+
         <el-progress v-if="isPollingPay" :percentage="payPollProgress" :show-text="false" :stroke-width="6" />
+
         <div v-if="payStatusMessage" class="pay-status-message" :class="{ success: payStatusSuccess, error: !payStatusSuccess }">
           {{ payStatusMessage }}
         </div>
       </div>
+
       <template #footer>
-        <el-button @click="closePayDialog">关闭</el-button>
-        <el-button v-if="!paySuccess" type="primary" :loading="isGeneratingQrCode" @click="refreshPayQrCode">
+        <el-button class="app-soft-button" @click="closePayDialog">关闭</el-button>
+        <el-button
+          v-if="!paySuccess"
+          type="primary"
+          class="app-soft-button"
+          :loading="isGeneratingQrCode"
+          @click="refreshPayQrCode"
+        >
           刷新二维码
         </el-button>
       </template>
@@ -175,24 +216,52 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Clock } from '@element-plus/icons-vue'
 import request from '@/util/request'
-import dayjs from 'dayjs'
+import { formatDateOnly, formatDateTime } from '@/utils/date'
+
+type OrderRecord = {
+  id?: number | string
+  orderNo: string
+  orderType: number
+  orderStatus: number
+  totalAmount?: number | string
+  createTime?: string
+  expireTime?: string
+  deliveryStatus?: number
+  ticketName?: string
+  hotelName?: string
+  foodName?: string
+  hotelId?: number | string
+  foodId?: number | string
+  checkInDate?: string
+  checkOutDate?: string
+  guestName?: string
+  guestPhone?: string
+  roomName?: string
+  roomCount?: number
+  bookingDate?: string
+  mealTime?: string
+  dinerCount?: number
+  visitDate?: string
+  ticketCount?: number
+  visitorName?: string
+  visitorPhone?: string
+}
 
 const router = useRouter()
 
 const activeTab = ref('all')
-const orderList = ref<any[]>([])
+const orderList = ref<OrderRecord[]>([])
 const pageNum = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
-// 支付相关
 const payDialogVisible = ref(false)
-const payingOrder = ref<any>(null)
+const payingOrder = ref<OrderRecord | null>(null)
 const payQrCodeUrl = ref('')
 const isGeneratingQrCode = ref(false)
 const isPollingPay = ref(false)
@@ -200,14 +269,38 @@ const payPollProgress = ref(0)
 const payStatusMessage = ref('')
 const payStatusSuccess = ref(false)
 const paySuccess = ref(false)
-let payPollingTimer: any = null
+let payPollingTimer: ReturnType<typeof setInterval> | null = null
 
-// 加载订单列表
+const tabLabelMap: Record<string, string> = {
+  all: '全部订单',
+  'type-1': '景点门票',
+  'type-2': '酒店预订',
+  'type-3': '美食预订',
+  'status-0': '待支付',
+  'status-1': '已支付',
+  'status-2': '已使用',
+  'status-3': '已取消'
+}
+
+const activeDescription = computed(() => {
+  const descriptionMap: Record<string, string> = {
+    all: '查看你所有的旅游消费记录',
+    'type-1': '门票订单会优先展示游玩日期和电子票入口',
+    'type-2': '酒店订单会突出入住与离店信息',
+    'type-3': '美食订单会展示预订时间与联系人信息',
+    'status-0': '优先处理未完成支付的订单',
+    'status-1': '已完成支付，等待消费或履约',
+    'status-2': '订单已经使用或完成核销',
+    'status-3': '已取消订单仅保留查看记录'
+  }
+  return descriptionMap[activeTab.value] || descriptionMap.all
+})
+
+const getTabLabel = (tab: string) => tabLabelMap[tab] || '全部订单'
+
 const loadOrders = async () => {
-  // 订单类型：1-门票，2-酒店，3-美食
-  // 订单状态：0-待支付，1-已支付，2-已使用，3-已取消
   const typeStatusMap: Record<string, { type?: number; status?: number }> = {
-    'all': {},
+    all: {},
     'type-1': { type: 1 },
     'type-2': { type: 2 },
     'type-3': { type: 3 },
@@ -228,23 +321,94 @@ const loadOrders = async () => {
         orderStatus: filter.status
       }
     })
-    if (res && res.data) {
+
+    if (res?.data) {
       orderList.value = res.data.list || []
       total.value = res.data.total || 0
+    } else {
+      orderList.value = []
+      total.value = 0
     }
   } catch (error) {
     console.error('加载订单失败', error)
+    ElMessage.error('订单数据加载失败')
   }
 }
 
-// 切换标签
-const handleTabChange = (tab: string) => {
+const handleTabChange = () => {
   pageNum.value = 1
   loadOrders()
 }
 
-// 支付订单
-const handlePay = async (order: any) => {
+const formatAmount = (amount?: number | string) => {
+  if (amount === undefined || amount === null || amount === '') return '--'
+  const numericAmount = Number(amount)
+  return Number.isNaN(numericAmount) ? String(amount) : numericAmount.toFixed(2)
+}
+
+const formatTime = (time?: string) => formatDateTime(time, '时间待确认')
+const formatDate = (time?: string) => formatDateOnly(time, '待确认')
+
+const getOrderTitle = (order: OrderRecord) => {
+  if (order.orderType === 2) return order.hotelName || '酒店订单'
+  if (order.orderType === 3) return order.foodName || '美食订单'
+  return order.ticketName || '门票订单'
+}
+
+const getOrderSummary = (order: OrderRecord) => {
+  if (order.orderType === 2) {
+    return `入住时间 ${formatDate(order.checkInDate)} 至 ${formatDate(order.checkOutDate)}`
+  }
+  if (order.orderType === 3) {
+    return `预订日期 ${formatDate(order.bookingDate)}，用餐时间 ${order.mealTime || '待确认'}`
+  }
+  return `游玩日期 ${formatDate(order.visitDate)}，出行人 ${order.visitorName || '待补充'}`
+}
+
+const getOrderDetails = (order: OrderRecord) => {
+  if (order.orderType === 2) {
+    return [
+      { label: '入住日期', value: formatDate(order.checkInDate) },
+      { label: '离店日期', value: formatDate(order.checkOutDate) },
+      { label: '入住人', value: order.guestName || '-' },
+      { label: '房型信息', value: order.roomName || `${order.roomCount || 1} 间客房` },
+      { label: '联系电话', value: order.guestPhone || '-' }
+    ]
+  }
+
+  if (order.orderType === 3) {
+    return [
+      { label: '预订日期', value: formatDate(order.bookingDate) },
+      { label: '用餐时间', value: order.mealTime || '-' },
+      { label: '用餐人数', value: order.dinerCount ? `${order.dinerCount} 人` : '-' },
+      { label: '联系人', value: order.guestName || '-' },
+      { label: '联系电话', value: order.guestPhone || '-' }
+    ]
+  }
+
+  return [
+    { label: '游玩日期', value: formatDate(order.visitDate) },
+    { label: '购票数量', value: order.ticketCount ? `${order.ticketCount} 张` : '-' },
+    { label: '出行人', value: order.visitorName || '-' },
+    { label: '联系电话', value: order.visitorPhone || '-' }
+  ]
+}
+
+const getOrderFootnote = (order: OrderRecord) => {
+  if (order.orderType === 2) return '酒店订单建议在出行前再次核对入住日期、入住人和联系电话。'
+  if (order.orderType === 3) return '美食订单可在商家发货后确认收货，也可随时返回查看预订信息。'
+  return '门票订单支付完成后可直接查看电子票信息，避免到现场重复排队。'
+}
+
+const getAmountCaption = (order: OrderRecord) => {
+  if (order.orderStatus === 0) return '订单尚未完成支付'
+  if (order.orderStatus === 1) return '订单已支付，等待使用'
+  if (order.orderStatus === 2) return '订单已完成核销'
+  if (order.orderStatus === 3) return '该订单已取消'
+  return '查看订单状态详情'
+}
+
+const handlePay = async (order: OrderRecord) => {
   payingOrder.value = order
   payDialogVisible.value = true
   payStatusMessage.value = ''
@@ -252,55 +416,56 @@ const handlePay = async (order: any) => {
   paySuccess.value = false
   payQrCodeUrl.value = ''
   payPollProgress.value = 0
-
   await generatePayQrCode(order.orderNo)
 }
 
-// 生成支付宝支付二维码
 const generatePayQrCode = async (orderNo: string) => {
   isGeneratingQrCode.value = true
-  payStatusMessage.value = '正在生成支付宝支付二维码...'
+  payStatusMessage.value = '正在生成支付二维码...'
+  payStatusSuccess.value = false
 
   try {
     const res: any = await request.get(`/order/pay/qrcode/${orderNo}`)
-    if (res && res.code === 200) {
-      payQrCodeUrl.value = res.data.qrCodeUrl || ''
+
+    if (res?.code === 200) {
+      payQrCodeUrl.value = res.data?.qrCodeUrl || ''
       if (!payQrCodeUrl.value) {
-        throw new Error('未获取到支付宝支付二维码')
+        throw new Error('未获取到支付二维码')
       }
       payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
       startPayPolling(orderNo)
     } else {
-      payStatusMessage.value = res.message || '生成支付二维码失败'
-      payStatusSuccess.value = false
+      payStatusMessage.value = res?.message || '生成支付二维码失败'
     }
   } catch (error: any) {
-    payStatusMessage.value = error.message || '生成支付二维码失败'
-    payStatusSuccess.value = false
+    payStatusMessage.value = error?.message || '生成支付二维码失败'
   } finally {
     isGeneratingQrCode.value = false
   }
 }
 
-// 刷新支付二维码
 const refreshPayQrCode = async () => {
   if (payingOrder.value) {
     await generatePayQrCode(payingOrder.value.orderNo)
   }
 }
 
-// 开始轮询支付状态
-const startPayPolling = (orderNo: string) => {
+const stopPayPolling = () => {
   if (payPollingTimer) {
     clearInterval(payPollingTimer)
+    payPollingTimer = null
   }
+  isPollingPay.value = false
+}
 
+const startPayPolling = (orderNo: string) => {
+  stopPayPolling()
   isPollingPay.value = true
   payPollProgress.value = 0
   let pollCount = 0
 
   payPollingTimer = setInterval(async () => {
-    pollCount++
+    pollCount += 1
 
     if (pollCount >= 60) {
       stopPayPolling()
@@ -313,19 +478,17 @@ const startPayPolling = (orderNo: string) => {
 
     try {
       const res: any = await request.get(`/order/pay/status/${orderNo}`)
-      if (res && res.code === 200 && res.data) {
-        if (res.data.paid || res.data.orderStatus === 1) {
-          stopPayPolling()
-          payPollProgress.value = 100
-          payStatusMessage.value = '支付成功！'
-          payStatusSuccess.value = true
-          paySuccess.value = true
+      if (res?.code === 200 && res.data && (res.data.paid || res.data.orderStatus === 1)) {
+        stopPayPolling()
+        payPollProgress.value = 100
+        payStatusMessage.value = '支付成功'
+        payStatusSuccess.value = true
+        paySuccess.value = true
 
-          setTimeout(() => {
-            loadOrders()
-            closePayDialog()
-          }, 1500)
-        }
+        setTimeout(() => {
+          loadOrders()
+          closePayDialog()
+        }, 1500)
       }
     } catch (error) {
       console.error('轮询支付状态失败', error)
@@ -333,16 +496,6 @@ const startPayPolling = (orderNo: string) => {
   }, 3000)
 }
 
-// 停止轮询
-const stopPayPolling = () => {
-  if (payPollingTimer) {
-    clearInterval(payPollingTimer)
-    payPollingTimer = null
-  }
-  isPollingPay.value = false
-}
-
-// 关闭支付对话框
 const closePayDialog = () => {
   stopPayPolling()
   payDialogVisible.value = false
@@ -351,125 +504,108 @@ const closePayDialog = () => {
   payingOrder.value = null
 }
 
-// 确认收货
-const handleReceive = async (order: any) => {
+const handleReceive = async (order: OrderRecord) => {
   try {
-    await ElMessageBox.confirm(
-      '确定已收到外卖吗？',
-      '确认收货',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
-      }
-    )
+    await ElMessageBox.confirm('确认已经收到该订单商品了吗？', '确认收货', {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: 'info'
+    })
 
     const res: any = await request.post(`/order/receive/${order.orderNo}`)
-    if (res && res.code === 200) {
+    if (res?.code === 200) {
       ElMessage.success('确认收货成功')
       loadOrders()
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '确认收货失败')
+      ElMessage.error(error?.message || '确认收货失败')
     }
   }
 }
 
-// 取消订单
-const handleCancel = async (order: any) => {
+const handleCancel = async (order: OrderRecord) => {
   try {
     await ElMessageBox.confirm('确定要取消该订单吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     const res: any = await request.post(`/order/cancel/${order.orderNo}`)
-    if (res && res.code === 200) {
+    if (res?.code === 200) {
       ElMessage.success('订单已取消')
       loadOrders()
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '取消失败')
+      ElMessage.error(error?.message || '取消订单失败')
     }
   }
 }
 
-// 查看电子票
-const viewETicket = (order: any) => {
+const viewETicket = (order: OrderRecord) => {
   router.push(`/eticket/${order.orderNo}`)
 }
 
-// 查看详情
-const viewDetail = (order: any) => {
-  ElMessage.info('订单详情功能开发中')
+const viewHotelDetail = (order: OrderRecord) => {
+  router.push(`/hotel/${order.hotelId}`)
 }
 
-// 获取状态类型
+const viewDetail = (order: OrderRecord) => {
+  if (order.orderType === 2 && order.hotelId) {
+    router.push(`/hotel/${order.hotelId}`)
+    return
+  }
+  if (order.orderType === 3 && order.foodId) {
+    router.push(`/food/${order.foodId}`)
+    return
+  }
+  if (order.orderType === 1) {
+    viewETicket(order)
+    return
+  }
+  ElMessage.info('该订单暂未配置详情页')
+}
+
 const getStatusType = (status: number) => {
-  const types: any = {
+  const types: Record<number, string> = {
     0: 'warning',
     1: 'success',
     2: 'info',
-    3: 'info',
+    3: 'danger',
     4: 'danger'
   }
   return types[status] || 'info'
 }
 
-// 获取订单类型标签类型
 const getOrderTypeTag = (type: number) => {
-  const types: any = {
-    1: '',      // 门票 - 默认
-    2: 'info',  // 酒店 - 灰色
-    3: 'warning' // 美食 - 橙色
+  const types: Record<number, string> = {
+    1: 'primary',
+    2: 'warning',
+    3: 'success'
   }
-  return types[type] || ''
+  return types[type] || 'info'
 }
 
-// 获取订单类型文本
 const getOrderTypeText = (type: number) => {
-  const texts: any = {
+  const texts: Record<number, string> = {
     1: '门票',
     2: '酒店',
     3: '美食'
   }
-  return texts[type] || '门票'
+  return texts[type] || '订单'
 }
 
-// 获取状态文本
 const getStatusText = (status: number) => {
-  const texts: any = {
+  const texts: Record<number, string> = {
     0: '待支付',
     1: '已支付',
     2: '已使用',
     3: '已取消',
     4: '已退款'
   }
-  return texts[status] || '未知'
-}
-
-// 格式化时间
-const formatTime = (time: string) => {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
-}
-
-// 格式化日期
-const formatDate = (time: string) => {
-  if (!time) return ''
-  return dayjs(time).format('YYYY-MM-DD')
-}
-
-// 查看酒店详情
-const viewHotelDetail = (order: any) => {
-  router.push(`/hotel/${order.hotelId}`)
-}
-
-// 查看餐厅详情
-const viewFoodDetail = (order: any) => {
-  router.push(`/food/${order.foodId}`)
+  return texts[status] || '未知状态'
 }
 
 const goHome = () => router.push('/')
@@ -480,229 +616,570 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (payPollingTimer) {
-    clearInterval(payPollingTimer)
-  }
+  stopPayPolling()
 })
 </script>
 
 <style scoped lang="scss">
 .my-orders {
   min-height: 100vh;
-  background: #f5f5f5;
+  background:
+    radial-gradient(circle at top left, rgba(31, 111, 95, 0.18), transparent 24%),
+    radial-gradient(circle at 85% 12%, rgba(226, 162, 78, 0.18), transparent 18%),
+    linear-gradient(180deg, #f5f7f1 0%, #edf2ec 46%, #eef1ea 100%);
 }
 
 .header {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 0;
-  height: 60px;
-  line-height: 60px;
-
-  .header-content {
-    max-width: 1400px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-
-    .logo h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: bold;
-      color: #ff6b6b;
-      cursor: pointer;
-    }
-  }
 }
 
-.main-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
 }
 
-.orders-container {
-  background: #fff;
-  border-radius: 8px;
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  background: linear-gradient(135deg, #17594d 0%, #2f8a75 100%);
+  box-shadow: 0 14px 30px rgba(31, 111, 95, 0.25);
+}
+
+.brand-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #18362e;
+}
+
+.brand-subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7b8a86;
+}
+
+.topbar-button {
+  padding-inline: 20px;
+}
+
+.orders-hero,
+.orders-shell {
+  overflow: hidden;
+}
+
+.orders-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 420px);
+  gap: 28px;
+  padding: 32px;
+  margin-bottom: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(244, 249, 246, 0.98) 60%, rgba(234, 244, 239, 0.96) 100%);
+}
+
+.orders-hero::after {
+  content: '';
+  position: absolute;
+  inset: auto -40px -60px auto;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(31, 111, 95, 0.12), transparent 68%);
+  pointer-events: none;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7d8d88;
+}
+
+.hero-title {
+  margin: 0;
+  font-size: 38px;
+  line-height: 1.05;
+  color: #18362e;
+}
+
+.hero-subtitle {
+  max-width: 680px;
+  margin: 14px 0 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #617571;
+}
+
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.hero-pill {
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f6f5f;
+  background: rgba(31, 111, 95, 0.1);
+  border: 1px solid rgba(31, 111, 95, 0.1);
+}
+
+.hero-aside {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+}
+
+.hero-stat {
+  padding: 20px 22px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.hero-stat.primary {
+  color: #fff;
+  background: linear-gradient(135deg, #1a6657 0%, #2d8c74 100%);
+  box-shadow: 0 22px 36px rgba(31, 111, 95, 0.22);
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: inherit;
+  opacity: 0.72;
+}
+
+.stat-value {
+  display: block;
+  margin-top: 10px;
+  font-size: 32px;
+  line-height: 1;
+  color: inherit;
+}
+
+.stat-value--small {
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.stat-note {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: inherit;
+  opacity: 0.82;
+}
+
+.orders-shell {
   padding: 24px;
+}
 
-  h2 {
-    margin: 0 0 24px 0;
+.tabs-wrap {
+  margin-bottom: 20px;
+
+  :deep(.el-tabs__header) {
+    margin-bottom: 14px;
+  }
+
+  :deep(.el-tabs__nav-wrap::after) {
+    background: rgba(15, 23, 42, 0.07);
+  }
+
+  :deep(.el-tabs__item) {
+    height: 44px;
+    padding: 0 18px;
+    font-weight: 600;
+    color: #6f7e7c;
+  }
+
+  :deep(.el-tabs__item.is-active) {
+    color: #1f6f5f;
+  }
+
+  :deep(.el-tabs__active-bar) {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #1f6f5f, #2f8a75);
   }
 }
 
 .order-list {
-  margin: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .order-card {
-  border: 1px solid #eee;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  overflow: hidden;
-
-  .order-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    background: #f9f9f9;
-    border-bottom: 1px solid #eee;
-
-    .order-no {
-      font-size: 14px;
-      color: #666;
-    }
-
-    .header-tags {
-      display: flex;
-      gap: 8px;
-    }
-  }
-
-  .order-body {
-    display: flex;
-    justify-content: space-between;
-    padding: 20px;
-
-    .order-info {
-      flex: 1;
-
-      h4 {
-        margin: 0 0 12px 0;
-        font-size: 16px;
-      }
-
-      .info-row {
-        display: flex;
-        gap: 32px;
-        margin-bottom: 8px;
-        font-size: 14px;
-        color: #666;
-      }
-    }
-
-    .order-amount {
-      text-align: right;
-
-      .amount {
-        font-size: 24px;
-        font-weight: bold;
-        color: #ff6b6b;
-        margin-bottom: 8px;
-      }
-
-      .time {
-        font-size: 12px;
-        color: #999;
-      }
-    }
-  }
-
-  .order-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 20px;
-    background: #f9f9f9;
-    border-top: 1px solid #eee;
-  }
+  position: relative;
+  border-radius: 28px;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 252, 250, 0.98));
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow: 0 20px 42px rgba(18, 28, 45, 0.06);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 
-.empty {
-  padding: 60px 0;
-  text-align: center;
+.order-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 24px 48px rgba(18, 28, 45, 0.1);
 }
 
-.el-pagination {
-  margin-top: 24px;
+.order-card__accent {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 72px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1f6f5f, #58a38f);
+}
+
+.order-card--type-2 .order-card__accent {
+  background: linear-gradient(90deg, #c98621, #e2b055);
+}
+
+.order-card--type-3 .order-card__accent {
+  background: linear-gradient(90deg, #24775b, #57b185);
+}
+
+.order-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-top: 12px;
+}
+
+.order-head-main {
+  min-width: 0;
+}
+
+.order-meta-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.order-no,
+.order-time {
+  font-size: 13px;
+  color: #80908b;
+}
+
+.order-title {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.15;
+  color: #18362e;
+}
+
+.order-summary {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #637672;
+}
+
+.order-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.order-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 20px;
+  margin-top: 22px;
+}
+
+.order-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.detail-chip {
+  padding: 15px 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(247, 250, 248, 0.96), rgba(255, 255, 255, 0.98));
+  border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.detail-chip__label {
+  display: block;
+  font-size: 12px;
+  color: #879692;
+}
+
+.detail-chip__value {
+  display: block;
+  margin-top: 7px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #24312e;
+}
+
+.order-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-side__panel {
+  height: 100%;
+  min-height: 146px;
+  padding: 18px 18px 20px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #18362e 0%, #21473d 100%);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.amount-label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+.amount-value {
+  display: block;
+  margin-top: 12px;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.amount-caption {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  opacity: 0.8;
+}
+
+.expire-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #9a6417;
+  background: rgba(226, 162, 78, 0.12);
+}
+
+.order-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.foot-tip {
+  max-width: 520px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #74837f;
+}
+
+.order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.empty-state {
+  padding: 50px 0 24px;
+}
+
+.pagination-wrap {
+  display: flex;
   justify-content: center;
+  margin-top: 28px;
 }
 
-// 支付对话框样式
 .pay-dialog-content {
+  padding: 16px 0;
   text-align: center;
-  padding: 20px 0;
+}
 
-  .pay-order-info {
-    margin-bottom: 20px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
+.pay-order-info {
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
 
-    .pay-order-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 8px;
-    }
+.pay-order-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #18362e;
+}
 
-    .pay-order-no {
-      font-size: 13px;
-      color: #999;
-    }
+.pay-order-no {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #7e8d8a;
+}
+
+.pay-amount {
+  margin-bottom: 22px;
+}
+
+.pay-amount .label {
+  margin-right: 12px;
+  font-size: 14px;
+  color: #667a77;
+}
+
+.pay-amount .amount {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--app-primary);
+}
+
+.pay-qrcode {
+  display: inline-block;
+  margin: 0 auto 18px;
+  padding: 20px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 16px 32px rgba(17, 24, 39, 0.06);
+}
+
+.qrcode-tip {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #667a77;
+}
+
+.pay-expire {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #9a6417;
+}
+
+.pay-status-message {
+  margin-top: 16px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.pay-status-message.success {
+  color: #67c23a;
+  background: #f0f9eb;
+}
+
+.pay-status-message.error {
+  color: #f56c6c;
+  background: #fef0f0;
+}
+
+@media (max-width: 980px) {
+  .orders-hero {
+    grid-template-columns: 1fr;
   }
 
-  .pay-amount {
-    margin-bottom: 24px;
-
-    .label {
-      font-size: 14px;
-      color: #666;
-      margin-right: 12px;
-    }
-
-    .amount {
-      font-size: 28px;
-      font-weight: 700;
-      color: #ff6b6b;
-    }
+  .order-card__body {
+    grid-template-columns: 1fr;
   }
 
-  .pay-qrcode {
-    margin: 20px auto;
+  .order-side__panel {
+    min-height: unset;
+  }
+}
+
+@media (max-width: 768px) {
+  .orders-hero,
+  .orders-shell,
+  .order-card {
     padding: 20px;
-    background: #fff;
-    border-radius: 12px;
-    display: inline-block;
-
-    .qrcode-tip {
-      margin-top: 12px;
-      font-size: 14px;
-      color: #666;
-    }
   }
 
-  .pay-expire {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    font-size: 13px;
-    color: #e6a23c;
-    margin-bottom: 16px;
+  .hero-title {
+    font-size: 30px;
   }
 
-  .pay-status-message {
-    margin-top: 16px;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-
-    &.success {
-      background: #f0f9eb;
-      color: #67c23a;
-    }
-
-    &.error {
-      background: #fef0f0;
-      color: #f56c6c;
-    }
+  .order-title {
+    font-size: 24px;
   }
 
-  :deep(.el-progress) {
-    margin-top: 16px;
+  .order-card__head,
+  .order-card__foot {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-badges,
+  .order-actions {
+    justify-content: flex-start;
+  }
+
+  .foot-tip {
+    max-width: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .brand-name {
+    font-size: 20px;
+  }
+
+  .hero-pills {
+    gap: 8px;
+  }
+
+  .hero-pill {
+    width: 100%;
+    text-align: center;
+  }
+
+  .order-details {
+    grid-template-columns: 1fr;
+  }
+
+  .amount-value {
+    font-size: 30px;
   }
 }
 </style>

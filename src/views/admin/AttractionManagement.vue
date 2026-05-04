@@ -1,5 +1,5 @@
-<template>
-  <div class="attraction-management">
+﻿<template>
+  <div class="attraction-management admin-theme-page">
     <!-- 顶部区域 -->
     <div class="page-header">
       <div class="header-content">
@@ -155,9 +155,9 @@
                   <el-icon><Check /></el-icon>
                 </div>
               </div>
-              <div class="attraction-detail">
+              <div class="attraction-meta">
                 <div class="name">{{ row.name }}</div>
-                <div class="location">
+                <div class="meta-location">
                   <el-icon><Location /></el-icon>
                   <span>{{ row.region }}</span>
                   <span class="divider">|</span>
@@ -217,11 +217,15 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="createTime" label="创建时间" width="170" />
+        <el-table-column prop="createTime" label="创建时间" width="170">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
 
         <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
-            <div class="action-buttons">
+            <div class="attraction-actions">
               <el-tooltip content="编辑" placement="top">
                 <button class="action-btn edit" @click="handleEdit(row)">
                   <el-icon><Edit /></el-icon>
@@ -266,7 +270,6 @@
       v-model="dialogVisible"
       :title="dialogTitle"
       width="750px"
-      destroy-on-close
       :show-close="true"
       class="attraction-dialog"
     >
@@ -453,6 +456,7 @@ import {
   Warning
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
+import { formatDateTime } from '@/util/datetime'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -534,7 +538,7 @@ const loadAMapScript = (): Promise<void> => {
     ;(window as any)._amapLoading = true
 
     // 设置安全密钥
-    window._AMapSecurityConfig = {
+    ;(window as any)._AMapSecurityConfig = {
       securityJsCode: '1b5870e9227ca6f29ae1d37bee644626'
     }
 
@@ -543,7 +547,7 @@ const loadAMapScript = (): Promise<void> => {
     script.async = false
     script.onload = () => {
       ;(window as any)._amapLoading = false
-      if (window.AMap) {
+      if ((window as any).AMap) {
         resolve()
       } else {
         reject(new Error('AMap API loaded but window.AMap not available'))
@@ -644,7 +648,8 @@ const initMapPickerInternal = () => {
     container.innerHTML = ''
   }
 
-  if (!window.AMap) {
+  const AMap = (window as any).AMap
+  if (!AMap) {
     console.error('高德地图API未加载')
     mapLoadFailed.value = true
     return
@@ -657,7 +662,7 @@ const initMapPickerInternal = () => {
       ? [attractionForm.longitude, attractionForm.latitude] as [number, number]
       : defaultCenter
 
-    mapPickerInstance = new window.AMap.Map('attraction-map-picker', {
+    mapPickerInstance = new AMap.Map('attraction-map-picker', {
       zoom: 13,
       center: center,
       mapStyle: 'amap://styles/normal'
@@ -694,11 +699,12 @@ const addMarkerToPicker = (lng: number, lat: number) => {
     mapPickerInstance.remove(mapPickerMarker)
   }
 
-  mapPickerMarker = new window.AMap.Marker({
+  const AMap = (window as any).AMap
+  mapPickerMarker = new AMap.Marker({
     position: [lng, lat],
     draggable: true,
     cursor: 'move'
-  })
+  } as any)
 
   mapPickerMarker.on('dragend', (e: any) => {
     const lng = e.lnglat.getLng()
@@ -904,7 +910,7 @@ const previewImage = (index: number) => {
 const handleSubmit = async () => {
   if (!formRef.value) return
 
-  await formRef.value.validate(async (valid) => {
+  await formRef.value.validate(async (valid: boolean) => {
     if (valid) {
       submitting.value = true
       try {
@@ -1380,7 +1386,7 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
     }
   }
 
-  .attraction-detail {
+  .attraction-meta {
     .name {
       font-size: 15px;
       font-weight: 600;
@@ -1388,7 +1394,7 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
       margin-bottom: 6px;
     }
 
-    .location {
+    .meta-location {
       display: flex;
       align-items: center;
       gap: 4px;
@@ -1495,7 +1501,7 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
   }
 }
 
-.action-buttons {
+.attraction-actions {
   display: flex;
   justify-content: center;
   gap: 8px;
@@ -1974,3 +1980,6 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
   }
 }
 </style>
+
+
+

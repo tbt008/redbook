@@ -98,6 +98,7 @@
       <el-container>
         <el-header class="header">
           <div class="header-left">
+            <div class="header-badge">文旅控制台</div>
             <el-breadcrumb separator="/">
               <el-breadcrumb-item :to="{ path: '/admin/dashboard' }">首页</el-breadcrumb-item>
               <el-breadcrumb-item v-if="breadcrumb">{{ breadcrumb }}</el-breadcrumb-item>
@@ -201,28 +202,59 @@ onMounted(() => {
 .admin-layout {
   height: 100vh;
   overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(214, 154, 45, 0.08), transparent 26%),
+    linear-gradient(180deg, #f6f7f4 0%, #eef4f0 100%);
 
   .el-container {
     height: 100%;
   }
 
   .sidebar {
-    background: #001529;
+    position: relative;
+    background:
+      radial-gradient(circle at top, rgba(214, 154, 45, 0.18), transparent 28%),
+      linear-gradient(180deg, #16342c 0%, #0e201c 58%, #091613 100%);
     height: 100vh;
     overflow-y: auto;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 20px 0 48px rgba(9, 22, 19, 0.24);
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent 32%),
+        repeating-linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.03) 0,
+          rgba(255, 255, 255, 0.03) 1px,
+          transparent 1px,
+          transparent 18px
+        );
+      opacity: 0.45;
+    }
 
     .logo {
-      height: 64px;
+      position: relative;
+      z-index: 1;
+      min-height: 88px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #002140;
+      padding: 20px 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
       h2 {
         color: #fff;
         font-size: 18px;
         margin: 0;
         font-weight: 600;
+        letter-spacing: 1px;
+        text-align: center;
       }
     }
 
@@ -232,15 +264,31 @@ onMounted(() => {
   }
 
   .header {
-    background: #fff;
-    border-bottom: 1px solid #f0f0f0;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(18, 51, 45, 0.08);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
+    box-shadow: 0 10px 32px rgba(18, 51, 45, 0.06);
 
     .header-left {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .header-badge {
+      width: fit-content;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(31, 111, 95, 0.08);
+      color: var(--app-primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
     }
 
     .header-right {
@@ -249,17 +297,23 @@ onMounted(() => {
         align-items: center;
         gap: 8px;
         cursor: pointer;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.84);
+        border: 1px solid rgba(18, 51, 45, 0.08);
+        box-shadow: 0 12px 28px rgba(18, 51, 45, 0.08);
 
         .username {
           font-size: 14px;
-          color: #333;
+          color: var(--app-text);
+          font-weight: 600;
         }
       }
     }
   }
 
   .main-content {
-    background: #f0f2f5;
+    background: transparent;
     padding: 24px;
     overflow-y: auto;
   }
@@ -267,5 +321,60 @@ onMounted(() => {
 
 :deep(.el-sub-menu__title) {
   color: #fff !important;
+}
+
+:deep(.admin-menu) {
+  border-right: none !important;
+  background: transparent !important;
+  position: relative;
+  z-index: 1;
+  padding-top: 12px;
+}
+
+:deep(.admin-menu .el-menu-item),
+:deep(.admin-menu .el-sub-menu__title) {
+  height: 50px;
+  line-height: 50px;
+  margin: 7px 12px;
+  border-radius: 14px;
+  font-weight: 600;
+  transition: all 0.22s ease;
+}
+
+:deep(.admin-menu .el-menu-item.is-active) {
+  background: linear-gradient(135deg, rgba(214, 154, 45, 0.24), rgba(255, 255, 255, 0.1)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
+}
+
+:deep(.admin-menu .el-menu-item:hover),
+:deep(.admin-menu .el-sub-menu__title:hover) {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+:deep(.header-left .el-breadcrumb__inner),
+:deep(.header-left .el-breadcrumb__inner a) {
+  color: var(--app-text-muted) !important;
+}
+
+:deep(.header-left .el-breadcrumb__item:last-child .el-breadcrumb__inner) {
+  color: var(--app-ink) !important;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .admin-layout {
+    .header {
+      padding: 0 16px;
+
+      .header-badge {
+        display: none;
+      }
+    }
+
+    .main-content {
+      padding: 16px;
+    }
+  }
 }
 </style>

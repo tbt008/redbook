@@ -1,5 +1,5 @@
-<template>
-  <div class="merchant-foods">
+﻿<template>
+  <div class="merchant-foods admin-theme-page">
     <div class="page-header">
       <h2 class="page-title">美食管理</h2>
       <el-button type="primary" @click="handleAdd">
@@ -109,7 +109,7 @@
     </el-card>
 
     <!-- 编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="750px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="750px">
       <el-form :model="foodForm" :rules="formRules" ref="formRef" label-width="100px">
         <el-form-item label="美食名称" prop="name">
           <el-input v-model="foodForm.name" placeholder="请输入美食名称" />
@@ -167,7 +167,7 @@
     </el-dialog>
 
     <!-- 套餐管理对话框 -->
-    <el-dialog v-model="packageDialogVisible" :title="`${currentFoodName} - 套餐管理`" width="900px" destroy-on-close>
+    <el-dialog v-model="packageDialogVisible" :title="`${currentFoodName} - 套餐管理`" width="900px">
       <div class="package-header">
         <el-button type="primary" @click="handleAddPackage">
           <el-icon><Plus /></el-icon> 添加套餐
@@ -223,7 +223,7 @@
     </el-dialog>
 
     <!-- 添加/编辑套餐对话框 -->
-    <el-dialog v-model="packageFormDialogVisible" :title="packageFormTitle" width="600px" destroy-on-close>
+    <el-dialog v-model="packageFormDialogVisible" :title="packageFormTitle" width="600px">
       <el-form :model="packageForm" :rules="packageFormRules" ref="packageFormRef" label-width="100px">
         <el-form-item label="套餐名称" prop="packageName">
           <el-input v-model="packageForm.packageName" placeholder="请输入套餐名称" />
@@ -442,7 +442,8 @@ const handleDelete = async (row: any) => {
 }
 
 const handleStatusChange = async (row: any) => {
-  const action = row.status === 1 ? '下架' : '上架'
+  const targetStatus = row.status === 1 ? 0 : 1
+  const action = targetStatus === 1 ? '上架' : '下架'
   try {
     await ElMessageBox.confirm(`确定要${action}美食"${row.name}"吗？`, `确认${action}`, {
       confirmButtonText: '确定',
@@ -450,7 +451,13 @@ const handleStatusChange = async (row: any) => {
       type: 'warning'
     })
 
-    const res: any = await request.delete(`/admin/merchant/foods/${row.id}`)
+    const res: any = await request.put('/admin/merchant/foods/status', null, {
+      params: {
+        id: row.id,
+        status: targetStatus,
+        _t: Date.now()
+      }
+    })
     if (res.code === 200) {
       ElMessage.success(`${action}成功`)
       setTimeout(() => {

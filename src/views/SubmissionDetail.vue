@@ -1,16 +1,14 @@
 <template>
   <div class="submission-detail">
-    <!-- 测试用例结果展示 -->
     <div class="test-case-section">
       <testCase :test="testResult"></testCase>
       <div class="author-info">
         <el-tag size="small" type="info" effect="plain">
-          作者：{{ submissionData.userName }}
+          提交用户：{{ submissionData.userName }}
         </el-tag>
       </div>
     </div>
 
-    <!-- 提交信息卡片 -->
     <el-card class="submission-info">
       <div class="info-grid">
         <div class="info-item">
@@ -18,7 +16,7 @@
           <span class="value">{{ submissionData.createTime }}</span>
         </div>
         <div class="info-item">
-          <span class="label">语言：</span>
+          <span class="label">编程语言：</span>
           <span class="value">{{ getLanguageName(submissionData.language) }}</span>
         </div>
         <div class="info-item">
@@ -34,7 +32,7 @@
           <span class="value">{{ formatMemory(submissionData.memory) }}</span>
         </div>
         <div class="info-item">
-          <span class="label">运行状态：</span>
+          <span class="label">运行结果：</span>
           <span class="value">
             <el-tag v-if="submissionData.runResult == '答案正确'" type="success">答案正确</el-tag>
             <el-tag v-else-if="submissionData.runResult == '部分正确'" type="primary">部分正确</el-tag>
@@ -47,10 +45,9 @@
       </div>
     </el-card>
 
-    <!-- 代码展示区域 -->
     <el-card class="code-section">
       <div class="code-header">
-        <span class="code-title">提交的代码</span>
+        <span class="code-title">提交代码</span>
         <el-button type="primary" size="small" @click="copyCode" :icon="Document">
           复制代码
         </el-button>
@@ -72,8 +69,6 @@ import { ElMessage } from 'element-plus'
 import { Document } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import testCase from '@/components/testCase.vue'
-import hljs from 'highlight.js'
-import 'highlight.js/styles/github.css'
 
 const route = useRoute()
 const submissionData = ref({
@@ -93,7 +88,6 @@ const testResult = ref({
   time: 0
 })
 
-// 获取提交详情
 const getSubmissionDetail = async () => {
   try {
     const submissionId = route.params.id
@@ -104,12 +98,6 @@ const getSubmissionDetail = async () => {
       })) as any
       if (response.code === 200) {
         submissionData.value = response.data
-        // 代码高亮
-        setTimeout(() => {
-          document.querySelectorAll('pre code').forEach((block) => {
-            hljs.highlightElement(block as HTMLElement)
-          })
-        }, 0)
       }
     } else {
       const response = (await request.post('/record/submission', {
@@ -117,23 +105,13 @@ const getSubmissionDetail = async () => {
       })) as any
       if (response.code === 200) {
         submissionData.value = response.data
-        // 代码高亮
-        setTimeout(() => {
-          document.querySelectorAll('pre code').forEach((block) => {
-            hljs.highlightElement(block as HTMLElement)
-          })
-        }, 0)
       }
     }
-
-
-
   } catch (error) {
     ElMessage.error('获取提交详情失败')
   }
 }
 
-// 获取测试结果
 const getTestResult = async () => {
   try {
     const submissionId = route.params.id
@@ -148,13 +126,11 @@ const getTestResult = async () => {
         testResult.value = response.data.test
       }
     }
-
   } catch (error) {
     ElMessage.error('获取测试结果失败')
   }
 }
 
-// 获取编程语言
 const getLanguageName = (languageId: number) => {
   const languages: { [key: number]: string } = {
     1: 'C',
@@ -165,40 +141,35 @@ const getLanguageName = (languageId: number) => {
   return languages[languageId] || '未知语言'
 }
 
-// 格式化内存大小
 const formatMemory = (bytes: number) => {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
-// 获取代码长度
 const getCodeLength = (code: string) => {
   return new Blob([code]).size
 }
 
-// 复制代码
 const copyCode = () => {
   const code = submissionData?.value?.code
 
   if (!code) {
-    ElMessage.error('代码为空，无法复制')
+    ElMessage.error('代码内容为空，无法复制')
     return
   }
-  //解决 浏览器禁用了非安全域 (非 HTTPS) 的 navigator.clipboard API
-  // 创建临时的文本区域用于复制
+
   const textArea = document.createElement('textarea')
   textArea.value = code
   textArea.style.position = 'absolute'
-  textArea.style.left = '-9999px' // 确保元素不可见
+  textArea.style.left = '-9999px'
   document.body.appendChild(textArea)
 
-  // 选中并复制
   textArea.select()
   try {
     const success = document.execCommand('copy')
     if (success) {
-      ElMessage.success('代码已成功复制到剪贴板')
+      ElMessage.success('代码已复制到剪贴板')
     } else {
       ElMessage.error('复制失败，请手动复制')
     }
@@ -207,7 +178,6 @@ const copyCode = () => {
     console.error('复制失败:', err)
   }
 
-  // 移除临时文本区域
   document.body.removeChild(textArea)
 }
 
@@ -251,8 +221,6 @@ onMounted(() => {
   border: 1px solid #e9e9eb;
   background-color: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(4px);
-  /* 背景模糊效果 */
-  /* 字体加粗 */
   font-weight: 600;
 }
 
@@ -268,7 +236,6 @@ onMounted(() => {
 
 .info-item:last-child {
   grid-column: 1 / -1;
-  /* 运行状态占据整行 */
   margin-top: 16px;
 }
 
@@ -339,13 +306,6 @@ code {
   font-family: inherit;
 }
 
-/* 代码高亮主题自定义 */
-:deep(.hljs) {
-  background: #f8f9fa;
-  padding: 0;
-}
-
-/* 为所有 el-card 添加统一的圆角样式 */
 :deep(.el-card) {
   border-radius: 18px;
   overflow: hidden;

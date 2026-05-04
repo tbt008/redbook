@@ -1,13 +1,6 @@
-<template>
+﻿<template>
   <div class="content-detail-container">
-    <el-header class="header">
-      <div class="header-content">
-        <el-button :icon="ArrowLeft" @click="goBack">返回</el-button>
-        <div class="logo" @click="goHome">
-          <h1>莆田文旅</h1>
-        </div>
-      </div>
-    </el-header>
+    <TourismTopNav />
 
     <el-main v-loading="loading" class="main-content">
       <div class="content-wrapper">
@@ -16,12 +9,12 @@
           <h1 class="title">{{ content.title }}</h1>
           
           <div class="author-info">
-            <el-avatar :src="content.authorAvatar" :size="40" />
+            <el-avatar :src="resolveAvatar(content)" :size="40">
+              {{ getAvatarText(getDisplayName(content)) }}
+            </el-avatar>
             <div class="author-detail">
-              <div class="author-name">{{ content.authorName }}</div>
-              <div class="publish-time">{{ formatTime(content.createTime) }}</div>
+              <div class="author-name">{{ getDisplayName(content) }}</div>
             </div>
-            <el-button v-if="!isAuthor" type="primary" plain>关注</el-button>
           </div>
 
           <div class="content-body">
@@ -38,11 +31,12 @@
                 :initial-index="index"
               />
             </div>
-            <div class="text-content" v-html="content.content"></div>
+            <div class="text-content markdown-body" v-html="renderedContent"></div>
           </div>
 
           <div class="tags">
-            <el-tag v-for="tag in content.tags" :key="tag" type="info">{{ tag }}</el-tag>
+            <el-tag type="danger" effect="dark">攻略</el-tag>
+            <el-tag v-for="tag in displayTags" :key="tag" type="info">{{ tag }}</el-tag>
           </div>
 
           <div class="actions">
@@ -75,10 +69,12 @@
 
             <div class="comments-list">
               <div v-for="comment in comments" :key="comment.id" class="comment-item">
-                <el-avatar :src="comment.userAvatar" :size="36" />
+                <el-avatar :src="resolveAvatar(comment)" :size="36">
+                  {{ getAvatarText(getDisplayName(comment)) }}
+                </el-avatar>
                 <div class="comment-content">
                   <div class="comment-header">
-                    <span class="username">{{ comment.userName }}</span>
+                    <span class="username">{{ getDisplayName(comment) }}</span>
                     <span class="time">{{ formatTime(comment.createTime) }}</span>
                   </div>
                   <div class="comment-text">{{ comment.content }}</div>
@@ -126,9 +122,12 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, Star, StarFilled, ChatDotRound, Share, View } from '@element-plus/icons-vue'
+import { Star, StarFilled, ChatDotRound, Share, View } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import dayjs from 'dayjs'
+import { renderMarkdown } from '@/utils/markdown'
+import { extractDisplayTags } from '@/utils/contentTags'
+import TourismTopNav from '@/components/TourismTopNav.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -150,6 +149,29 @@ const isAuthor = computed(() => {
   return userInfo.id === content.value.userId
 })
 
+const renderedContent = computed(() => renderMarkdown(content.value?.content))
+const displayTags = computed(() => extractDisplayTags(content.value, ['tags', 'tagList', 'tagNames', 'labels', 'keywords']))
+
+const getDisplayName = (target: any) => {
+  if (!target) return '平台用户'
+  return (
+    target.authorName ||
+    target.userName ||
+    target.nickname ||
+    target.username ||
+    target.user?.nickname ||
+    target.user?.username ||
+    '平台用户'
+  )
+}
+
+const resolveAvatar = (target: any) => {
+  if (!target) return ''
+  return target.authorAvatar || target.userAvatar || target.avatar || target.user?.avatar || ''
+}
+
+const getAvatarText = (name?: string) => name?.trim()?.charAt(0) || '游'
+
 // 加载内容详情
 const loadContent = async () => {
   loading.value = true
@@ -164,9 +186,6 @@ const loadContent = async () => {
       // 解析图片和标签
       if (res.data.images) {
         content.value.images = JSON.parse(res.data.images)
-      }
-      if (res.data.tags) {
-        content.value.tags = JSON.parse(res.data.tags)
       }
       loadComments()
       loadRelated()
@@ -441,21 +460,14 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 
     .author-detail {
-      flex: 1;
+      min-width: 0;
 
       .author-name {
         font-weight: bold;
-        margin-bottom: 4px;
-      }
-
-      .publish-time {
-        font-size: 12px;
-        color: #999;
+        margin-bottom: 0;
       }
     }
   }
@@ -480,6 +492,80 @@ onMounted(() => {
       line-height: 1.8;
       font-size: 16px;
       color: #333;
+
+      :deep(h1),
+      :deep(h2),
+      :deep(h3),
+      :deep(h4),
+      :deep(h5),
+      :deep(h6) {
+        margin: 1.1em 0 0.6em;
+        line-height: 1.35;
+        color: #0f172a;
+      }
+
+      :deep(p) {
+        margin: 0 0 1em;
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      :deep(ul),
+      :deep(ol) {
+        margin: 0 0 1em;
+        padding-left: 1.5em;
+      }
+
+      :deep(li) {
+        margin-bottom: 0.35em;
+      }
+
+      :deep(blockquote) {
+        margin: 1em 0;
+        padding: 12px 16px;
+        border-left: 4px solid #409eff;
+        background: #f8fbff;
+        color: #475569;
+        border-radius: 6px;
+      }
+
+      :deep(pre) {
+        margin: 1em 0;
+        padding: 16px;
+        overflow-x: auto;
+        border-radius: 10px;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+
+      :deep(code) {
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #f1f5f9;
+        font-size: 0.92em;
+      }
+
+      :deep(pre code) {
+        padding: 0;
+        background: transparent;
+        color: inherit;
+      }
+
+      :deep(img) {
+        display: block;
+        max-width: 100%;
+        border-radius: 10px;
+        margin: 12px 0;
+      }
+
+      :deep(a) {
+        color: #2563eb;
+        text-decoration: none;
+      }
+
+      :deep(a:hover) {
+        text-decoration: underline;
+      }
     }
   }
 
@@ -488,6 +574,11 @@ onMounted(() => {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+
+    :deep(.el-tag) {
+      border-radius: 999px;
+      padding-inline: 12px;
+    }
   }
 
   .actions {

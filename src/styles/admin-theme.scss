@@ -1,0 +1,274 @@
+.admin-theme-page {
+  min-height: 100%;
+  padding: 24px;
+  background: linear-gradient(180deg, #f5fbf8 0%, #eef7f4 100%);
+
+  .admin-hero,
+  .page-header,
+  .search-card,
+  .table-card,
+  .action-card,
+  .chart-card,
+  .stat-card,
+  .resource-stats .el-card,
+  .recent-orders .el-card,
+  .quick-actions .el-card,
+  > .el-row .el-card,
+  .trend-card,
+  .ranking-card {
+    border: none !important;
+    box-shadow: 0 14px 34px rgba(31, 111, 92, 0.08) !important;
+  }
+
+  .admin-hero,
+  .page-header {
+    margin-bottom: 22px;
+    padding: 28px 32px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #226b58 0%, #2e8b70 58%, #49a087 100%);
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+  }
+
+  .admin-hero::before,
+  .admin-hero::after,
+  .page-header::before,
+  .page-header::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .admin-hero::before,
+  .page-header::before {
+    width: 220px;
+    height: 220px;
+    left: 3%;
+    top: -45%;
+  }
+
+  .admin-hero::after,
+  .page-header::after {
+    width: 260px;
+    height: 260px;
+    right: -8%;
+    top: -18%;
+  }
+
+  .admin-hero,
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .admin-hero__content,
+  .page-header > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .admin-hero__eyebrow {
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+    margin-bottom: 8px;
+  }
+
+  .page-title,
+  .admin-hero .page-title,
+  .page-header .page-title {
+    margin: 0 !important;
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    letter-spacing: 1px;
+  }
+
+  .admin-hero__subtitle {
+    margin: 8px 0 0;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .admin-hero__button,
+  .page-header > .el-button {
+    position: relative;
+    z-index: 1;
+    height: 46px;
+    padding: 0 22px;
+    border-radius: 12px;
+    border: none !important;
+    color: #fff !important;
+    background: linear-gradient(135deg, #f0ab2d 0%, #db9827 100%) !important;
+    box-shadow: 0 10px 24px rgba(240, 171, 45, 0.28);
+    font-weight: 600;
+  }
+
+  .search-card,
+  .table-card,
+  .action-card,
+  .chart-card,
+  .trend-card,
+  .ranking-card {
+    background: #fff !important;
+    border-radius: 20px !important;
+    margin-bottom: 22px;
+  }
+
+  .search-card :deep(.el-card__body),
+  .table-card :deep(.el-card__body),
+  .action-card :deep(.el-card__body),
+  .chart-card :deep(.el-card__body),
+  .trend-card :deep(.el-card__body),
+  .ranking-card :deep(.el-card__body) {
+    padding: 24px !important;
+  }
+
+  .action-card :deep(.el-button) {
+    height: 46px;
+    padding: 0 18px;
+    border-radius: 12px !important;
+  }
+
+  .search-card :deep(.el-form) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .search-card :deep(.el-form-item) {
+    margin-bottom: 0 !important;
+  }
+
+  .search-card :deep(.el-input__wrapper),
+  .search-card :deep(.el-select__wrapper),
+  .table-card :deep(.el-input__wrapper),
+  .table-card :deep(.el-select__wrapper),
+  .table-card :deep(.el-textarea__inner),
+  .chart-card :deep(.el-input__wrapper),
+  .chart-card :deep(.el-select__wrapper) {
+    min-height: 44px;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    background: #f6faf8 !important;
+  }
+
+  .search-card :deep(.el-button--primary),
+  .table-card :deep(.el-button--primary),
+  .chart-card :deep(.el-button--primary) {
+    border: none !important;
+    background: linear-gradient(135deg, #1f6f5c 0%, #2f8a72 100%) !important;
+  }
+
+  .search-card :deep(.el-button),
+  .table-card :deep(.el-button),
+  .chart-card :deep(.el-button) {
+    border-radius: 12px !important;
+  }
+
+  .table-card :deep(.el-card__header),
+  .chart-card :deep(.el-card__header),
+  .resource-stats :deep(.el-card__header),
+  .recent-orders :deep(.el-card__header),
+  .quick-actions :deep(.el-card__header) {
+    border-bottom: 1px solid #e8f0ec !important;
+    padding: 18px 24px !important;
+    background: linear-gradient(180deg, #f9fcfb 0%, #f5faf7 100%);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #183153;
+    font-weight: 700;
+  }
+
+  :deep(.el-table) {
+    --el-table-border-color: #edf3f0;
+    --el-table-header-bg-color: #f7fbf9;
+    --el-table-row-hover-bg-color: rgba(31, 111, 92, 0.04);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  :deep(.el-table th) {
+    color: #4d647d !important;
+    font-weight: 600 !important;
+  }
+
+  :deep(.el-table td) {
+    color: #31475f;
+  }
+
+  :deep(.el-tag) {
+    border-radius: 999px;
+    padding: 0 10px;
+    font-weight: 600;
+  }
+
+  :deep(.el-pagination) {
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  :deep(.el-pagination .el-pager li.is-active) {
+    background: #1f6f5c !important;
+    color: #fff !important;
+  }
+
+  .stats-cards,
+  .resource-stats,
+  .quick-actions,
+  .recent-orders {
+    margin-bottom: 22px;
+  }
+
+  .stat-card,
+  .resource-stats .el-card,
+  .quick-actions .el-card,
+  .recent-orders .el-card {
+    border-radius: 18px !important;
+    background: #fff !important;
+  }
+
+  .stat-card :deep(.el-card__body),
+  .resource-stats .el-card :deep(.el-card__body),
+  .quick-actions .el-card :deep(.el-card__body),
+  .recent-orders .el-card :deep(.el-card__body) {
+    padding: 22px !important;
+  }
+
+  .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-theme-page {
+    padding: 16px;
+
+    .admin-hero,
+    .page-header {
+      padding: 22px 20px;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .admin-hero__button,
+    .page-header > .el-button {
+      width: 100%;
+    }
+  }
+}

@@ -18,26 +18,31 @@
     <el-main class="main-content">
       <div class="user-profile">
         <div class="profile-header">
-          <el-avatar :src="userInfo.avatar" :size="100" />
+          <div class="profile-avatar-wrap">
+            <el-avatar :src="userInfo.avatar" :size="100" />
+          </div>
           <div class="profile-info">
-            <h2>{{ userInfo.nickName || userInfo.userName }}</h2>
+            <div class="profile-meta-row">
+              <h2>{{ userInfo.nickName || userInfo.userName }}</h2>
+              <span class="profile-role">{{ profileRoleText }}</span>
+            </div>
             <p class="description">{{ userInfo.description || '这个人很懒，什么都没留下' }}</p>
-            <div class="stats">
-              <div class="stat-item">
-                <div class="stat-value">{{ stats.contentCount }}</div>
+            <div class="stats stats-overview">
+              <div class="stat-item stat-item-highlight">
+                <div class="stat-value">{{ displayStats.contentCount }}</div>
                 <div class="stat-label">内容</div>
               </div>
               <div class="stat-item">
-                <div class="stat-value">{{ stats.likeCount }}</div>
+                <div class="stat-value">{{ displayStats.likeCount }}</div>
                 <div class="stat-label">获赞</div>
               </div>
               <div class="stat-item">
-                <div class="stat-value">{{ stats.collectCount }}</div>
+                <div class="stat-value">{{ displayStats.collectCount }}</div>
                 <div class="stat-label">收藏</div>
               </div>
             </div>
           </div>
-          <el-button type="primary" @click="showEditDialog">编辑资料</el-button>
+          <el-button class="profile-edit-button" type="primary" @click="showEditDialog">编辑资料</el-button>
         </div>
       </div>
 
@@ -95,8 +100,9 @@
                 <div class="card-content">
                   <h3 class="title">{{ item.title }}</h3>
                   <div class="stats">
-                    <span><el-icon><View /></el-icon> {{ item.viewCount }}</span>
-                    <span><el-icon><Star /></el-icon> {{ item.likeCount }}</span>
+                    <span><el-icon><View /></el-icon> {{ item.viewCount || 0 }}</span>
+                    <span><el-icon><Star /></el-icon> {{ item.likeCount || 0 }}</span>
+                    <span><el-icon><Collection /></el-icon> {{ item.collectCount || 0 }}</span>
                   </div>
                 </div>
               </el-card>
@@ -114,6 +120,11 @@
               <div class="history-info">
                 <h3 class="title">{{ item.title }}</h3>
                 <p class="description">{{ item.description }}</p>
+                <div class="history-stats">
+                  <span><el-icon><View /></el-icon> {{ item.viewCount || 0 }}</span>
+                  <span><el-icon><Star /></el-icon> {{ item.likeCount || 0 }}</span>
+                  <span><el-icon><Collection /></el-icon> {{ item.collectCount || 0 }}</span>
+                </div>
                 <div class="time">{{ formatTime(item.createTime) }}</div>
               </div>
             </div>
@@ -125,8 +136,9 @@
 
         <el-tab-pane label="我的订单" name="orders">
           <!-- 订单筛选 - 第一行：订单类型 -->
-          <div class="order-filter">
-            <el-radio-group v-model="orderTypeFilter" size="small" @change="handleOrderTypeChange">
+          <div class="order-filter order-filter-card">
+            <div class="filter-label">订单类型</div>
+            <el-radio-group class="order-filter-group" v-model="orderTypeFilter" size="small" @change="handleOrderTypeChange">
               <el-radio-button :value="0">全部</el-radio-button>
               <el-radio-button :value="1">景点门票</el-radio-button>
               <el-radio-button :value="2">酒店预订</el-radio-button>
@@ -134,8 +146,9 @@
             </el-radio-group>
           </div>
           <!-- 订单筛选 - 第二行：订单状态 -->
-          <div class="order-filter">
-            <el-radio-group v-model="orderStatusFilter" size="small" @change="handleOrderStatusChange">
+          <div class="order-filter order-filter-card">
+            <div class="filter-label">订单状态</div>
+            <el-radio-group class="order-filter-group" v-model="orderStatusFilter" size="small" @change="handleOrderStatusChange">
               <el-radio-button :value="-1">全部状态</el-radio-button>
               <el-radio-button :value="0">待支付</el-radio-button>
               <el-radio-button :value="1">待使用/待发货</el-radio-button>
@@ -301,6 +314,23 @@
         </el-tab-pane>
 
         <el-tab-pane label="账号设置" name="settings">
+          <div v-if="!isMerchant && !isAdmin" class="merchant-apply-card">
+            <div class="merchant-apply-card__content">
+              <div>
+                <div class="merchant-apply-card__title">商家认证</div>
+                <div class="merchant-apply-card__desc">{{ merchantApplyDescription }}</div>
+              </div>
+              <div class="merchant-apply-card__actions">
+                <el-tag :type="merchantApplyTagType">{{ merchantApplyStatusText }}</el-tag>
+                <el-button type="primary" @click="openMerchantApplyDialog">
+                  {{ merchantApplyButtonText }}
+                </el-button>
+              </div>
+            </div>
+            <div v-if="userInfo.merchantAuditComment" class="merchant-apply-card__comment">
+              审核意见：{{ userInfo.merchantAuditComment }}
+            </div>
+          </div>
           <el-form :model="settingsForm" label-width="100px" class="settings-form">
             <el-form-item label="用户名">
               <el-input v-model="settingsForm.userName" disabled />
@@ -339,7 +369,7 @@
         <el-form-item label="头像">
           <el-upload
             class="avatar-uploader"
-            action="/file/upload?directory=avatar"
+            action="/api/file/upload?directory=avatar"
             :show-file-list="false"
             :on-success="handleAvatarSuccess"
           >
@@ -376,6 +406,63 @@
       <template #footer>
         <el-button @click="passwordDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="changePassword">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="merchantApplyDialogVisible" title="申请成为商家" width="620px">
+      <el-form :model="merchantApplyForm" label-width="96px">
+        <el-form-item label="商家名称">
+          <el-input v-model="merchantApplyForm.merchantName" placeholder="请输入商家或店铺名称" />
+        </el-form-item>
+        <el-form-item label="联系人">
+          <el-input v-model="merchantApplyForm.merchantContactName" placeholder="请输入联系人姓名" />
+        </el-form-item>
+        <el-form-item label="联系电话">
+          <el-input v-model="merchantApplyForm.merchantContactPhone" placeholder="请输入联系电话" />
+        </el-form-item>
+        <el-form-item label="商家地址">
+          <el-input v-model="merchantApplyForm.merchantAddress" placeholder="请输入经营地址" />
+        </el-form-item>
+        <el-form-item label="经营类目">
+          <el-select v-model="merchantApplyForm.merchantCategory" placeholder="请选择经营类目" style="width: 100%">
+            <el-option label="酒店住宿" value="酒店住宿" />
+            <el-option label="美食餐饮" value="美食餐饮" />
+            <el-option label="景区景点" value="景区景点" />
+            <el-option label="综合文旅" value="综合文旅" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="资质图片">
+          <el-upload
+            action="/api/file/upload?directory=merchant"
+            :show-file-list="false"
+            :on-success="handleMerchantLicenseSuccess"
+          >
+            <el-image
+              v-if="merchantApplyForm.merchantLicenseImage"
+              :src="merchantApplyForm.merchantLicenseImage"
+              fit="cover"
+              class="merchant-license-preview"
+            />
+            <div v-else class="merchant-license-uploader">
+              <el-icon><Plus /></el-icon>
+              <span>上传营业执照/资质图</span>
+            </div>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="补充说明">
+          <el-input
+            v-model="merchantApplyForm.merchantApplyRemark"
+            type="textarea"
+            :rows="4"
+            maxlength="300"
+            show-word-limit
+            placeholder="可补充主营业务、服务特色、审核说明等"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="merchantApplyDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitMerchantApplication">提交申请</el-button>
       </template>
     </el-dialog>
 
@@ -624,12 +711,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { View, Star, Plus, Setting, Edit, Delete, Collection, Promotion, Shop, Calendar, User, House, Ticket, Wallet, Box, Clock, Picture } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import dayjs from 'dayjs'
+import { formatDateTime } from '@/utils/date'
 
 const router = useRouter()
 
 const activeTab = ref('content')
 const userInfo = ref<any>({})
-const stats = ref({ contentCount: 0, likeCount: 0, collectCount: 0 })
+const stats = ref({ contentCount: 0, likeCount: 0, collectCount: 0, collectionCount: 0 })
 const myContents = ref<any[]>([])
 const myCollections = ref<any[]>([])
 const browseHistory = ref<any[]>([])
@@ -638,10 +726,12 @@ const orderLoading = ref(false)
 const editDialogVisible = ref(false)
 const passwordDialogVisible = ref(false)
 const contentEditDialogVisible = ref(false)
+const merchantApplyDialogVisible = ref(false)
 
 // 订单相关
 const orderTypeFilter = ref(0) // 0-全部 1-景点门票 2-酒店 3-美食
 const orderStatusFilter = ref(-1) // -1-全部 0-待支付 1-待使用/待发货 2-已完成 3-已取消
+const orderFilter = orderTypeFilter
 const payDialogVisible = ref(false)
 const orderDetailDialogVisible = ref(false)
 const payingOrder = ref<any>(null)
@@ -672,6 +762,111 @@ const isAdmin = computed(() => userInfo.value.userType === 4)
 const isMerchant = computed(() => userInfo.value.userType === 2)
 
 // 订单筛选
+const displayStats = computed(() => ({
+  contentCount: Number(stats.value.contentCount || 0),
+  likeCount: Number(stats.value.likeCount || 0),
+  collectCount: Number(stats.value.collectCount ?? stats.value.collectionCount ?? 0)
+}))
+
+const profileRoleText = computed(() => {
+  if (isAdmin.value) return 'ADMIN'
+  if (isMerchant.value) return 'MERCHANT'
+  return 'TRAVELER'
+})
+
+/*
+const merchantApplyStatusText = computed(() => {
+  switch (userInfo.value.merchantApplyStatus) {
+    case 1:
+      return '待审核'
+    case 2:
+      return '已通过'
+    case 3:
+      return '已驳回'
+    default:
+      return '未申请'
+  }
+})
+
+const merchantApplyTagType = computed(() => {
+  switch (userInfo.value.merchantApplyStatus) {
+    case 1:
+      return 'warning'
+    case 2:
+      return 'success'
+    case 3:
+      return 'danger'
+    default:
+      return 'info'
+  }
+})
+
+const merchantApplyDescription = computed(() => {
+  switch (userInfo.value.merchantApplyStatus) {
+    case 1:
+      return '申请资料已提交，正在等待管理员审核。'
+    case 2:
+      return '您的商家认证已经通过，重新登录后即可进入商家中心。'
+    case 3:
+      return '申请已被驳回，您可以根据审核意见修改资料后重新提交。'
+    default:
+      return '提交商家资料后，审核通过即可发布酒店、美食和景点资源。'
+  }
+})
+
+const merchantApplyButtonText = computed(() => {
+  if (userInfo.value.merchantApplyStatus === 1) return '查看申请'
+  if (userInfo.value.merchantApplyStatus === 3) return '重新申请'
+  return '立即申请'
+})
+
+*/
+
+const merchantApplyStatusText = computed(() => {
+  switch (userInfo.value.merchantApplyStatus) {
+    case 1:
+      return 'Pending'
+    case 2:
+      return 'Approved'
+    case 3:
+      return 'Rejected'
+    default:
+      return 'Not Applied'
+  }
+})
+
+const merchantApplyTagType = computed(() => {
+  switch (userInfo.value.merchantApplyStatus) {
+    case 1:
+      return 'warning'
+    case 2:
+      return 'success'
+    case 3:
+      return 'danger'
+    default:
+      return 'info'
+  }
+})
+
+const merchantApplyDescription = computed(() => {
+  switch (userInfo.value.merchantApplyStatus) {
+    case 1:
+      return 'Application submitted. Waiting for admin review.'
+    case 2:
+      return 'Approved. Please sign in again to enter the merchant center.'
+    case 3:
+      return 'Rejected. You can revise the information and submit again.'
+    default:
+      return 'Submit merchant information to unlock merchant publishing features.'
+  }
+})
+
+const merchantApplyButtonText = computed(() => {
+  if (userInfo.value.merchantApplyStatus === 1) return 'View'
+  if (userInfo.value.merchantApplyStatus === 3) return 'Retry'
+  return 'Apply'
+})
+
 const filteredOrders = computed(() => {
   let orders = myOrders.value
 
@@ -731,6 +926,16 @@ const editForm = reactive({
   description: ''
 })
 
+const merchantApplyForm = reactive({
+  merchantName: '',
+  merchantContactName: '',
+  merchantContactPhone: '',
+  merchantAddress: '',
+  merchantCategory: '',
+  merchantLicenseImage: '',
+  merchantApplyRemark: ''
+})
+
 const passwordForm = reactive({
   oldPassword: '',
   newPassword: '',
@@ -766,11 +971,21 @@ const loadUserInfo = async () => {
     const res: any = await request.get('/user/info')
     if (res.code === 200) {
       userInfo.value = res.data
+      localStorage.setItem('userInfo', JSON.stringify(res.data))
       Object.assign(settingsForm, res.data)
       Object.assign(editForm, {
         avatar: res.data.avatar,
         nickName: res.data.nickName,
         description: res.data.description
+      })
+      Object.assign(merchantApplyForm, {
+        merchantName: res.data.merchantName || '',
+        merchantContactName: res.data.merchantContactName || '',
+        merchantContactPhone: res.data.merchantContactPhone || '',
+        merchantAddress: res.data.merchantAddress || '',
+        merchantCategory: res.data.merchantCategory || '',
+        merchantLicenseImage: res.data.merchantLicenseImage || '',
+        merchantApplyRemark: res.data.merchantApplyRemark || ''
       })
     }
   } catch (error) {
@@ -783,13 +998,18 @@ const loadStats = async () => {
   try {
     const res: any = await request.get('/user/stats')
     if (res && res.data) {
-      stats.value = res.data
+      stats.value = {
+        contentCount: Number(res.data.contentCount || 0),
+        likeCount: Number(res.data.likeCount || 0),
+        collectCount: Number(res.data.collectCount ?? res.data.collectionCount ?? 0),
+        collectionCount: Number(res.data.collectionCount ?? res.data.collectCount ?? 0)
+      }
     }
   } catch (error) {
     // 请求拦截器已经处理了错误提示，这里只需要静默处理
     console.error('加载统计数据失败', error)
     // 设置默认值，避免页面显示异常
-    stats.value = { contentCount: 0, likeCount: 0, collectCount: 0 }
+    stats.value = { contentCount: 0, likeCount: 0, collectCount: 0, collectionCount: 0 }
   }
 }
 
@@ -1234,6 +1454,17 @@ const handleAvatarSuccess = (response: any) => {
   }
 }
 
+const handleMerchantLicenseSuccess = (response: any) => {
+  if (response.code === 200) {
+    merchantApplyForm.merchantLicenseImage = response.data.url
+    ElMessage.success('资质图片上传成功')
+  }
+}
+
+const openMerchantApplyDialog = () => {
+  merchantApplyDialogVisible.value = true
+}
+
 // 保存资料
 const saveProfile = async () => {
   try {
@@ -1258,6 +1489,44 @@ const updateUserInfo = async () => {
     }
   } catch (error: any) {
     ElMessage.error(error.message || '保存失败')
+  }
+}
+
+const submitMerchantApplication = async () => {
+  if (!merchantApplyForm.merchantName.trim()) {
+    ElMessage.warning('请输入商家名称')
+    return
+  }
+  if (!merchantApplyForm.merchantContactName.trim()) {
+    ElMessage.warning('请输入联系人')
+    return
+  }
+  if (!merchantApplyForm.merchantContactPhone.trim()) {
+    ElMessage.warning('请输入联系电话')
+    return
+  }
+  if (!merchantApplyForm.merchantAddress.trim()) {
+    ElMessage.warning('请输入商家地址')
+    return
+  }
+  if (!merchantApplyForm.merchantCategory) {
+    ElMessage.warning('请选择经营类目')
+    return
+  }
+  if (!merchantApplyForm.merchantLicenseImage) {
+    ElMessage.warning('请上传资质图片')
+    return
+  }
+
+  try {
+    const res: any = await request.post('/user/merchant/apply', merchantApplyForm)
+    if (res.code === 200) {
+      ElMessage.success('申请已提交，请等待管理员审核')
+      merchantApplyDialogVisible.value = false
+      await loadUserInfo()
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '提交申请失败')
   }
 }
 
@@ -1288,7 +1557,7 @@ const changePassword = async () => {
 
 // 格式化时间
 const formatTime = (time: string) => {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
+  return formatDateTime(time)
 }
 
 const goHome = () => router.push('/')
@@ -1334,13 +1603,13 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .user-center-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f5f3 0%, #e8f0ec 100%);
+  background: #f5f7f4;
 }
 
 .header {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e7ece6;
   padding: 0;
   height: 64px;
   position: sticky;
@@ -1360,9 +1629,7 @@ onUnmounted(() => {
       margin: 0;
       font-size: 22px;
       font-weight: 700;
-      background: linear-gradient(135deg, #1a5f4a 0%, #2d8b6f 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #1f513f;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -1380,8 +1647,11 @@ onUnmounted(() => {
       align-items: center;
 
       .el-button {
-        border-radius: 20px;
+        border-radius: 999px;
         padding: 10px 18px;
+        border-color: #d7dfd7;
+        color: #355f50;
+        background: #fff;
       }
     }
   }
@@ -1390,92 +1660,183 @@ onUnmounted(() => {
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px 20px 40px;
 }
 
 .user-profile {
   background: #fff;
-  border-radius: 16px;
-  padding: 32px;
+  border: 1px solid #e7ece6;
+  border-radius: 20px;
+  padding: 32px 32px 28px;
   margin-bottom: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  box-sizing: border-box;
 
   .profile-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 28px;
+    column-gap: 24px;
+    row-gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    min-height: 0;
+
+    .profile-avatar-wrap {
+      width: 96px;
+      height: 96px;
+      padding: 0;
+      border-radius: 999px;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+
+      :deep(.el-avatar) {
+        border: 2px solid #ffffff;
+        border-radius: 999px;
+        width: 100% !important;
+        height: 100% !important;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      }
+    }
 
     .profile-info {
-      flex: 1;
+      min-width: 0;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+
+      .profile-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+        padding-top: 4px;
+      }
 
       h2 {
-        margin: 0 0 8px 0;
-        font-size: 26px;
+        margin: 0;
+        font-size: 30px;
         font-weight: 700;
-        color: #1a1a1a;
+        color: #18281f;
+        line-height: 1.25;
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      .profile-role {
+        display: inline-flex;
+        align-items: center;
+        height: 30px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: #f1f4f0;
+        color: #51655a;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
       }
 
       .description {
+        max-width: none;
         margin: 0 0 16px 0;
-        color: #666;
+        color: #66756d;
         font-size: 14px;
+        line-height: 1.65;
       }
 
       .stats {
         display: flex;
-        gap: 40px;
+        flex-wrap: wrap;
+        gap: 12px;
 
         .stat-item {
-          text-align: center;
+          min-width: 112px;
+          padding: 14px 16px;
+          border-radius: 16px;
+          background: #f7f8f6;
+          border: 1px solid #e9eeea;
 
           .stat-value {
             font-size: 28px;
             font-weight: 700;
-            background: linear-gradient(135deg, #1a5f4a 0%, #2d8b6f 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #1f513f;
           }
 
           .stat-label {
             font-size: 13px;
-            color: #999;
-            margin-top: 4px;
+            color: #6d7d74;
+            margin-top: 6px;
           }
+        }
+
+        .stat-item-highlight {
+          background: #f1f5f2;
+          border-color: #dfe8e1;
+        }
+      }
+
+      .stats-overview {
+        .stat-item {
+          text-align: left;
         }
       }
     }
 
-    .el-button {
-      border-radius: 24px;
-      padding: 12px 28px;
-      background: linear-gradient(135deg, #1a5f4a 0%, #2d8b6f 100%);
-      border: none;
+    .profile-edit-button {
+      justify-self: end;
+      align-self: start;
+      border-radius: 999px;
+      padding: 11px 20px;
+      background: #1f513f;
+      border-color: #1f513f;
+      box-shadow: none;
     }
   }
 }
 
 .content-tabs {
   background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e7ece6;
+  border-radius: 20px;
+  padding: 20px 24px 24px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 
   :deep(.el-tabs__header) {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
+  }
+
+  :deep(.el-tabs__nav-wrap) {
+    &::after {
+      background-color: #edf1ec;
+    }
   }
 
   :deep(.el-tabs__item) {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 500;
-    padding: 0 24px;
+    padding: 0 20px;
+    color: #718178;
 
     &.is-active {
-      color: #1a5f4a;
+      color: #1f513f;
     }
   }
 
   :deep(.el-tabs__active-bar) {
-    background: linear-gradient(135deg, #1a5f4a 0%, #2d8b6f 100%);
+    background: #1f513f;
   }
 }
 
@@ -1486,23 +1847,39 @@ onUnmounted(() => {
 
   .content-card {
     cursor: pointer;
-    transition: transform 0.3s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 
     &:hover {
-      transform: translateY(-4px);
+      transform: translateY(-3px);
     }
 
     .card-wrapper {
       cursor: pointer;
     }
 
+    :deep(.el-card) {
+      overflow: hidden;
+      border: 1px solid rgba(15, 23, 42, 0.07);
+      border-radius: 20px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
     .card-image {
       position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: auto 0 0 0;
+        height: 64px;
+        background: linear-gradient(180deg, rgba(10, 21, 17, 0) 0%, rgba(10, 21, 17, 0.34) 100%);
+      }
       
       .card-status {
         position: absolute;
         top: 10px;
         right: 10px;
+        z-index: 1;
       }
     }
 
@@ -1510,32 +1887,38 @@ onUnmounted(() => {
       display: flex;
       justify-content: center;
       gap: 10px;
-      padding: 10px;
-      background: #fafafa;
-      border-top: 1px solid #eee;
+      padding: 12px 14px 14px;
+      background: #fcfcfb;
+      border-top: 1px solid #eef1ec;
     }
 
     .card-content {
-      padding: 12px;
+      padding: 16px 16px 18px;
 
       .title {
-        font-size: 14px;
-        margin: 0 0 8px 0;
+        font-size: 15px;
+        line-height: 1.5;
+        margin: 0 0 12px 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        color: #18372d;
       }
 
       .stats {
         display: flex;
+        flex-wrap: wrap;
         gap: 12px;
         font-size: 12px;
-        color: #999;
+        color: #6a7c73;
 
         span {
           display: flex;
           align-items: center;
           gap: 4px;
+          padding: 5px 10px;
+          border-radius: 999px;
+          background: #f3f5f2;
         }
       }
     }
@@ -1546,15 +1929,16 @@ onUnmounted(() => {
   .history-item {
     display: flex;
     gap: 16px;
-    padding: 16px;
-    background: #fff;
-    border-radius: 8px;
-    margin-bottom: 12px;
+    padding: 18px;
+    background: #fcfcfb;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 20px;
+    margin-bottom: 14px;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
 
     &:hover {
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+      border-color: rgba(31, 81, 63, 0.16);
     }
 
     .history-info {
@@ -1577,6 +1961,24 @@ onUnmounted(() => {
         -webkit-box-orient: vertical;
       }
 
+      .history-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        color: #6a7c73;
+
+        span {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 5px 10px;
+          border-radius: 999px;
+          background: #f3f5f2;
+        }
+      }
+
       .time {
         font-size: 12px;
         color: #999;
@@ -1587,6 +1989,46 @@ onUnmounted(() => {
 
 .settings-form {
   max-width: 600px;
+}
+
+.merchant-apply-card {
+  margin-bottom: 20px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(31, 81, 63, 0.08), rgba(223, 191, 131, 0.12));
+  border: 1px solid rgba(31, 81, 63, 0.1);
+}
+
+.merchant-apply-card__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.merchant-apply-card__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #173a2d;
+}
+
+.merchant-apply-card__desc {
+  margin-top: 8px;
+  color: #5d6d65;
+  line-height: 1.7;
+}
+
+.merchant-apply-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.merchant-apply-card__comment {
+  margin-top: 14px;
+  color: #7a4e18;
+  line-height: 1.7;
 }
 
 .empty {
@@ -1602,26 +2044,167 @@ onUnmounted(() => {
 }
 
 .order-filter {
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #eee;
+  margin-bottom: 18px;
+}
+
+.order-filter-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  background: #fcfcfb;
+  border: 1px solid #ebeeea;
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.filter-label {
+  flex: 0 0 auto;
+  min-width: 72px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4f6157;
+  letter-spacing: 0.08em;
+}
+
+.order-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  :deep(.el-radio-button__original-radio) {
+    display: none;
+  }
 
   :deep(.el-radio-button__inner) {
-    border-radius: 20px !important;
+    min-width: 88px;
+    height: 36px;
+    padding: 0 16px;
+    border: 1px solid #dfe5df !important;
+    border-radius: 999px !important;
+    background: #fff;
+    color: #5d6d65;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 34px;
+    box-shadow: none !important;
+    transition: all 0.22s ease;
+  }
+
+  :deep(.el-radio-button:first-child .el-radio-button__inner),
+  :deep(.el-radio-button:last-child .el-radio-button__inner) {
+    border-radius: 999px !important;
+  }
+
+  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+    border-color: #1f513f !important;
+    background: #1f513f;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  :deep(.el-radio-button:hover .el-radio-button__inner) {
+    border-color: #97aa9f !important;
+    color: #1f513f;
+  }
+
+  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner:hover) {
+    color: #fff;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px 12px 28px;
+  }
+
+  .user-profile {
+    padding: 24px 16px 20px;
+  }
+
+  .user-profile .profile-header {
+    grid-template-columns: 1fr;
+    align-items: start;
+    width: 100%;
+  }
+
+  .user-profile .profile-header .profile-edit-button {
+    justify-self: start;
+  }
+
+  .user-profile .profile-header .profile-info .stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .content-tabs {
+    padding: 16px;
+  }
+
+  .history-list .history-item {
+    flex-direction: column;
+  }
+
+  .history-list .history-item :deep(.el-image) {
+    width: 100% !important;
+    height: 180px !important;
+  }
+
+  .order-filter-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .filter-label {
+    min-width: auto;
+  }
+
+  .order-filter-group {
+    width: 100%;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-card .order-body,
+  .order-card .order-footer,
+  .header .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-card .order-body .order-price {
+    border-left: none;
+    border-top: 1px solid #e8ece7;
+    padding-left: 0;
+    padding-top: 12px;
+    margin-top: 12px;
+    text-align: left;
+  }
+
+  .header {
+    height: auto;
+  }
+
+  .header .header-content {
+    gap: 12px;
+    padding: 12px 16px;
   }
 }
 
 .order-card {
   background: #fff;
-  border-radius: 12px;
+  border: 1px solid #edf0ec;
+  border-radius: 18px;
   padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
   transition: all 0.3s;
   cursor: pointer;
 
   &:hover {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+    border-color: rgba(31, 81, 63, 0.16);
   }
 
   .order-header {
@@ -1654,7 +2237,7 @@ onUnmounted(() => {
     margin-bottom: 16px;
     padding: 12px;
     background: #fafafa;
-    border-radius: 8px;
+    border-radius: 14px;
 
     &:hover {
       background: #f5f5f5;
@@ -1771,6 +2354,29 @@ onUnmounted(() => {
       border-color: #409eff;
     }
   }
+}
+
+.merchant-license-uploader {
+  width: 220px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 16px;
+  border: 1px dashed #cbd5cf;
+  background: #fafcfb;
+  color: #6c7c74;
+  cursor: pointer;
+}
+
+.merchant-license-preview {
+  width: 220px;
+  height: 140px;
+  border-radius: 16px;
+  border: 1px solid #e5ebe6;
+  overflow: hidden;
 }
 
 // 支付对话框样式

@@ -1,6 +1,33 @@
 <template>
-  <div class="login-container">
-    <div class="login-box">
+  <div class="login-container app-auth-page">
+    <section class="auth-side app-auth-aside">
+      <div class="app-auth-badge">莆田文旅平台</div>
+      <h1 class="app-auth-title">
+        城市旅行灵感
+        <strong>从这里开始</strong>
+      </h1>
+      <p class="app-auth-subtitle">
+        统一使用站内青绿主题，登录、浏览、发布与管理后台保持同一套视觉秩序。
+      </p>
+      <div class="app-auth-points">
+        <div class="app-auth-point">
+          <span class="app-auth-point__icon">景</span>
+          <div>
+            <p class="app-auth-point__title">内容一体化</p>
+            <p class="app-auth-point__desc">景点、美食、住宿与攻略内容统一展示与检索。</p>
+          </div>
+        </div>
+        <div class="app-auth-point">
+          <span class="app-auth-point__icon">AI</span>
+          <div>
+            <p class="app-auth-point__title">智能规划</p>
+            <p class="app-auth-point__desc">登录后可继续使用行程与地图规划等辅助能力。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="login-box app-auth-card">
       <div class="login-header">
         <h2>欢迎来到莆田文旅</h2>
         <p>发现莆田之美，分享旅行故事</p>
@@ -353,20 +380,12 @@ const goRegister = () => {
 <style scoped lang="scss">
 .login-container {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
 }
 
 .login-box {
   width: 100%;
-  max-width: 420px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  max-width: 460px;
+  padding: 36px 34px 30px;
 }
 
 .login-header {
@@ -376,14 +395,15 @@ const goRegister = () => {
   h2 {
     margin: 0 0 8px 0;
     font-size: 28px;
-    font-weight: bold;
-    color: #333;
+    font-weight: 700;
+    color: var(--app-primary-strong);
+    letter-spacing: 1px;
   }
 
   p {
     margin: 0;
     font-size: 14px;
-    color: #999;
+    color: var(--app-text-muted);
   }
 }
 
@@ -413,9 +433,96 @@ const goRegister = () => {
   }
 }
 
+.auth-side {
+  max-width: 440px;
+}
+
 .register-link {
   text-align: center;
   font-size: 14px;
-  color: #666;
+  color: var(--app-text-muted);
+}
+
+:deep(.login-tabs .el-tabs__header) {
+  margin-bottom: 22px;
+}
+
+:deep(.login-tabs .el-tabs__nav-wrap::after) {
+  background-color: rgba(31, 111, 95, 0.08);
+}
+
+:deep(.login-tabs .el-tabs__item) {
+  height: 42px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+:deep(.login-tabs .el-tabs__item.is-active) {
+  color: var(--app-primary);
+}
+
+:deep(.login-form .el-form-item) {
+  margin-bottom: 20px;
+}
+
+:deep(.login-form .el-input__wrapper) {
+  min-height: 48px;
+  border-radius: 14px;
+  background: #f6faf8;
+  box-shadow: 0 0 0 1px rgba(31, 111, 95, 0.08) inset;
+}
+
+:deep(.login-form .el-input__wrapper.is-focus) {
+  box-shadow:
+    0 0 0 1px rgba(31, 111, 95, 0.2) inset,
+    0 0 0 4px rgba(31, 111, 95, 0.08);
+}
+
+:deep(.login-form .el-button--primary) {
+  min-height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--app-primary) 0%, #2f8a72 100%);
+  box-shadow: 0 14px 30px rgba(31, 111, 95, 0.2);
+}
+
+:deep(.login-form .el-button--primary:hover) {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+:deep(.form-footer .el-checkbox) {
+  color: var(--app-text-muted);
+}
+
+:deep(.form-footer .el-link),
+:deep(.register-link .el-link) {
+  font-weight: 600;
+}
+
+:deep(.code-input) {
+  width: 100%;
+}
+
+:deep(.code-input .el-button) {
+  min-height: 48px;
+  border-radius: 14px;
+}
+
+@media (max-width: 980px) {
+  .auth-side {
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-box {
+    padding: 28px 20px 24px;
+  }
+
+  :deep(.code-input) {
+    flex-direction: column;
+  }
 }
 </style>

@@ -43,7 +43,7 @@ const handleAvatarUpload = (file) => {
   var url = ''
   data.append('file', file)
   request
-    .post('/api/file/upload?directory=avatar', data, {
+    .post('/file/upload?directory=avatar', data, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

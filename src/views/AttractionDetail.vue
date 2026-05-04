@@ -1,22 +1,8 @@
-<template>
+﻿<template>
   <div class="attraction-detail">
-    <!-- 顶部导航 -->
-    <header class="detail-header">
-      <div class="header-inner">
-        <div class="logo-section" @click="goHome">
-          <span class="logo-icon">🏝️</span>
-          <span class="logo-text">莆田文旅</span>
-        </div>
-        <div class="header-actions">
-          <el-button class="back-btn" @click="goBack">
-            <el-icon><ArrowLeft /></el-icon>
-            返回
-          </el-button>
-        </div>
-      </div>
-    </header>
+    <TourismTopNav />
 
-    <!-- 主内容区 -->
+    <!-- 主内容区域 -->
     <main class="main-content">
       <!-- 图片画廊 -->
       <section class="gallery-section">
@@ -27,15 +13,6 @@
             </el-carousel-item>
           </el-carousel>
           <div class="gallery-overlay"></div>
-        </div>
-        <div class="gallery-thumbs">
-          <div
-            v-for="(image, index) in imageList.slice(0, 5)"
-            :key="index"
-            :class="['thumb-item', { active: index === 0 }]"
-          >
-            <el-image :src="image" fit="cover" />
-          </div>
         </div>
       </section>
 
@@ -55,6 +32,9 @@
             <h1 class="attraction-title">{{ attraction.name }}</h1>
 
             <div class="attraction-tags">
+              <span class="tag type-tag">
+                景点
+              </span>
               <span class="tag">
                 <el-icon><Location /></el-icon>
                 {{ attraction.region }}
@@ -62,6 +42,13 @@
               <span class="tag" v-if="attraction.theme">
                 <el-icon><Collection /></el-icon>
                 {{ attraction.theme }}
+              </span>
+              <span
+                v-for="tag in attractionDisplayTags"
+                :key="tag"
+                class="tag extra-tag"
+              >
+                {{ tag }}
               </span>
             </div>
 
@@ -84,7 +71,7 @@
               <div class="stat-divider"></div>
               <div class="stat-item">
                 <div class="stat-value">{{ commentList.length }}</div>
-                <div class="stat-label">用户评价</div>
+                <div class="stat-label">用户评论</div>
               </div>
             </div>
 
@@ -124,7 +111,7 @@
             <!-- 景点介绍 -->
             <div class="description-section">
               <h3 class="section-title">
-                <span class="title-icon">📖</span>
+                <span class="title-icon">📝</span>
                 景点介绍
               </h3>
               <div class="description-content">
@@ -135,7 +122,7 @@
             <!-- 地图 -->
             <div class="map-section">
               <h3 class="section-title">
-                <span class="title-icon">🗺️</span>
+                <span class="title-icon">📍</span>
                 地理位置
               </h3>
               <div id="attraction-map" class="map-container"></div>
@@ -146,7 +133,7 @@
             </div>
           </div>
 
-          <!-- 右侧悬浮卡片 -->
+          <!-- 右侧悬浮信息卡片 -->
           <div class="info-right">
             <div class="ticket-card">
               <div class="ticket-header">
@@ -169,7 +156,7 @@
                     <div class="ticket-name">{{ ticket.ticketName }}</div>
                     <div class="ticket-desc">{{ ticket.description }}</div>
                     <div v-if="ticket.totalCount && ticket.totalCount > 0" class="ticket-stock">
-                      <span class="stock-label">剩余:</span>
+                      <span class="stock-label">剩余：</span>
                       <span class="stock-count">{{ getRemainingTickets(ticket) }}</span>
                       <span class="stock-unit">张</span>
                     </div>
@@ -218,18 +205,17 @@
             <div v-for="ticket in ticketList" :key="ticket.id" class="ticket-card-item">
               <div class="ticket-card-header">
                 <span class="ticket-name">{{ ticket.ticketName }}</span>
-                <span class="ticket-tag">官方</span>
+                  <span class="ticket-tag">官方</span>
               </div>
               <div class="ticket-card-body">
                 <p class="ticket-description">{{ ticket.description }}</p>
                 <div class="ticket-validity">
                   <el-icon><Calendar /></el-icon>
-                  有效期：{{ ticket.validDays }}天
-                </div>
+                  有效期：{{ ticket.validDays }}天                </div>
               </div>
               <div class="ticket-card-footer">
                 <div class="price-info">
-                  <span class="currency">¥</span>
+                    <span class="currency">¥</span>
                   <span class="amount">{{ ticket.price }}</span>
                 </div>
                 <el-button type="primary" round @click="selectTicket(ticket)">立即购买</el-button>
@@ -239,14 +225,17 @@
         </div>
       </section>
 
-      <!-- 用户评价 -->
+      <!-- 用户评论 -->
       <section class="comments-section">
         <div class="section-container">
-          <h3 class="section-title">
-            <span class="title-bar"></span>
-            用户评价
-            <span class="comment-count">({{ commentList.length }})</span>
-          </h3>
+          <div class="comments-header">
+            <h3 class="section-title">
+              <span class="title-bar"></span>
+              用户评论
+              <span class="comment-count">({{ commentList.length }})</span>
+            </h3>
+            <el-button type="primary" round @click="showCommentDialog">立即评论</el-button>
+          </div>
 
           <div v-if="commentList.length > 0" class="comment-list">
             <div v-for="comment in commentList" :key="comment.id" class="comment-item">
@@ -276,12 +265,33 @@
             </div>
           </div>
 
-          <el-empty v-else description="暂无评价，快来抢先评价吧" class="empty-comments" />
+          <el-empty v-else description="暂无评论，快来抢先评论吧" class="empty-comments" />
         </div>
       </section>
     </main>
 
-    <!-- 购票对话框 -->
+    <el-dialog v-model="commentDialogVisible" title="立即评论" width="550px" class="comment-dialog">
+      <div class="comment-form">
+        <div class="rating-select">
+          <span class="label">评分</span>
+          <el-rate v-model="commentForm.rating" size="large" />
+        </div>
+        <el-input
+          v-model="commentForm.content"
+          type="textarea"
+          :rows="5"
+          placeholder="分享你的游玩体验..."
+          maxlength="500"
+          show-word-limit
+        />
+      </div>
+      <template #footer>
+        <el-button @click="commentDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitComment" :loading="submittingComment">提交评论</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 门票购买弹窗 -->
     <el-dialog
       v-model="ticketDialogVisible"
       :title="dialogTitle"
@@ -299,7 +309,7 @@
         </el-steps>
 
         <div class="step-content">
-          <!-- 步骤1: 选择门票 -->
+          <!-- 步骤1：选择门票 -->
           <div v-show="currentStep === 0" class="step-panel">
             <div class="ticket-select-grid">
               <div
@@ -321,7 +331,7 @@
             </div>
           </div>
 
-          <!-- 步骤2: 日期和数量 -->
+          <!-- 步骤2：选择日期和数量 -->
           <div v-show="currentStep === 1" class="step-panel">
             <el-form :model="orderForm" label-position="top" class="order-form">
               <el-form-item label="游玩日期" required>
@@ -349,7 +359,7 @@
             </el-form>
           </div>
 
-          <!-- 步骤3: 填写信息 -->
+          <!-- 步骤3：填写信息 -->
           <div v-show="currentStep === 2" class="step-panel">
             <el-form :model="orderForm" label-position="top" class="order-form">
               <el-form-item label="游客姓名" required>
@@ -359,20 +369,20 @@
                 <el-input v-model="orderForm.visitorIdCard" placeholder="请输入身份证号" maxlength="18" />
               </el-form-item>
               <el-form-item label="联系电话" required>
-                <el-input v-model="orderForm.visitorPhone" placeholder="用于接收电子票" />
+                <el-input v-model="orderForm.visitorPhone" placeholder="用于接收电子票信息" />
               </el-form-item>
               <el-form-item label="特殊需求">
                 <el-input
                   v-model="orderForm.specialRequest"
                   type="textarea"
                   :rows="3"
-                  placeholder="如需要导游服务等"
+                  placeholder="如需导游服务等可填写"
                 />
               </el-form-item>
             </el-form>
           </div>
 
-          <!-- 步骤4: 确认订单 -->
+          <!-- 步骤4：确认订单 -->
           <div v-show="currentStep === 3" class="step-panel">
             <div class="order-confirm">
               <div class="confirm-section">
@@ -417,7 +427,7 @@
             </div>
           </div>
 
-          <!-- 步骤5: 支付 -->
+          <!-- 步骤5：支付 -->
           <div v-show="currentStep === 4" class="step-panel">
             <div class="payment-panel">
               <div class="success-icon">
@@ -454,7 +464,7 @@
       </template>
     </el-dialog>
 
-    <!-- 支付成功对话框 -->
+    <!-- 支付成功弹窗 -->
     <el-dialog v-model="paySuccessVisible" title="" width="450px" :close-on-click-modal="false" class="success-dialog">
       <div class="success-content">
         <div class="success-icon-large">
@@ -475,13 +485,13 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import dayjs from 'dayjs'
 import {
   Location,
   Clock,
   Phone,
   Star,
   StarFilled,
-  ArrowLeft,
   Collection,
   Share,
   Ticket,
@@ -494,7 +504,9 @@ import {
   CircleCheck
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
-import dayjs from 'dayjs'
+import { extractDisplayTags } from '@/utils/contentTags'
+
+import TourismTopNav from '@/components/TourismTopNav.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -506,6 +518,12 @@ const ticketList = ref<any[]>([])
 const commentList = ref<any[]>([])
 const isCollected = ref(false)
 const ticketDialogVisible = ref(false)
+const commentDialogVisible = ref(false)
+const submittingComment = ref(false)
+const attractionDisplayTags = computed(() => {
+  const tags = extractDisplayTags(attraction.value)
+  return tags.filter((tag) => tag !== attraction.value.region && tag !== attraction.value.theme)
+})
 const currentStep = ref(0)
 const creating = ref(false)
 const orderNo = ref('')
@@ -528,6 +546,11 @@ const orderForm = reactive({
   visitorIdCard: '',
   visitorPhone: '',
   specialRequest: ''
+})
+
+const commentForm = reactive({
+  rating: 5,
+  content: ''
 })
 
 const totalAmount = computed(() => {
@@ -578,7 +601,7 @@ const initMap = () => {
   }
   
   if (!window.AMap) {
-    console.error('高德地图API未加载')
+    console.error('高德地图 API 未加载')
     return
   }
   
@@ -641,6 +664,43 @@ const loadCommentList = async () => {
     }
   } catch (error) {
     console.error('加载评论失败', error)
+  }
+}
+
+const showCommentDialog = () => {
+  if (!localStorage.getItem('auth-token')) {
+    ElMessage.warning('请先登录后再评论')
+    router.push('/login')
+    return
+  }
+  commentDialogVisible.value = true
+}
+
+const submitComment = async () => {
+  if (!commentForm.content.trim()) {
+    ElMessage.warning('请输入评论内容')
+    return
+  }
+
+  submittingComment.value = true
+  try {
+    const res: any = await request.post('/comment/add', {
+      contentId: attractionId.value,
+      contentType: 4,
+      content: commentForm.content,
+      rating: commentForm.rating
+    })
+    if (res && res.code === 200) {
+      ElMessage.success('评论成功')
+      commentDialogVisible.value = false
+      commentForm.content = ''
+      commentForm.rating = 5
+      loadCommentList()
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '评论失败')
+  } finally {
+    submittingComment.value = false
   }
 }
 
@@ -764,7 +824,7 @@ const startPayPolling = (currentOrderNo: string) => {
       if (res && res.code === 200 && res.data && (res.data.paid || res.data.orderStatus === 1)) {
         stopPayPolling()
         payPollProgress.value = 100
-        payStatusMessage.value = '支付成功！'
+        payStatusMessage.value = '支付成功'
         ElMessage.success('支付成功')
         ticketDialogVisible.value = false
         paySuccessVisible.value = true
@@ -839,7 +899,7 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-// 主题色
+// 颜色变量
 $primary: #1a5f4a;
 $primary-light: #2d8b6f;
 $primary-dark: #0f3d2f;
@@ -904,10 +964,8 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
   }
 }
 
-// 画廊
+// 图片区域
 .gallery-section {
-  background: $white;
-  padding: 24px 40px;
 
   .gallery-main {
     position: relative;
@@ -932,46 +990,8 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
       height: 100%;
     }
 
-    .gallery-overlay {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 120px;
-      background: linear-gradient(transparent, rgba(0, 0, 0, 0.4));
-    }
   }
 
-  .gallery-thumbs {
-    display: flex;
-    gap: 12px;
-    margin-top: 16px;
-
-    .thumb-item {
-      width: 100px;
-      height: 70px;
-      border-radius: 8px;
-      overflow: hidden;
-      cursor: pointer;
-      opacity: 0.6;
-      transition: all 0.3s;
-      border: 2px solid transparent;
-
-      &:hover,
-      &.active {
-        opacity: 1;
-      }
-
-      &.active {
-        border-color: $primary;
-      }
-
-      .el-image {
-        width: 100%;
-        height: 100%;
-      }
-    }
-  }
 }
 
 // 信息区域
@@ -1027,6 +1047,7 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
     display: flex;
     gap: 12px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
 
     .tag {
       display: flex;
@@ -1040,6 +1061,17 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
 
       .el-icon {
         font-size: 14px;
+      }
+
+      &.type-tag {
+        background: linear-gradient(135deg, $primary, #2f8668);
+        color: $white;
+        font-weight: 600;
+      }
+
+      &.extra-tag {
+        background: rgba(232, 168, 56, 0.12);
+        color: #8a6116;
       }
     }
   }
@@ -1452,7 +1484,7 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
   }
 }
 
-// 评论区
+// 评论区域
 .comments-section {
   padding: 40px 0;
   margin-top: 24px;
@@ -1483,6 +1515,18 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
       font-size: 14px;
       color: $text-muted;
       font-weight: 400;
+    }
+  }
+
+  .comments-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .section-title {
+      margin: 0;
     }
   }
 
@@ -1546,7 +1590,30 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
   }
 }
 
-// 购票对话框
+.comment-dialog {
+  :deep(.el-dialog) {
+    border-radius: 16px;
+  }
+
+  .comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .rating-select {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .label {
+      color: $text-secondary;
+      font-size: 14px;
+    }
+  }
+}
+
+// 门票弹窗
 .ticket-dialog {
   :deep(.el-dialog) {
     border-radius: 16px;
@@ -1785,7 +1852,7 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
   }
 }
 
-// 成功对话框
+// 支付成功弹窗
 .success-dialog {
   :deep(.el-dialog) {
     border-radius: 16px;
@@ -1822,7 +1889,7 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
   }
 }
 
-// 响应式
+// 响应式适配
 @media (max-width: 1200px) {
   .info-container {
     grid-template-columns: 1fr;
@@ -1847,10 +1914,6 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
 
     .gallery-main {
       border-radius: 12px;
-    }
-
-    .gallery-thumbs {
-      display: none;
     }
   }
 

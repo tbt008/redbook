@@ -1,5 +1,7 @@
 <template>
-  <router-view />
+  <div class="app-shell">
+    <router-view />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -18,15 +20,19 @@ onMounted(() => {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-    'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 #app {
   min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 /* 滚动条样式 */

@@ -43,7 +43,7 @@ const captchaCode = ref(props.modelValue || '');
 // 生成验证码
 const generateCaptcha = async () => {
   try {
-    const response = await request.get('/captcha/generate');
+    const response = await request.get('/captcha/generate') as any;
     if (response.code === 200) {
       captchaImage.value = response.data.captchaImage;
       captchaId.value = response.data.captchaId;

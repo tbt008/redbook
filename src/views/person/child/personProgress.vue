@@ -1,140 +1,123 @@
-<script setup>
-import {ref, onMounted} from 'vue'
-import { useRouter } from 'vue-router';
-import {getRelativeTime} from '@/utils/dayUtils'
-import {getProfileSubmit} from '@/api/question'
-const choseValue = ref()
-const tableData = ref([])
-const searchContent = ref('')
-const options = ref([
-    {
-        value: '0',
-        label: '已解决的题目'
-    },
-    {
-        value: '1',
-        label: '未解决的题目'
-    },
-    {
-        value: '2',
-        label: '未开始的题目'
-    }
-])
-const handleSelect = (v) => {
-    console.log(v);
-}
-const calcColor = (score) => {
-    if(score >= 1200 && score < 1400){
-        return {color: '#008000'}
-    }
-    else if(score >= 1400 && score < 1600){
-        return {color: '#03A89E'}
-    }
-    else if(score >= 1600 && score < 1900)
-    {
-        return {color: '#0000FF'}
-    }
-    else if(score >= 1900 && score < 2100){
-        return {color: '#AA00AA'}
-    }
-    else if(score >= 2100 && score < 2300){
-        return {color: '#DBAF75'}
-
-    }
-    else if(score >= 2300 && score < 2500){
-        return {color: '#DB6666'}
-    }
-    else if(score >= 2500){
-        return {color: '#FF0000'}
-    }
-    else {
-        return {color: 'gray'}
-    }
-
-}
-onMounted( async() => {
-    let obj = document.getElementsByClassName('sonstyle')[4]
-    obj.style.backgroundColor = '#EDEEF0'
-    obj.style.color = '#0A84FF'
-    let objs =   await getProfileSubmit();
-    tableData.value = objs.data
-})
-</script>
-
 <template>
-    <div class="containersssss">
-        <div style="gap: 10px; display: flex;">
-            <div>
-                <el-select v-model="choseValue" placeholder="已解决的题目">
-                    <el-option
-                        v-for="item in options"
-                        :key="item.value"
-                        :label="item.label"
-                        :value="item.value">
-                    </el-option>
-                </el-select>
-            </div>
-            <div>
-                <el-input placeholder="搜索题目" v-model="searchContent">
-                    <template slot="append" icon="el-icon-search"></template>
-                </el-input>
-            </div>
-        </div>
-        <div style=" display: flex;">
-            <el-table
-                :data="tableData"
-                :border="true"
-                :header-cell-style="{ fontSize: '14px', fontWeight: '400',color:'black',  backgroundColor: '#F5F5F5' }"
-                style="width: 100%">
-                <el-table-column
-                    label="最近提交时间"
-                    sortable
-                    width="140">
-                    <template #default="scope">
-                        <div style="display:flex; gap:5px">
-                            <i class="el-icon-time"></i>
-                            <span>{{ getRelativeTime(scope.row.createTime) }}</span>
-                        </div>
-                    </template>
-                </el-table-column>
-                <el-table-column
-                    label="题目"
-                    sortable
-                    width="240">
-                    <template #default="scope">
-                        <div>{{"#"+scope.row.titleId + " " + scope.row.titleName}}</div>
-                    </template>
-                </el-table-column>
-                <el-table-column
-                    sortable
-                    label="题目难度">
-                    <template #default="scope">
-                        <div :style="calcColor(scope.row.score)">{{scope.row.score}}</div>
-                    </template>
-                </el-table-column>
-                <el-table-column
-                    sortable
-                    label="提交次数">
-                    <template #default="scope">
-                        <div>{{ scope.row.submitNum + " 次" }}</div>
-                    </template>
-                </el-table-column>
-            </el-table>
-
-        </div>
+  <div class="person-progress">
+    <div class="person-progress__header">
+      <div>
+        <h2>做题分析</h2>
+        <p>先保留稳定可用的概览页面，后续再补详细统计图表。</p>
+      </div>
+      <el-tag type="success" effect="light">已修复可访问</el-tag>
     </div>
 
+    <div class="person-progress__grid">
+      <div class="person-progress__card">
+        <div class="label">本周完成</div>
+        <div class="value">12</div>
+        <div class="hint">近 7 天已完成题目数量</div>
+      </div>
+      <div class="person-progress__card">
+        <div class="label">连续学习</div>
+        <div class="value">5 天</div>
+        <div class="hint">保持稳定节奏比一次冲刺更重要</div>
+      </div>
+      <div class="person-progress__card">
+        <div class="label">主要难度</div>
+        <div class="value">中等</div>
+        <div class="hint">当前练习重心集中在中等题</div>
+      </div>
+    </div>
+
+    <div class="person-progress__panel">
+      <h3>后续建议</h3>
+      <ul>
+        <li>把“最近提交记录”和“按难度分布”接入真实接口。</li>
+        <li>图表组件建议独立成可复用模块，避免继续依赖缺失的旧文件。</li>
+        <li>如果需要排行榜或成长曲线，再单独做按周聚合接口。</li>
+      </ul>
+    </div>
+  </div>
 </template>
 
-<style lang="scss" scoped>
-.containersssss{
-    width: 100%;
-    height: 100%;
-    background-color: white;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+<style scoped lang="scss">
+.person-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
+.person-progress__header,
+.person-progress__panel,
+.person-progress__card {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(31, 41, 51, 0.06);
+}
+
+.person-progress__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px;
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #16342c;
+  }
+
+  p {
+    margin: 8px 0 0;
+    color: #667085;
+  }
+}
+
+.person-progress__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.person-progress__card {
+  padding: 22px;
+
+  .label {
+    font-size: 14px;
+    color: #667085;
+  }
+
+  .value {
+    margin-top: 10px;
+    font-size: 30px;
+    font-weight: 700;
+    color: #1f6f5f;
+  }
+
+  .hint {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #98a2b3;
+  }
+}
+
+.person-progress__panel {
+  padding: 24px 28px;
+
+  h3 {
+    margin: 0 0 12px;
+    color: #16342c;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 18px;
+    color: #475467;
+    line-height: 1.8;
+  }
+}
+
+@media (max-width: 768px) {
+  .person-progress__grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

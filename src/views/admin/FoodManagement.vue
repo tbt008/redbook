@@ -1,47 +1,107 @@
-<template>
-  <div class="food-management">
-    <h2 class="page-title">美食管理</h2>
+﻿<template>
+  <div class="food-management admin-theme-page">
+    <div class="page-header">
+      <div class="header-content">
+        <div class="title-section">
+          <div class="title-icon">
+            <el-icon><ForkSpoon /></el-icon>
+          </div>
+          <div class="title-text">
+            <h1 class="page-title">美食管理</h1>
+            <p class="page-subtitle">Manage Culinary Spots And Packages</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <el-button type="primary" class="add-btn" @click="handleAdd">
+            <el-icon><Plus /></el-icon>
+            发布美食
+          </el-button>
+        </div>
+      </div>
+    </div>
 
-    <!-- 搜索筛选 -->
-    <el-card class="search-card">
-      <el-form :inline="true" :model="searchForm">
-        <el-form-item label="美食名称">
-          <el-input v-model="searchForm.keyword" placeholder="请输入美食名称" style="width: 200px" clearable />
-        </el-form-item>
-        <el-form-item label="地区">
-          <el-select v-model="searchForm.region" placeholder="全部地区" clearable style="width: 150px">
+    <div class="search-section">
+      <div class="search-box">
+        <div class="search-input-wrapper">
+          <el-icon class="search-icon"><Search /></el-icon>
+          <input
+            v-model="searchForm.keyword"
+            type="text"
+            placeholder="搜索美食名称..."
+            class="search-input"
+            @keyup.enter="handleSearch"
+          />
+          <span class="search-shortcut">Enter 搜索</span>
+        </div>
+        <div class="filter-group">
+          <el-select v-model="searchForm.region" placeholder="全部地区" clearable class="filter-select">
+            <template #prefix>
+              <el-icon><Location /></el-icon>
+            </template>
             <el-option label="荔城区" value="荔城区" />
             <el-option label="城厢区" value="城厢区" />
             <el-option label="涵江区" value="涵江区" />
             <el-option label="秀屿区" value="秀屿区" />
             <el-option label="湄洲岛" value="湄洲岛" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="全部" clearable style="width: 120px">
+          <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="filter-select">
+            <template #prefix>
+              <el-icon><SwitchButton /></el-icon>
+            </template>
             <el-option label="下架" :value="0" />
             <el-option label="上架" :value="1" />
           </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <!-- 操作栏 -->
-    <el-card class="table-card">
-      <template #header>
-        <div class="table-header">
-          <el-button type="primary" @click="handleAdd">
-            <el-icon><Plus /></el-icon> 发布美食
+          <el-button class="reset-btn" @click="handleReset">
+            <el-icon><RefreshRight /></el-icon>
+            重置
           </el-button>
         </div>
-      </template>
+      </div>
+    </div>
 
-      <!-- 美食列表 -->
-      <el-table :data="foodList" v-loading="loading" stripe>
+    <div class="stats-section">
+      <div class="stat-card">
+        <div class="stat-icon total"><el-icon><Collection /></el-icon></div>
+        <div class="stat-content">
+          <div class="stat-value">{{ pagination.total }}</div>
+          <div class="stat-label">美食总数</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon online"><el-icon><CircleCheck /></el-icon></div>
+        <div class="stat-content">
+          <div class="stat-value">{{ onlineCount }}</div>
+          <div class="stat-label">上架美食</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon views"><el-icon><View /></el-icon></div>
+        <div class="stat-content">
+          <div class="stat-value">{{ totalViews }}</div>
+          <div class="stat-label">总浏览量</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon comments"><el-icon><ChatDotRound /></el-icon></div>
+        <div class="stat-content">
+          <div class="stat-value">{{ totalComments }}</div>
+          <div class="stat-label">总评论数</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-section">
+      <div class="table-header table-header--panel">
+        <h3 class="section-title">
+          <span class="title-bar"></span>
+          美食列表
+        </h3>
+        <div class="table-actions">
+          <span class="data-info">共 {{ pagination.total }} 条记录</span>
+        </div>
+      </div>
+
+      <el-table :data="foodList" v-loading="loading" stripe class="food-table">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="美食信息" width="300">
           <template #default="{ row }">
@@ -51,7 +111,7 @@
                   <div class="image-slot"><el-icon><Picture /></el-icon></div>
                 </template>
               </el-image>
-              <div class="food-detail">
+              <div class="food-meta">
                 <div class="name">{{ row.name }}</div>
                 <div class="address">{{ row.region }} - {{ row.address }}</div>
               </div>
@@ -104,9 +164,9 @@
       </el-table>
 
       <!-- 分页 -->
-      <el-pagination
-        v-model:current-page="pagination.pageNum"
-        v-model:page-size="pagination.pageSize"
+        <el-pagination
+          v-model:current-page="pagination.pageNum"
+          v-model:page-size="pagination.pageSize"
         :total="pagination.total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
@@ -114,10 +174,10 @@
         @current-change="loadFoodList"
         style="margin-top: 20px; justify-content: flex-end"
       />
-    </el-card>
+    </div>
 
     <!-- 编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="700px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="700px">
       <el-form :model="foodForm" :rules="formRules" ref="formRef" label-width="100px">
         <el-form-item label="美食名称" prop="name">
           <el-input v-model="foodForm.name" placeholder="请输入美食名称" />
@@ -168,7 +228,7 @@
     </el-dialog>
 
     <!-- 套餐管理对话框 -->
-    <el-dialog v-model="packageDialogVisible" :title="`${currentFoodName} - 套餐管理`" width="900px" destroy-on-close>
+    <el-dialog v-model="packageDialogVisible" :title="`${currentFoodName} - 套餐管理`" width="900px">
       <div class="package-header">
         <el-button type="primary" @click="handleAddPackage">
           <el-icon><Plus /></el-icon> 添加套餐
@@ -224,7 +284,7 @@
     </el-dialog>
 
     <!-- 添加/编辑套餐对话框 -->
-    <el-dialog v-model="packageFormDialogVisible" :title="packageFormTitle" width="600px" destroy-on-close>
+    <el-dialog v-model="packageFormDialogVisible" :title="packageFormTitle" width="600px">
       <el-form :model="packageForm" :rules="packageFormRules" ref="packageFormRef" label-width="100px">
         <el-form-item label="套餐名称" prop="packageName">
           <el-input v-model="packageForm.packageName" placeholder="请输入套餐名称" />
@@ -270,9 +330,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
-import { Picture, Delete, Plus } from '@element-plus/icons-vue'
+import {
+  Picture,
+  Delete,
+  Plus,
+  Search,
+  Location,
+  SwitchButton,
+  RefreshRight,
+  Collection,
+  CircleCheck,
+  View,
+  ChatDotRound,
+  ForkSpoon
+} from '@element-plus/icons-vue'
 import request from '@/util/request'
 
 const loading = ref(false)
@@ -309,6 +382,10 @@ const pagination = reactive({
   pageSize: 20,
   total: 0
 })
+
+const onlineCount = computed(() => foodList.value.filter((item) => item.status === 1).length)
+const totalViews = computed(() => foodList.value.reduce((sum, item) => sum + Number(item.viewCount || 0), 0))
+const totalComments = computed(() => foodList.value.reduce((sum, item) => sum + Number(item.commentCount || 0), 0))
 
 const foodForm = reactive({
   id: null as number | null,
@@ -670,21 +747,381 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .food-management {
-  .page-title {
-    margin: 0 0 24px 0;
-    font-size: 24px;
-    font-weight: 600;
-    color: #333;
+  $primary-color: #1a5f4a;
+  $primary-light: #2d7a5f;
+  $accent-color: #e8a838;
+  $success-color: #52c41a;
+  $danger-color: #ff4d4f;
+  $text-primary: #1f2937;
+  $text-secondary: #4b5563;
+  $text-muted: #9ca3af;
+  $bg-light: #f8faf9;
+  $bg-card: #ffffff;
+  $border-color: #e5e7eb;
+  $shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.05);
+  $shadow-md: 0 8px 30px rgba(26, 95, 74, 0.12);
+  $shadow-lg: 0 15px 40px rgba(26, 95, 74, 0.15);
+
+  .page-header {
+    margin-bottom: 24px;
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 28px 32px;
+      background: linear-gradient(135deg, $primary-color 0%, $primary-light 100%);
+      border-radius: 16px;
+      box-shadow: $shadow-lg;
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: 5%;
+        width: 150px;
+        height: 150px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+      }
+    }
   }
 
-  .search-card {
+  .title-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .title-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .el-icon {
+      font-size: 28px;
+      color: #fff;
+    }
+  }
+
+  .title-text {
+    .page-title {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+
+    .page-subtitle {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.75);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+  }
+
+  .header-actions {
+    position: relative;
+    z-index: 1;
+
+    .add-btn {
+      background: linear-gradient(135deg, $accent-color 0%, #d4922a 100%);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(232, 168, 56, 0.4);
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(232, 168, 56, 0.5);
+      }
+    }
+  }
+
+  .search-section {
+    margin-bottom: 20px;
+
+    .search-box {
+      background: $bg-card;
+      border-radius: 14px;
+      padding: 20px 24px;
+      box-shadow: $shadow-sm;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+  }
+
+  .search-input-wrapper {
+    flex: 1;
+    min-width: 280px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: $bg-light;
+    border-radius: 10px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+
+    &:focus-within {
+      border-color: $primary-light;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(26, 95, 74, 0.1);
+    }
+
+    .search-icon {
+      color: $text-muted;
+      font-size: 18px;
+    }
+
+    .search-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 12px;
+      font-size: 14px;
+      color: $text-primary;
+      outline: none;
+
+      &::placeholder {
+        color: $text-muted;
+      }
+    }
+
+    .search-shortcut {
+      font-size: 12px;
+      color: $text-muted;
+      background: rgba(0, 0, 0, 0.05);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+
+    .filter-select {
+      width: 150px;
+
+      :deep(.el-select__wrapper) {
+        border-radius: 10px;
+        background: $bg-light;
+        border: 1px solid transparent;
+        box-shadow: none;
+
+        &:hover {
+          border-color: $primary-light;
+        }
+
+        &.is-focused {
+          border-color: $primary-light;
+          box-shadow: 0 0 0 3px rgba(26, 95, 74, 0.1);
+        }
+      }
+    }
+
+    .reset-btn {
+      border-radius: 10px;
+      background: $bg-light;
+      border: 1px solid $border-color;
+      color: $text-secondary;
+      padding: 10px 16px;
+
+      &:hover {
+        border-color: $primary-light;
+        color: $primary-color;
+      }
+    }
+  }
+
+  .stats-section {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+
+    @media (max-width: 1200px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .stat-card {
+    background: $bg-card;
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: $shadow-sm;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+    }
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: $shadow-md;
+    }
+
+    &:nth-child(1)::before { background: linear-gradient(180deg, $primary-color, $primary-light); }
+    &:nth-child(2)::before { background: linear-gradient(180deg, $success-color, #73d13d); }
+    &:nth-child(3)::before { background: linear-gradient(180deg, #3b82f6, #60a5fa); }
+    &:nth-child(4)::before { background: linear-gradient(180deg, $accent-color, #f0b954); }
+  }
+
+  .stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+
+    &.total {
+      background: linear-gradient(135deg, rgba(26, 95, 74, 0.1), rgba(26, 95, 74, 0.05));
+      color: $primary-color;
+    }
+
+    &.online {
+      background: linear-gradient(135deg, rgba(82, 196, 26, 0.1), rgba(82, 196, 26, 0.05));
+      color: $success-color;
+    }
+
+    &.views {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+      color: #3b82f6;
+    }
+
+    &.comments {
+      background: linear-gradient(135deg, rgba(232, 168, 56, 0.1), rgba(232, 168, 56, 0.05));
+      color: $accent-color;
+    }
+  }
+
+  .stat-content {
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: $text-primary;
+      line-height: 1.2;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: $text-muted;
+      margin-top: 4px;
+    }
+  }
+
+  .content-section {
+    background: $bg-card;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: $shadow-sm;
+  }
+
+  .table-header--panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
   }
 
-  .table-card {
-    .table-header {
-      display: flex;
-      justify-content: flex-end;
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: $text-primary;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+
+    .title-bar {
+      width: 4px;
+      height: 18px;
+      background: linear-gradient(180deg, $primary-color, $primary-light);
+      border-radius: 2px;
+    }
+  }
+
+  .data-info {
+    font-size: 13px;
+    color: $text-muted;
+  }
+
+  .food-table {
+    :deep(.el-table__body-wrapper),
+    :deep(.el-scrollbar__view),
+    :deep(.el-table__body),
+    :deep(.el-table__body tbody),
+    :deep(.el-table__fixed-body-wrapper tbody) {
+      height: auto !important;
+    }
+
+    :deep(.el-table__header-wrapper th) {
+      background: $bg-light;
+      color: $text-secondary;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 14px 0;
+    }
+
+    :deep(.el-table__body-wrapper td) {
+      padding: 16px 0;
+      vertical-align: middle;
+    }
+
+    :deep(.el-table__cell) {
+      vertical-align: middle;
+    }
+
+    :deep(.el-table__row) {
+      height: auto !important;
+    }
+
+    :deep(.el-table__row) {
+      transition: all 0.3s ease;
+
+      &:hover > td {
+        background: rgba(26, 95, 74, 0.04) !important;
+      }
     }
 
     .food-info {
@@ -692,38 +1129,28 @@ onMounted(() => {
       align-items: center;
       gap: 12px;
 
-      .food-detail {
+      .food-meta {
         .name {
+          font-size: 15px;
           font-weight: 600;
-          margin-bottom: 4px;
+          color: $text-primary;
+          margin-bottom: 6px;
         }
 
         .address {
           font-size: 12px;
-          color: #999;
+          color: $text-muted;
         }
       }
     }
 
     .price {
-      color: #ff6b00;
-      font-weight: 600;
-    }
-
-    .table-info {
-      .total {
-        font-weight: 600;
-        color: #1a5f4a;
-      }
-
-      .reserved {
-        color: #999;
-        font-size: 12px;
-      }
+      color: $danger-color;
+      font-weight: 700;
     }
 
     .no-table {
-      color: #999;
+      color: $text-muted;
       font-size: 12px;
     }
   }
@@ -757,8 +1184,8 @@ onMounted(() => {
     align-items: center;
     width: 80px;
     height: 60px;
-    background: #f5f7fa;
-    color: #909399;
+    background: linear-gradient(135deg, #e8f0ec, #d4e4db);
+    color: $text-muted;
   }
 
   .package-header {
@@ -772,14 +1199,61 @@ onMounted(() => {
   }
 
   .no-data {
-    color: #999;
+    color: $text-muted;
     font-size: 12px;
   }
 
   .original-price {
-    color: #999;
+    color: $text-muted;
     text-decoration: line-through;
     font-size: 12px;
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      .header-content {
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+      }
+
+      .header-actions {
+        width: 100%;
+
+        .add-btn {
+          width: 100%;
+        }
+      }
+    }
+
+    .search-section {
+      .search-box {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-input-wrapper {
+        min-width: auto;
+      }
+    }
+
+    .filter-group {
+      flex-wrap: wrap;
+
+      .filter-select {
+        flex: 1;
+        min-width: 120px;
+      }
+    }
+
+    .stats-section {
+      grid-template-columns: 1fr;
+    }
+
+    .content-section {
+      padding: 16px;
+      overflow-x: auto;
+    }
   }
 }
 </style>

@@ -38,6 +38,7 @@ const router = createRouter({
       path: '/profile',
       component: () => import('@/views/person/personMain.vue'),
       meta: { requiresAuth: true },
+      redirect: '/profile/info',
       children: [
         {
           path: 'notes',
@@ -53,6 +54,26 @@ const router = createRouter({
           path: 'favour',
           name: 'personFavour',
           component: () => import('@/views/person/child/personFavour.vue')
+        },
+        {
+          path: 'article',
+          name: 'personArticle',
+          component: () => import('@/views/person/child/personSolveArticle.vue')
+        },
+        {
+          path: 'rewards',
+          name: 'personRewards',
+          component: () => import('@/views/person/child/personRewards.vue')
+        },
+        {
+          path: 'progress',
+          name: 'personProgress',
+          component: () => import('@/views/person/child/personProgress.vue')
+        },
+        {
+          path: 'session',
+          name: 'personSession',
+          component: () => import('@/views/person/child/personSession.vue')
         }
       ]
     },
@@ -157,7 +178,7 @@ const router = createRouter({
         {
           path: 'user-certification',
           name: 'adminUserCertification',
-          component: () => import('@/views/admin/UserManagement.vue')
+          component: () => import('@/views/admin/UserCertification.vue')
         },
         {
           path: 'audit-content',

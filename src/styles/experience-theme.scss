@@ -1,0 +1,825 @@
+.publish-page,
+.content-detail-page,
+.search-page,
+.user-center-container,
+.my-orders,
+.merchant-publish-container,
+.ai-map-planner,
+.itinerary-editor-page,
+.itinerary-create-page,
+.ai-itinerary-page,
+.ai-assistant-page,
+.attraction-detail,
+.food-detail,
+.hotel-detail {
+  position: relative;
+  min-height: 100vh;
+  color: var(--app-text);
+  background:
+    radial-gradient(circle at top left, rgba(214, 154, 45, 0.08), transparent 24%),
+    radial-gradient(circle at 85% 10%, rgba(31, 111, 95, 0.12), transparent 26%),
+    linear-gradient(180deg, #f7f7f2 0%, #eef4ef 54%, #f6f3ea 100%);
+}
+
+.publish-page::before,
+.content-detail-page::before,
+.search-page::before,
+.user-center-container::before,
+.my-orders::before,
+.merchant-publish-container::before,
+.ai-map-planner::before,
+.itinerary-editor-page::before,
+.itinerary-create-page::before,
+.ai-itinerary-page::before,
+.ai-assistant-page::before,
+.attraction-detail::before,
+.food-detail::before,
+.hotel-detail::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.26), transparent 45%),
+    radial-gradient(circle at 20% 22%, rgba(255, 255, 255, 0.52), transparent 18%);
+  mix-blend-mode: screen;
+  z-index: 0;
+}
+
+.publish-page > *,
+.content-detail-page > *,
+.search-page > *,
+.user-center-container > *,
+.my-orders > *,
+.merchant-publish-container > *,
+.ai-map-planner > *,
+.itinerary-editor-page > *,
+.itinerary-create-page > *,
+.ai-itinerary-page > *,
+.ai-assistant-page > *,
+.attraction-detail > *,
+.food-detail > *,
+.hotel-detail > * {
+  position: relative;
+  z-index: 1;
+}
+
+.publish-page .app-main,
+.content-detail-page .app-main,
+.search-page .app-main,
+.my-orders .app-main {
+  padding-top: 36px;
+  padding-bottom: 56px;
+}
+
+.publish-page .app-page-card,
+.content-detail-page .app-page-card,
+.search-page .app-page-card,
+.my-orders .app-page-card,
+.merchant-publish-container .el-card,
+.user-center-container .user-profile,
+.user-center-container .content-tabs,
+.user-center-container .order-filter-card,
+.user-center-container .order-card,
+.user-center-container .settings-form,
+.user-center-container .history-item,
+.user-center-container .content-card,
+.ai-map-planner .panel,
+.ai-map-planner .marker-detail,
+.ai-map-planner .map-legend,
+.itinerary-editor-page .map-section,
+.itinerary-editor-page .timeline-section,
+.itinerary-editor-page .stats-panel,
+.itinerary-create-page .create-card,
+.itinerary-create-page .example-card,
+.ai-itinerary-page .chat-section,
+.ai-itinerary-page .itinerary-section,
+.ai-assistant-page .chat-container,
+.attraction-detail .gallery-section,
+.attraction-detail .info-container,
+.food-detail .gallery-section,
+.food-detail .info-container,
+.hotel-detail .gallery-section,
+.hotel-detail .info-container {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(18, 51, 45, 0.08);
+  box-shadow:
+    0 18px 45px rgba(18, 51, 45, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(18px);
+}
+
+.publish-page .workspace-card,
+.publish-page .intro-panel,
+.content-detail-page .content-main,
+.content-detail-page .related-card,
+.search-page .hero-card,
+.search-page .filters-card,
+.search-page .result-card,
+.my-orders .orders-hero,
+.my-orders .orders-shell,
+.merchant-publish-container .publish-card,
+.merchant-publish-container .my-list-card,
+.ai-map-planner .panel,
+.itinerary-editor-page .map-section,
+.itinerary-editor-page .timeline-section,
+.itinerary-create-page .create-card,
+.ai-itinerary-page .chat-section,
+.ai-itinerary-page .itinerary-section,
+.ai-assistant-page .chat-container,
+.attraction-detail .gallery-section,
+.attraction-detail .info-container,
+.food-detail .gallery-section,
+.food-detail .info-container,
+.hotel-detail .gallery-section,
+.hotel-detail .info-container {
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.publish-page .page-header,
+.content-detail-page .header,
+.search-page .search-header,
+.my-orders .header,
+.merchant-publish-container .header,
+.user-center-container .header,
+.itinerary-editor-page .header,
+.itinerary-create-page .header,
+.ai-itinerary-page .header,
+.ai-assistant-page .header,
+.attraction-detail .detail-header,
+.food-detail .detail-header,
+.hotel-detail .detail-header {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  background: rgba(255, 252, 246, 0.7);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(18, 51, 45, 0.08);
+  box-shadow: 0 10px 24px rgba(18, 51, 45, 0.05);
+}
+
+.merchant-publish-container .header-content,
+.user-center-container .header-content,
+.itinerary-editor-page .header-content,
+.itinerary-create-page .header-content,
+.ai-itinerary-page .header-content,
+.ai-assistant-page .header-content,
+.attraction-detail .header-inner,
+.food-detail .header-inner,
+.hotel-detail .header-inner,
+.ai-map-planner .header-inner {
+  width: min(100% - 32px, 1240px);
+  margin: 0 auto;
+}
+
+.merchant-publish-container .header-content,
+.user-center-container .header-content,
+.itinerary-editor-page .header-content,
+.itinerary-create-page .header-content,
+.ai-itinerary-page .header-content,
+.ai-assistant-page .header-content,
+.attraction-detail .header-inner,
+.food-detail .header-inner,
+.hotel-detail .header-inner,
+.ai-map-planner .header-inner {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.merchant-publish-container .logo,
+.user-center-container .logo,
+.itinerary-editor-page .logo,
+.itinerary-create-page .logo,
+.ai-itinerary-page .logo,
+.ai-assistant-page .logo,
+.attraction-detail .logo-section,
+.food-detail .logo-section,
+.hotel-detail .logo-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  color: var(--app-primary-strong);
+}
+
+.merchant-publish-container .logo::before,
+.user-center-container .logo::before,
+.itinerary-editor-page .logo::before,
+.itinerary-create-page .logo::before,
+.ai-itinerary-page .logo::before,
+.ai-assistant-page .logo::before {
+  content: '';
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(31, 111, 95, 0.96), rgba(214, 154, 45, 0.78));
+  box-shadow: 0 14px 24px rgba(23, 79, 67, 0.18);
+}
+
+.merchant-publish-container .logo span,
+.user-center-container .logo span,
+.itinerary-editor-page .logo span,
+.itinerary-create-page .logo span,
+.ai-itinerary-page .logo span,
+.ai-assistant-page .logo span {
+  position: relative;
+  margin-left: -54px;
+  width: 42px;
+  text-align: center;
+  color: #fff;
+  font-size: 18px;
+  z-index: 1;
+}
+
+.publish-page .topbar-left,
+.publish-page .topbar-actions,
+.content-detail-page .header-left,
+.search-page .header-inner,
+.my-orders .header-content,
+.merchant-publish-container .user-info,
+.user-center-container .header-actions,
+.itinerary-editor-page .header-actions,
+.ai-map-planner .header-actions,
+.ai-itinerary-page .header-actions,
+.ai-assistant-page .header-actions,
+.attraction-detail .header-actions,
+.food-detail .header-actions,
+.hotel-detail .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.publish-page .brand-badge,
+.publish-page .draft-state,
+.content-detail-page .brand-subtitle,
+.search-page .brand-subtitle,
+.my-orders .brand-subtitle,
+.user-center-container .profile-role,
+.user-center-container .filter-label,
+.merchant-publish-container .user-info,
+.itinerary-editor-page .section-header p,
+.itinerary-create-page .card-header p,
+.ai-itinerary-page .chat-header .info p,
+.ai-assistant-page .chat-header .info p,
+.attraction-detail .breadcrumb,
+.food-detail .breadcrumb,
+.hotel-detail .breadcrumb {
+  color: var(--app-text-muted);
+}
+
+.publish-page .intro-panel,
+.search-page .hero-card,
+.my-orders .orders-hero,
+.itinerary-create-page .create-card,
+.ai-itinerary-page .chat-header,
+.ai-assistant-page .chat-header,
+.content-detail-page .hero-panel,
+.attraction-detail .gallery-section,
+.food-detail .gallery-section,
+.hotel-detail .gallery-section {
+  position: relative;
+  isolation: isolate;
+}
+
+.publish-page .intro-panel::before,
+.search-page .hero-card::before,
+.my-orders .orders-hero::before,
+.itinerary-create-page .create-card::before,
+.content-detail-page .hero-panel::before,
+.attraction-detail .gallery-section::before,
+.food-detail .gallery-section::before,
+.hotel-detail .gallery-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top right, rgba(214, 154, 45, 0.16), transparent 26%),
+    linear-gradient(135deg, rgba(19, 65, 56, 0.96), rgba(28, 89, 77, 0.82) 46%, rgba(229, 211, 177, 0.55) 100%);
+  z-index: -1;
+}
+
+.publish-page .intro-main,
+.publish-page .intro-side,
+.search-page .hero-copy,
+.search-page .hero-aside,
+.my-orders .hero-copy,
+.my-orders .hero-aside,
+.content-detail-page .hero-panel > *,
+.attraction-detail .gallery-main,
+.food-detail .gallery-main,
+.hotel-detail .gallery-main {
+  position: relative;
+  z-index: 1;
+}
+
+.publish-page .intro-panel,
+.search-page .hero-card,
+.my-orders .orders-hero,
+.content-detail-page .hero-panel {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.publish-page .intro-text,
+.search-page .hero-subtitle,
+.my-orders .hero-subtitle,
+.content-detail-page .description,
+.content-detail-page .publish-time,
+.content-detail-page .metric-label {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.publish-page .intro-metric,
+.search-page .hero-stat,
+.my-orders .hero-stat,
+.content-detail-page .metric-card {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+}
+
+.publish-page .workspace,
+.content-detail-page .detail-shell,
+.user-center-container .main-content,
+.itinerary-editor-page .editor-container,
+.itinerary-create-page .create-container,
+.ai-itinerary-page .main-container,
+.ai-assistant-page .chat-wrapper,
+.attraction-detail .main-content,
+.food-detail .main-content,
+.hotel-detail .main-content,
+.merchant-publish-container .main-content,
+.ai-map-planner .main-container {
+  width: min(100% - 32px, 1240px);
+  margin: 0 auto;
+}
+
+.user-center-container .main-content,
+.merchant-publish-container .main-content,
+.itinerary-editor-page .editor-container,
+.itinerary-create-page .create-container,
+.ai-itinerary-page .main-container,
+.ai-assistant-page .chat-wrapper,
+.attraction-detail .main-content,
+.food-detail .main-content,
+.hotel-detail .main-content,
+.ai-map-planner .main-container {
+  padding: 34px 0 56px;
+}
+
+.publish-page .section-header,
+.publish-page .preview-card__header,
+.publish-page .status-card__header,
+.content-detail-page .section-head,
+.search-page .results-toolbar,
+.user-center-container .profile-header,
+.user-center-container .detail-header,
+.merchant-publish-container .card-header,
+.itinerary-editor-page .section-header,
+.itinerary-create-page .card-header,
+.ai-map-planner .panel-header,
+.ai-itinerary-page .itinerary-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.publish-page .workspace-card,
+.content-detail-page .related-card,
+.search-page .filters-card,
+.search-page .result-card,
+.my-orders .orders-shell,
+.user-center-container .user-profile,
+.user-center-container .content-tabs,
+.merchant-publish-container .publish-card,
+.merchant-publish-container .my-list-card,
+.itinerary-editor-page .map-section,
+.itinerary-editor-page .timeline-section,
+.itinerary-create-page .create-card,
+.ai-itinerary-page .chat-section,
+.ai-itinerary-page .itinerary-section,
+.ai-assistant-page .chat-container {
+  border: 1px solid rgba(18, 51, 45, 0.08);
+}
+
+.publish-page .publish-form .el-input__wrapper,
+.publish-page .publish-form .el-textarea__inner,
+.publish-page .publish-form .el-select__wrapper,
+.merchant-publish-container .el-input__wrapper,
+.merchant-publish-container .el-textarea__inner,
+.merchant-publish-container .el-select__wrapper,
+.merchant-publish-container .el-date-editor.el-input__wrapper,
+.user-center-container .settings-form .el-input__wrapper,
+.user-center-container .settings-form .el-textarea__inner,
+.itinerary-create-page .create-form .el-input__wrapper,
+.itinerary-create-page .create-form .el-textarea__inner,
+.itinerary-create-page .create-form .el-select__wrapper,
+.ai-map-planner .chat-input .el-textarea__inner,
+.ai-itinerary-page .chat-input .el-textarea__inner,
+.ai-assistant-page .chat-input .el-textarea__inner {
+  border-radius: 18px;
+  background: rgba(247, 250, 247, 0.9);
+  box-shadow: inset 0 1px 2px rgba(18, 51, 45, 0.05);
+}
+
+.publish-page .snippet-chip,
+.search-page .filter-tab,
+.my-orders .hero-pill,
+.user-center-container .order-filter-group .el-radio-button__inner,
+.itinerary-create-page .interest-tags .el-check-tag,
+.itinerary-create-page .area-tags .el-check-tag,
+.ai-map-planner .map-filters .el-radio-button__inner,
+.ai-itinerary-page .suggestion-card,
+.ai-assistant-page .suggestion-card {
+  border-radius: 999px;
+  border: 1px solid rgba(31, 111, 95, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 8px 18px rgba(18, 51, 45, 0.06);
+}
+
+.search-page .result-card,
+.user-center-container .content-card,
+.user-center-container .history-item,
+.user-center-container .order-card,
+.my-orders .order-card,
+.itinerary-create-page .example-card,
+.ai-itinerary-page .day-card,
+.attraction-detail .info-card,
+.food-detail .info-card,
+.hotel-detail .info-card,
+.hotel-detail .room-card,
+.food-detail .merchant-card {
+  transition:
+    transform 0.24s ease,
+    box-shadow 0.24s ease,
+    border-color 0.24s ease;
+}
+
+.search-page .result-card:hover,
+.user-center-container .content-card:hover,
+.user-center-container .history-item:hover,
+.user-center-container .order-card:hover,
+.my-orders .order-card:hover,
+.itinerary-create-page .example-card:hover,
+.ai-itinerary-page .day-card:hover,
+.attraction-detail .info-card:hover,
+.food-detail .info-card:hover,
+.hotel-detail .info-card:hover,
+.hotel-detail .room-card:hover,
+.food-detail .merchant-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(31, 111, 95, 0.18);
+  box-shadow: 0 18px 32px rgba(18, 51, 45, 0.12);
+}
+
+.user-center-container .header,
+.merchant-publish-container .header,
+.itinerary-editor-page .header,
+.itinerary-create-page .header,
+.ai-itinerary-page .header,
+.ai-assistant-page .header {
+  background: rgba(255, 252, 246, 0.74);
+}
+
+.user-center-container .user-profile {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 30px;
+}
+
+.user-center-container .profile-cover {
+  min-height: 180px;
+  background:
+    radial-gradient(circle at 18% 25%, rgba(214, 154, 45, 0.24), transparent 22%),
+    linear-gradient(135deg, rgba(19, 65, 56, 0.96), rgba(31, 111, 95, 0.82) 58%, rgba(225, 210, 183, 0.72));
+}
+
+.user-center-container .profile-header {
+  margin-top: -72px;
+  padding: 0 28px 30px;
+  align-items: flex-end;
+}
+
+.user-center-container .profile-avatar-wrap .el-avatar,
+.user-center-container .profile-avatar-wrap img {
+  border: 4px solid rgba(255, 255, 255, 0.82);
+  box-shadow: 0 20px 40px rgba(18, 51, 45, 0.2);
+}
+
+.user-center-container .profile-info {
+  flex: 1;
+  padding: 22px 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(18, 51, 45, 0.08);
+}
+
+.user-center-container .content-tabs {
+  margin-top: 26px;
+  padding: 18px 20px 26px;
+  border-radius: 28px;
+}
+
+.user-center-container .content-tabs .el-tabs__header,
+.my-orders .tabs-wrap {
+  margin-bottom: 22px;
+  padding: 10px;
+  border-radius: 20px;
+  background: rgba(239, 246, 241, 0.88);
+}
+
+.user-center-container .content-tabs .el-tabs__nav-wrap::after,
+.my-orders .tabs-wrap .el-tabs__nav-wrap::after {
+  display: none;
+}
+
+.user-center-container .content-tabs .el-tabs__item,
+.my-orders .tabs-wrap .el-tabs__item {
+  height: 42px;
+  border-radius: 999px;
+  color: var(--app-text-muted);
+}
+
+.user-center-container .content-tabs .el-tabs__item.is-active,
+.my-orders .tabs-wrap .el-tabs__item.is-active {
+  background: #fff;
+  color: var(--app-primary-strong);
+}
+
+.user-center-container .order-filter-card,
+.user-center-container .settings-form,
+.user-center-container .history-item,
+.user-center-container .content-card,
+.user-center-container .order-card {
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.user-center-container .content-card,
+.user-center-container .history-item,
+.user-center-container .order-card {
+  border: 1px solid rgba(18, 51, 45, 0.08);
+  box-shadow: 0 16px 32px rgba(18, 51, 45, 0.08);
+}
+
+.user-center-container .empty,
+.search-page .empty-state,
+.my-orders .empty-state,
+.itinerary-editor-page .empty-state {
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px dashed rgba(31, 111, 95, 0.18);
+}
+
+.my-orders .order-card {
+  position: relative;
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 249, 245, 0.92));
+}
+
+.my-orders .order-card__accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--app-primary) 0%, var(--app-accent) 100%);
+}
+
+.my-orders .order-side__panel,
+.user-center-container .pay-dialog-content,
+.user-center-container .order-detail-content,
+.content-detail-page .comment-compose,
+.content-detail-page .comment-item,
+.content-detail-page .related-item,
+.hotel-detail .booking-card,
+.food-detail .order-card,
+.attraction-detail .ticket-card {
+  border-radius: 22px;
+  background: rgba(247, 249, 245, 0.92);
+  border: 1px solid rgba(18, 51, 45, 0.08);
+}
+
+.merchant-publish-container .publish-card,
+.merchant-publish-container .my-list-card {
+  padding: 8px;
+}
+
+.merchant-publish-container .card-header,
+.itinerary-create-page .card-header,
+.itinerary-editor-page .section-header {
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(18, 51, 45, 0.08);
+}
+
+.ai-map-planner .panels-container,
+.itinerary-editor-page .editor-layout,
+.ai-itinerary-page .main-container {
+  gap: 22px;
+}
+
+.ai-map-planner .panel,
+.itinerary-editor-page .map-section,
+.itinerary-editor-page .timeline-section,
+.ai-itinerary-page .chat-section,
+.ai-itinerary-page .itinerary-section,
+.ai-assistant-page .chat-container {
+  padding: 22px;
+}
+
+.ai-map-planner .bubble,
+.ai-itinerary-page .bubble,
+.ai-assistant-page .bubble {
+  border-radius: 22px;
+  box-shadow: 0 14px 28px rgba(18, 51, 45, 0.08);
+}
+
+.ai-map-planner .message.assistant .bubble,
+.ai-itinerary-page .message.assistant .bubble,
+.ai-assistant-page .message.assistant .bubble {
+  background: linear-gradient(135deg, rgba(29, 93, 79, 0.96), rgba(55, 122, 106, 0.9));
+  color: #fff;
+}
+
+.ai-map-planner .message.user .bubble,
+.ai-itinerary-page .message.user .bubble,
+.ai-assistant-page .message.user .bubble {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.attraction-detail .detail-header,
+.food-detail .detail-header,
+.hotel-detail .detail-header {
+  position: sticky;
+}
+
+.attraction-detail .gallery-main,
+.food-detail .gallery-main,
+.hotel-detail .gallery-main {
+  min-height: 420px;
+}
+
+.attraction-detail .gallery-overlay,
+.food-detail .gallery-overlay,
+.hotel-detail .gallery-overlay {
+  background: linear-gradient(180deg, transparent 0%, rgba(12, 26, 24, 0.28) 100%);
+}
+
+.attraction-detail .info-container,
+.food-detail .info-container,
+.hotel-detail .info-container {
+  padding: 28px;
+}
+
+.attraction-detail .attraction-title,
+.food-detail .food-title,
+.hotel-detail .hotel-title,
+.content-detail-page .title,
+.search-page .hero-title,
+.my-orders .hero-title,
+.itinerary-create-page .card-header h2,
+.ai-itinerary-page .chat-header h2,
+.ai-assistant-page .chat-header h2 {
+  color: var(--app-ink);
+  letter-spacing: 0.02em;
+}
+
+.content-detail-page .title,
+.search-page .hero-title,
+.my-orders .hero-title {
+  color: #fff;
+}
+
+.attraction-detail .info-card,
+.food-detail .info-card,
+.hotel-detail .info-card,
+.hotel-detail .room-card,
+.food-detail .merchant-card {
+  border-radius: 24px;
+  background: rgba(248, 250, 246, 0.94);
+  border: 1px solid rgba(18, 51, 45, 0.08);
+}
+
+.content-detail-page .action-row .el-button,
+.content-detail-page .load-more .el-button,
+.my-orders .order-actions .el-button,
+.merchant-publish-container .el-button,
+.itinerary-create-page .action-buttons .el-button,
+.itinerary-editor-page .header-actions .el-button,
+.ai-map-planner .header-actions .el-button,
+.ai-itinerary-page .header-actions .el-button,
+.ai-assistant-page .header-content .el-button,
+.attraction-detail .back-btn,
+.food-detail .back-btn,
+.hotel-detail .back-btn {
+  border-radius: 999px;
+  box-shadow: 0 10px 20px rgba(18, 51, 45, 0.08);
+}
+
+.content-detail-page .text-content,
+.attraction-detail .description-content,
+.food-detail .description-content,
+.hotel-detail .description-content {
+  line-height: 1.85;
+  color: #38504b;
+}
+
+@media (max-width: 1024px) {
+  .publish-page .workspace,
+  .content-detail-page .detail-shell,
+  .user-center-container .main-content,
+  .merchant-publish-container .main-content,
+  .ai-map-planner .main-container,
+  .itinerary-editor-page .editor-container,
+  .itinerary-create-page .create-container,
+  .ai-itinerary-page .main-container,
+  .ai-assistant-page .chat-wrapper,
+  .attraction-detail .main-content,
+  .food-detail .main-content,
+  .hotel-detail .main-content {
+    width: min(100% - 24px, 1240px);
+  }
+
+  .user-center-container .profile-header {
+    padding: 0 20px 24px;
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .merchant-publish-container .header-content,
+  .user-center-container .header-content,
+  .itinerary-editor-page .header-content,
+  .itinerary-create-page .header-content,
+  .ai-itinerary-page .header-content,
+  .ai-assistant-page .header-content,
+  .attraction-detail .header-inner,
+  .food-detail .header-inner,
+  .hotel-detail .header-inner,
+  .ai-map-planner .header-inner {
+    width: min(100% - 20px, 1240px);
+    min-height: auto;
+    padding: 14px 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .publish-page .workspace,
+  .content-detail-page .detail-shell,
+  .user-center-container .main-content,
+  .merchant-publish-container .main-content,
+  .ai-map-planner .main-container,
+  .itinerary-editor-page .editor-container,
+  .itinerary-create-page .create-container,
+  .ai-itinerary-page .main-container,
+  .ai-assistant-page .chat-wrapper,
+  .attraction-detail .main-content,
+  .food-detail .main-content,
+  .hotel-detail .main-content {
+    width: min(100% - 20px, 1240px);
+    padding-top: 24px;
+    padding-bottom: 40px;
+  }
+
+  .publish-page .workspace-card,
+  .content-detail-page .content-main,
+  .content-detail-page .related-card,
+  .search-page .hero-card,
+  .search-page .filters-card,
+  .search-page .result-card,
+  .my-orders .orders-hero,
+  .my-orders .orders-shell,
+  .user-center-container .user-profile,
+  .user-center-container .content-tabs,
+  .merchant-publish-container .publish-card,
+  .merchant-publish-container .my-list-card,
+  .ai-map-planner .panel,
+  .itinerary-editor-page .map-section,
+  .itinerary-editor-page .timeline-section,
+  .itinerary-create-page .create-card,
+  .ai-itinerary-page .chat-section,
+  .ai-itinerary-page .itinerary-section,
+  .ai-assistant-page .chat-container,
+  .attraction-detail .gallery-section,
+  .attraction-detail .info-container,
+  .food-detail .gallery-section,
+  .food-detail .info-container,
+  .hotel-detail .gallery-section,
+  .hotel-detail .info-container {
+    border-radius: 22px;
+  }
+
+  .attraction-detail .gallery-main,
+  .food-detail .gallery-main,
+  .hotel-detail .gallery-main {
+    min-height: 280px;
+  }
+}

@@ -1,6 +1,33 @@
 <template>
-  <div class="register-container">
-    <div class="register-box">
+  <div class="register-container app-auth-page">
+    <section class="auth-side app-auth-aside">
+      <div class="app-auth-badge">莆田文旅平台</div>
+      <h1 class="app-auth-title">
+        创建你的旅行账号
+        <strong>进入统一体验</strong>
+      </h1>
+      <p class="app-auth-subtitle">
+        注册后可以收藏内容、发布笔记、管理订单，并继续使用平台内的智能规划能力。
+      </p>
+      <div class="app-auth-points">
+        <div class="app-auth-point">
+          <span class="app-auth-point__icon">游</span>
+          <div>
+            <p class="app-auth-point__title">路线与内容同步</p>
+            <p class="app-auth-point__desc">把行程规划、攻略浏览和内容互动放到同一个账户里。</p>
+          </div>
+        </div>
+        <div class="app-auth-point">
+          <span class="app-auth-point__icon">管</span>
+          <div>
+            <p class="app-auth-point__title">前台后台一致</p>
+            <p class="app-auth-point__desc">用户端与商家后台延续同一套色彩、圆角和表单节奏。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="register-box app-auth-card">
       <div class="register-header">
         <h2>注册莆田文旅账号</h2>
         <p>开启你的莆田之旅</p>
@@ -319,20 +346,12 @@ const goLogin = () => {
 <style scoped lang="scss">
 .register-container {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
 }
 
 .register-box {
   width: 100%;
-  max-width: 420px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  max-width: 460px;
+  padding: 36px 34px 30px;
 }
 
 .register-header {
@@ -342,14 +361,15 @@ const goLogin = () => {
   h2 {
     margin: 0 0 8px 0;
     font-size: 28px;
-    font-weight: bold;
-    color: #333;
+    font-weight: 700;
+    color: var(--app-primary-strong);
+    letter-spacing: 1px;
   }
 
   p {
     margin: 0;
     font-size: 14px;
-    color: #999;
+    color: var(--app-text-muted);
   }
 }
 
@@ -372,9 +392,97 @@ const goLogin = () => {
   }
 }
 
+.auth-side {
+  max-width: 440px;
+}
+
 .login-link {
   text-align: center;
   font-size: 14px;
-  color: #666;
+  color: var(--app-text-muted);
+}
+
+:deep(.register-tabs .el-tabs__header) {
+  margin-bottom: 22px;
+}
+
+:deep(.register-tabs .el-tabs__nav-wrap::after) {
+  background-color: rgba(31, 111, 95, 0.08);
+}
+
+:deep(.register-tabs .el-tabs__item) {
+  height: 42px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+:deep(.register-tabs .el-tabs__item.is-active) {
+  color: var(--app-primary);
+}
+
+:deep(.register-form .el-form-item) {
+  margin-bottom: 20px;
+}
+
+:deep(.register-form .el-input__wrapper) {
+  min-height: 48px;
+  border-radius: 14px;
+  background: #f6faf8;
+  box-shadow: 0 0 0 1px rgba(31, 111, 95, 0.08) inset;
+}
+
+:deep(.register-form .el-input__wrapper.is-focus) {
+  box-shadow:
+    0 0 0 1px rgba(31, 111, 95, 0.2) inset,
+    0 0 0 4px rgba(31, 111, 95, 0.08);
+}
+
+:deep(.register-form .el-button--primary) {
+  min-height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--app-primary) 0%, #2f8a72 100%);
+  box-shadow: 0 14px 30px rgba(31, 111, 95, 0.2);
+}
+
+:deep(.register-form .el-button--primary:hover) {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+:deep(.register-form .el-checkbox) {
+  color: var(--app-text-muted);
+  line-height: 1.7;
+  white-space: normal;
+}
+
+:deep(.login-link .el-link) {
+  font-weight: 600;
+}
+
+:deep(.code-input) {
+  width: 100%;
+}
+
+:deep(.code-input .el-button) {
+  min-height: 48px;
+  border-radius: 14px;
+}
+
+@media (max-width: 980px) {
+  .auth-side {
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .register-box {
+    padding: 28px 20px 24px;
+  }
+
+  :deep(.code-input) {
+    flex-direction: column;
+  }
 }
 </style>

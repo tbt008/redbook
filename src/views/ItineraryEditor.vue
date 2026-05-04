@@ -215,6 +215,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'

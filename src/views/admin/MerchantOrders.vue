@@ -1,5 +1,5 @@
-<template>
-  <div class="merchant-orders">
+﻿<template>
+  <div class="merchant-orders admin-theme-page">
     <div class="page-header">
       <h2 class="page-title">订单管理</h2>
     </div>
@@ -117,7 +117,7 @@
     </el-card>
 
     <!-- 订单详情对话框 -->
-    <el-dialog v-model="detailDialogVisible" title="订单详情" width="600px" destroy-on-close>
+    <el-dialog v-model="detailDialogVisible" title="订单详情" width="600px">
       <el-descriptions :column="2" border v-if="currentOrder">
         <el-descriptions-item label="订单号">{{ currentOrder.orderNo }}</el-descriptions-item>
         <el-descriptions-item label="订单类型">

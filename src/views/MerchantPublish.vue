@@ -59,7 +59,7 @@
           <el-form-item label="景点图片">
             <el-upload
               class="images-uploader"
-              action="/file/upload?directory=attraction"
+              action="/api/file/upload?directory=attraction"
               list-type="picture-card"
               :file-list="attractionImageList"
               :on-success="handleAttractionImageSuccess"
@@ -134,7 +134,7 @@
           <el-form-item label="酒店图片">
             <el-upload
               class="images-uploader"
-              action="/file/upload?directory=hotel"
+              action="/api/file/upload?directory=hotel"
               list-type="picture-card"
               :file-list="hotelImageList"
               :on-success="handleHotelImageSuccess"

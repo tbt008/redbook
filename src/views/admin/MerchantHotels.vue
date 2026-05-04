@@ -1,5 +1,5 @@
-<template>
-  <div class="merchant-hotels">
+﻿<template>
+  <div class="merchant-hotels admin-theme-page">
     <div class="page-header">
       <h2 class="page-title">酒店管理</h2>
       <el-button type="primary" @click="handleAdd">
@@ -99,7 +99,7 @@
     </el-card>
 
     <!-- 编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="750px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="750px">
       <el-form :model="hotelForm" :rules="formRules" ref="formRef" label-width="100px">
         <el-form-item label="酒店名称" prop="name">
           <el-input v-model="hotelForm.name" placeholder="请输入酒店名称" />
@@ -149,7 +149,7 @@
     </el-dialog>
 
     <!-- 房型管理对话框 -->
-    <el-dialog v-model="roomDialogVisible" :title="`${currentHotelName} - 房型管理`" width="1000px" destroy-on-close>
+    <el-dialog v-model="roomDialogVisible" :title="`${currentHotelName} - 房型管理`" width="1000px">
       <div class="room-header">
         <el-button type="primary" @click="handleAddRoom">
           <el-icon><Plus /></el-icon> 添加房型
@@ -209,7 +209,7 @@
     </el-dialog>
 
     <!-- 添加/编辑房型对话框 -->
-    <el-dialog v-model="roomFormDialogVisible" :title="roomFormTitle" width="650px" destroy-on-close>
+    <el-dialog v-model="roomFormDialogVisible" :title="roomFormTitle" width="650px">
       <el-form :model="roomForm" :rules="roomFormRules" ref="roomFormRef" label-width="100px">
         <el-form-item label="房型名称" prop="roomName">
           <el-input v-model="roomForm.roomName" placeholder="请输入房型名称" />

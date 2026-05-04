@@ -1,12 +1,23 @@
 <template>
-  <div class="content-audit">
-    <h2 class="page-title">内容审核</h2>
+  <div class="content-audit admin-theme-page">
+    <div class="admin-hero">
+      <div class="admin-hero__content">
+        <div class="admin-hero__eyebrow">Admin Console</div>
+        <h2 class="page-title">内容审核</h2>
+        <p class="admin-hero__subtitle">集中处理用户投稿，快速完成通过与驳回操作。</p>
+      </div>
+      <div class="admin-hero__meta">
+        <div class="hero-metric">
+          <span class="hero-metric__label">待审核内容</span>
+          <strong class="hero-metric__value">{{ pagination.total }}</strong>
+        </div>
+      </div>
+    </div>
 
-    <!-- 筛选 -->
     <el-card class="search-card">
       <el-form :inline="true" :model="searchForm">
         <el-form-item label="内容类型">
-          <el-select v-model="searchForm.contentType" placeholder="全部" clearable style="width: 150px">
+          <el-select v-model="searchForm.contentType" placeholder="全部" clearable style="width: 160px">
             <el-option label="图文" :value="1" />
             <el-option label="问答" :value="2" />
             <el-option label="视频" :value="3" />
@@ -19,12 +30,11 @@
       </el-form>
     </el-card>
 
-    <!-- 待审核列表 -->
     <el-card class="table-card">
       <template #header>
         <div class="card-header">
           <span>待审核内容列表</span>
-          <el-tag type="warning">待审核: {{ pagination.total }}</el-tag>
+          <el-tag type="warning">待审核 {{ pagination.total }}</el-tag>
         </div>
       </template>
 
@@ -36,23 +46,36 @@
               v-if="row.coverImage"
               :src="row.coverImage"
               fit="cover"
-              style="width: 80px; height: 60px; border-radius: 4px"
+              style="width: 80px; height: 60px; border-radius: 8px"
               :preview-src-list="[row.coverImage]"
             />
-            <span v-else style="color: #999">无封面</span>
+            <span v-else class="empty-cover">无封面</span>
           </template>
         </el-table-column>
-        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="title" label="标题" min-width="220" show-overflow-tooltip />
         <el-table-column label="类型" width="100">
           <template #default="{ row }">
             <el-tag v-if="row.contentType === 1" type="success">图文</el-tag>
             <el-tag v-else-if="row.contentType === 2" type="warning">问答</el-tag>
             <el-tag v-else-if="row.contentType === 3" type="danger">视频</el-tag>
+            <el-tag v-else type="info">未知</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="region" label="地区" width="100" />
-        <el-table-column prop="theme" label="主题" width="100" />
-        <el-table-column prop="createTime" label="提交时间" width="180" />
+        <el-table-column label="关联" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span>{{ getRelatedDisplay(row) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="标签" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span>{{ getTagDisplay(row) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="提交时间" width="180">
+          <template #default="{ row }">
+            <span>{{ formatDateTime(row.createTime) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="viewContent(row)">查看</el-button>
@@ -62,7 +85,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <el-pagination
         v-model:current-page="pagination.pageNum"
         v-model:page-size="pagination.pageSize"
@@ -75,9 +97,8 @@
       />
     </el-card>
 
-    <!-- 审核对话框 -->
     <el-dialog v-model="auditDialogVisible" :title="auditForm.status === 1 ? '审核通过' : '审核驳回'" width="600px">
-      <el-form :model="auditForm" label-width="80px">
+      <el-form :model="auditForm" label-width="88px">
         <el-form-item label="内容标题">
           <span>{{ currentContent?.title }}</span>
         </el-form-item>
@@ -85,7 +106,7 @@
           <el-tag v-if="auditForm.status === 1" type="success">通过</el-tag>
           <el-tag v-else type="danger">驳回</el-tag>
         </el-form-item>
-        <el-form-item label="审核意见" v-if="auditForm.status === 2">
+        <el-form-item v-if="auditForm.status === 2" label="审核意见">
           <el-input
             v-model="auditForm.comment"
             type="textarea"
@@ -93,41 +114,40 @@
             placeholder="请输入驳回原因（必填）"
           />
         </el-form-item>
-        <el-form-item label="备注" v-else>
+        <el-form-item v-else label="备注">
           <el-input
             v-model="auditForm.comment"
             type="textarea"
             :rows="3"
-            placeholder="审核备注（选填）"
+            placeholder="请输入审核备注（选填）"
           />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="auditDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmAudit" :loading="submitting">确定</el-button>
+        <el-button type="primary" :loading="submitting" @click="confirmAudit">确定</el-button>
       </template>
     </el-dialog>
 
-    <!-- 内容详情对话框 -->
-    <el-dialog v-model="detailDialogVisible" title="内容详情" width="800px">
-      <div v-if="currentContent" class="content-detail">
-        <h3>{{ currentContent.title }}</h3>
+    <el-dialog v-model="detailDialogVisible" title="内容详情" width="860px">
+      <div class="content-detail">
+        <h3>{{ currentContentView.title }}</h3>
         <div class="content-meta">
-          <span>地区：{{ currentContent.region || '未设置' }}</span>
-          <span>主题：{{ currentContent.theme || '未设置' }}</span>
-          <span>提交时间：{{ currentContent.createTime }}</span>
+          <span>关联：{{ getRelatedDisplay(currentContentView) }}</span>
+          <span>标签：{{ getTagDisplay(currentContentView) }}</span>
+          <span>提交时间：{{ formatDateTime(currentContentView.createTime) }}</span>
         </div>
-        <div class="content-images" v-if="currentContent.images">
+        <div v-if="parseImages(currentContentView.images).length" class="content-images">
           <el-image
-            v-for="(img, index) in parseImages(currentContent.images)"
+            v-for="(img, index) in parseImages(currentContentView.images)"
             :key="index"
             :src="img"
             fit="cover"
-            style="width: 150px; height: 150px; margin: 5px; border-radius: 4px"
-            :preview-src-list="parseImages(currentContent.images)"
+            style="width: 150px; height: 150px; margin: 5px; border-radius: 8px"
+            :preview-src-list="parseImages(currentContentView.images)"
           />
         </div>
-        <div class="content-body" v-html="currentContent.content"></div>
+        <div class="content-body" v-html="currentContentView.content || '暂无内容'" />
       </div>
       <template #footer>
         <el-button @click="detailDialogVisible = false">关闭</el-button>
@@ -139,9 +159,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import dayjs from 'dayjs'
 import request from '@/util/request'
+import { extractDisplayTags } from '@/utils/contentTags'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -149,8 +171,17 @@ const contentList = ref<any[]>([])
 const auditDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
 const currentContent = ref<any>(null)
+const currentContentView = computed(() => currentContent.value || {})
 
-const searchForm = reactive({
+const RELATED_FIELD_GROUPS = [
+  { prefix: '关联景点', fields: ['attractionName', 'attractionTitle', 'attraction'] },
+  { prefix: '关联美食', fields: ['foodName', 'foodTitle', 'food'] },
+  { prefix: '关联酒店', fields: ['hotelName', 'hotelTitle', 'hotel'] }
+]
+
+const searchForm = reactive<{
+  contentType: number | null
+}>({
   contentType: null
 })
 
@@ -160,11 +191,97 @@ const pagination = reactive({
   total: 0
 })
 
-const auditForm = reactive({
+const auditForm = reactive<{
+  contentId: number | null
+  status: number | null
+  comment: string
+}>({
   contentId: null,
   status: null,
   comment: ''
 })
+
+const normalizeTextList = (value: unknown): string[] => {
+  if (!value) return []
+
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => {
+        if (typeof item === 'string' || typeof item === 'number') {
+          return [String(item)]
+        }
+        if (item && typeof item === 'object') {
+          const record = item as Record<string, unknown>
+          return [record.name, record.title, record.label, record.value]
+            .filter((entry): entry is string | number => typeof entry === 'string' || typeof entry === 'number')
+            .map((entry) => String(entry))
+        }
+        return []
+      })
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  if (typeof value === 'string') {
+    const raw = value.trim()
+    if (!raw) return []
+
+    if ((raw.startsWith('[') && raw.endsWith(']')) || (raw.startsWith('{') && raw.endsWith('}'))) {
+      try {
+        return normalizeTextList(JSON.parse(raw))
+      } catch {
+        // Fallback to delimiter parsing.
+      }
+    }
+
+    return raw
+      .split(/[，,、/|]/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  return [String(value).trim()].filter(Boolean)
+}
+
+const formatDateTime = (value: unknown) => {
+  if (!value) return '--'
+
+  const raw = String(value).trim()
+  if (!raw) return '--'
+
+  const normalized = raw.includes(',') ? raw.replace(/,/g, '-') : raw
+  const parsed = dayjs(normalized)
+  if (parsed.isValid()) {
+    return parsed.format('YYYY-MM-DD HH:mm:ss')
+  }
+
+  return raw.replace(/,/g, '-')
+}
+
+const getRelatedDisplayList = (content: Record<string, any>) => {
+  if (!content) return []
+
+  const relatedItems = RELATED_FIELD_GROUPS.flatMap(({ prefix, fields }) =>
+    fields.flatMap((field) => normalizeTextList(content[field]).map((item) => `${prefix}：${item}`))
+  )
+
+  if (relatedItems.length) {
+    return [...new Set(relatedItems)]
+  }
+
+  const fallbackRelated = normalizeTextList(content.region)
+  return fallbackRelated.map((item) => `关联地区：${item}`)
+}
+
+const getRelatedDisplay = (content: Record<string, any>) => {
+  const list = getRelatedDisplayList(content)
+  return list.length ? list.join(' / ') : '未设置关联'
+}
+
+const getTagDisplay = (content: Record<string, any>) => {
+  const tags = extractDisplayTags(content, ['tags', 'tagList', 'tagNames', 'labels', 'keywords', 'theme', 'themes'])
+  return tags.length ? tags.join(' / ') : '未设置标签'
+}
 
 const loadContentList = async () => {
   loading.value = true
@@ -198,6 +315,7 @@ const handleReset = () => {
 }
 
 const handleAudit = (content: any, status: number) => {
+  if (!content) return
   currentContent.value = content
   auditForm.contentId = content.id
   auditForm.status = status
@@ -207,7 +325,7 @@ const handleAudit = (content: any, status: number) => {
 }
 
 const confirmAudit = async () => {
-  if (auditForm.status === 2 && !auditForm.comment) {
+  if (auditForm.status === 2 && !auditForm.comment.trim()) {
     ElMessage.warning('请输入驳回原因')
     return
   }
@@ -238,11 +356,17 @@ const viewContent = (content: any) => {
   detailDialogVisible.value = true
 }
 
-const parseImages = (images: string) => {
+const parseImages = (images: string | string[] | null | undefined) => {
+  if (!images) return []
+  if (Array.isArray(images)) return images
   try {
-    return JSON.parse(images)
+    const parsed = JSON.parse(images)
+    return Array.isArray(parsed) ? parsed : []
   } catch {
-    return []
+    return images
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
   }
 }
 
@@ -253,49 +377,61 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .content-audit {
-  .page-title {
-    margin: 0 0 24px 0;
-    font-size: 24px;
-    font-weight: 600;
-    color: #333;
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
-  .search-card {
-    margin-bottom: 20px;
+  .hero-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 120px;
   }
 
-  .table-card {
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+  .hero-metric__label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .hero-metric__value {
+    font-size: 30px;
+    line-height: 1;
+    color: #fff;
+  }
+
+  .empty-cover {
+    color: #9ca3af;
   }
 
   .content-detail {
     h3 {
-      margin: 0 0 16px 0;
+      margin: 0 0 16px;
       font-size: 20px;
-      font-weight: 600;
+      font-weight: 700;
+      color: #14213d;
     }
+  }
 
-    .content-meta {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 16px;
-      font-size: 14px;
-      color: #666;
-    }
+  .content-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 18px;
+    color: #667085;
+    font-size: 14px;
+  }
 
-    .content-images {
-      margin-bottom: 16px;
-    }
+  .content-images {
+    margin-bottom: 20px;
+  }
 
-    .content-body {
-      line-height: 1.8;
-      color: #333;
-    }
+  .content-body {
+    line-height: 1.8;
+    color: #344054;
   }
 }
 </style>
-
