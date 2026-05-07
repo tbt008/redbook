@@ -63,7 +63,7 @@
         </div>
       </template>
 
-      <el-table :data="contentList" v-loading="loading" :row-class-name="tableRowClassName">
+      <el-table class="content-table" :data="contentList" v-loading="loading" :row-class-name="tableRowClassName">
         <el-table-column label="#" width="70">
           <template #default="{ $index }">
             <span class="row-index">{{ $index + 1 + (pagination.pageNum - 1) * pagination.pageSize }}</span>
@@ -123,13 +123,13 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="230" fixed="right" align="center">
+        <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
             <div class="table-actions">
               <button class="icon-btn preview" @click="handleView(row)"><el-icon><View /></el-icon></button>
+              <button class="icon-btn comments" @click="handleManageComments(row)"><el-icon><ChatDotRound /></el-icon></button>
               <button class="icon-btn edit" @click="handleEdit(row)"><el-icon><Edit /></el-icon></button>
               <button class="icon-btn toggle" @click="handleStatusChange(row, row.status === 2 ? 3 : 2)"><el-icon><SwitchButton /></el-icon></button>
-              <button class="icon-btn recommend" @click="handleRecommend(row)"><el-icon><Star /></el-icon></button>
               <button class="icon-btn delete" @click="handleDelete(row)"><el-icon><Delete /></el-icon></button>
             </div>
           </template>
@@ -201,6 +201,8 @@
       </el-form>
       <template #footer><div class="dialog-footer"><el-button @click="editDialogVisible = false">取消</el-button><el-button type="primary" :loading="submitting" @click="handleSubmit">保存修改</el-button></div></template>
     </el-dialog>
+
+    <AdminCommentDrawer ref="commentDrawerRef" />
   </div>
 </template>
 
@@ -210,6 +212,7 @@ import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import request from '@/util/request'
 import { formatDateTime } from '@/util/datetime'
+import AdminCommentDrawer from '@/components/admin/AdminCommentDrawer.vue'
 
 const contentTypeOptions = [{ label: '纯文字', value: 1 }, { label: '图文', value: 2 }, { label: '视频', value: 3 }, { label: '图文+视频', value: 4 }]
 const statusOptions = [{ label: '草稿', value: 0 }, { label: '待审核', value: 1 }, { label: '已发布', value: 2 }, { label: '已下架', value: 3 }]
@@ -223,6 +226,7 @@ const viewDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const dialogTitle = ref('编辑内容')
 const formRef = ref<FormInstance>()
+const commentDrawerRef = ref<InstanceType<typeof AdminCommentDrawer>>()
 
 const searchForm = reactive({ keyword: '', contentType: null as number | null, status: null as number | null, region: '' })
 const pagination = reactive({ pageNum: 1, pageSize: 20, total: 0 })
@@ -301,6 +305,14 @@ const handleView = (row: any) => {
   viewDialogVisible.value = true
 }
 
+const handleManageComments = (row: any) => {
+  commentDrawerRef.value?.open({
+    id: row.id,
+    title: row.title || '未命名内容',
+    type: 1
+  })
+}
+
 const handleEdit = (row: any) => {
   dialogTitle.value = '编辑内容'
   contentForm.id = row.id
@@ -344,23 +356,6 @@ const handleStatusChange = async (row: any, status: number) => {
     loadContentList()
   } catch (error: any) {
     if (error !== 'cancel' && error?.message !== 'cancel') ElMessage.error(error.message || '状态更新失败')
-  }
-}
-
-const handleRecommend = async (row: any) => {
-  const nextRecommend = row.isRecommend === 1 ? 0 : 1
-  const action = nextRecommend === 1 ? '设为推荐' : '取消推荐'
-  try {
-    await ElMessageBox.confirm(`确定${action}内容“${row.title}”吗？`, '推荐设置', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    await request.put('/admin/content/recommend', null, { params: { id: row.id, isRecommend: nextRecommend, _t: Date.now() } })
-    ElMessage.success(`${action}成功`)
-    loadContentList()
-  } catch (error: any) {
-    if (error !== 'cancel' && error?.message !== 'cancel') ElMessage.error(error.message || '推荐设置失败')
   }
 }
 
@@ -485,14 +480,32 @@ onMounted(loadContentList)
   .status-pill.offline { color: #f56c6c; background: rgba(245, 108, 108, 0.12); }
   .status-pill i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 
-  .stats-row, .table-actions, .detail-tags, .detail-meta { display: flex; flex-wrap: wrap; gap: 10px; }
+  .stats-row, .detail-tags, .detail-meta { display: flex; flex-wrap: wrap; gap: 10px; }
   .stats-row { justify-content: center; }
   .stats-row span, .detail-meta span { display: inline-flex; align-items: center; gap: 4px; color: #4d647d; font-size: 13px; }
-  .table-actions { justify-content: center; }
+  .content-table :deep(.el-table-fixed-column--right),
+  .content-table :deep(.el-table__fixed-right),
+  .content-table :deep(.el-table__fixed-right-patch) {
+    background: #fff;
+  }
+
+  .content-table :deep(.el-table__body td.el-table-fixed-column--right) {
+    z-index: 3;
+  }
+
+  .table-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    min-width: 176px;
+  }
 
   .icon-btn {
     width: 34px;
     height: 34px;
+    flex: 0 0 34px;
     border: none;
     border-radius: 10px;
     background: #f5faf7;
@@ -502,9 +515,9 @@ onMounted(loadContentList)
 
   .icon-btn:hover { transform: translateY(-1px) scale(1.03); }
   .icon-btn.preview { color: #3b82f6; }
+  .icon-btn.comments { color: #8b5cf6; }
   .icon-btn.edit { color: #1f6f5c; }
   .icon-btn.toggle { color: #67c23a; }
-  .icon-btn.recommend { color: #c88412; }
   .icon-btn.delete { color: #f56c6c; }
 
   .pagination-wrap { margin-top: 24px; display: flex; justify-content: flex-end; }

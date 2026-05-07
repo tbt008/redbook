@@ -70,6 +70,11 @@
               </div>
               <div class="stat-divider"></div>
               <div class="stat-item">
+                <div class="stat-value">{{ attraction.collectCount || 0 }}</div>
+                <div class="stat-label">收藏量</div>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
                 <div class="stat-value">{{ commentList.length }}</div>
                 <div class="stat-label">用户评论</div>
               </div>
@@ -104,6 +109,38 @@
                 <div class="card-content">
                   <div class="card-label">联系电话</div>
                   <div class="card-value">{{ attraction.contactPhone || '暂无信息' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 商家信息：必须来自真实绑定用户 -->
+            <div v-if="attraction.merchantId" class="merchant-section">
+              <h3 class="section-title">
+                <span class="title-icon">🏪</span>
+                商家信息
+              </h3>
+              <div class="merchant-card">
+                <div class="merchant-avatar" title="进入个人主页" @click="goToMerchantHome">
+                  <el-image v-if="merchantAvatarUrl" :src="merchantAvatarUrl" fit="cover" class="merchant-avatar-image">
+                    <template #error>
+                      <span class="merchant-avatar-text">{{ merchantInitial }}</span>
+                    </template>
+                  </el-image>
+                  <el-icon v-else><Shop /></el-icon>
+                </div>
+                <div class="merchant-info">
+                  <div class="merchant-name">{{ attraction.merchantName || '认证商家' }}</div>
+                  <div class="merchant-meta">
+                    <el-tag v-if="attraction.merchantCertified === 1" type="warning" size="small" effect="plain">
+                      <el-icon><Check /></el-icon> 认证商家
+                    </el-tag>
+                    <span class="meta-text" v-if="attraction.merchantLocation">{{ attraction.merchantLocation }}</span>
+                    <span class="meta-text" v-if="attraction.commentCount">{{ attraction.commentCount }}条评论</span>
+                  </div>
+                  <p class="merchant-desc" v-if="attraction.merchantBio">{{ attraction.merchantBio }}</p>
+                </div>
+                <div class="merchant-arrow">
+                  <el-icon><ArrowRight /></el-icon>
                 </div>
               </div>
             </div>
@@ -182,7 +219,7 @@
                   @click="toggleCollect"
                 >
                   <el-icon><component :is="isCollected ? 'StarFilled' : 'Star'" /></el-icon>
-                  {{ isCollected ? '已收藏' : '收藏' }}
+                  {{ isCollected ? '已收藏' : '收藏' }} ({{ attraction.collectCount || 0 }})
                 </el-button>
                 <el-button class="share-btn">
                   <el-icon><Share /></el-icon>
@@ -251,6 +288,19 @@
                   <span class="comment-time">{{ formatTime(comment.createTime) }}</span>
                 </div>
                 <div class="comment-content">{{ comment.content }}</div>
+                <div class="comment-actions">
+                  <el-button text size="small" :icon="ChatDotRound" @click="replyComment(comment, comment)">回复</el-button>
+                  <el-button
+                    v-if="comment.canDelete"
+                    text
+                    size="small"
+                    type="danger"
+                    :icon="Delete"
+                    @click="deleteComment(comment)"
+                  >
+                    删除
+                  </el-button>
+                </div>
                 <div v-if="comment.images" class="comment-images">
                   <el-image
                     v-for="(img, idx) in comment.images.split(',')"
@@ -261,6 +311,33 @@
                     :preview-src-list="comment.images.split(',')"
                   />
                 </div>
+                <div v-if="comment.replies?.length" class="reply-list">
+                  <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                    <el-avatar :src="reply.userAvatar" :size="32" />
+                    <div class="reply-body">
+                      <div class="comment-header">
+                        <div class="comment-user">
+                          <span class="username">{{ reply.userName }}</span>
+                        </div>
+                        <span class="comment-time">{{ formatTime(reply.createTime) }}</span>
+                      </div>
+                      <div class="comment-content">{{ reply.content }}</div>
+                      <div class="comment-actions">
+                        <el-button text size="small" :icon="ChatDotRound" @click="replyComment(reply, comment)">回复</el-button>
+                        <el-button
+                          v-if="reply.canDelete"
+                          text
+                          size="small"
+                          type="danger"
+                          :icon="Delete"
+                          @click="deleteComment(reply)"
+                        >
+                          删除
+                        </el-button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -270,9 +347,10 @@
       </section>
     </main>
 
-    <el-dialog v-model="commentDialogVisible" title="立即评论" width="550px" class="comment-dialog">
+    <el-dialog v-model="commentDialogVisible" :title="replyingTo ? '回复评论' : '立即评论'" width="550px" class="comment-dialog">
       <div class="comment-form">
-        <div class="rating-select">
+        <div v-if="replyingTo" class="reply-tip">正在回复 {{ replyingTo.userName }}</div>
+        <div v-else class="rating-select">
           <span class="label">评分</span>
           <el-rate v-model="commentForm.rating" size="large" />
         </div>
@@ -280,14 +358,16 @@
           v-model="commentForm.content"
           type="textarea"
           :rows="5"
-          placeholder="分享你的游玩体验..."
+          :placeholder="replyingTo ? `回复 ${replyingTo.userName}...` : '分享你的游玩体验...'"
           maxlength="500"
           show-word-limit
         />
       </div>
       <template #footer>
-        <el-button @click="commentDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitComment" :loading="submittingComment">提交评论</el-button>
+        <el-button @click="closeCommentDialog">取消</el-button>
+        <el-button type="primary" @click="submitComment" :loading="submittingComment">
+          {{ replyingTo ? '提交回复' : '提交评论' }}
+        </el-button>
       </template>
     </el-dialog>
 
@@ -369,7 +449,14 @@
                 <el-input v-model="orderForm.visitorIdCard" placeholder="请输入身份证号" maxlength="18" />
               </el-form-item>
               <el-form-item label="联系电话" required>
-                <el-input v-model="orderForm.visitorPhone" placeholder="用于接收电子票信息" />
+                <el-input
+                  v-model="orderForm.visitorPhone"
+                  placeholder="用于接收订单通知"
+                  maxlength="11"
+                  show-word-limit
+                  inputmode="numeric"
+                  @input="orderForm.visitorPhone = normalizeMobilePhone($event)"
+                />
               </el-form-item>
               <el-form-item label="特殊需求">
                 <el-input
@@ -439,6 +526,7 @@
                 <span class="label">应付金额</span>
                 <span class="amount">¥{{ totalAmount }}</span>
               </div>
+              <PaymentMethodCard />
               <div v-if="payQrCodeUrl" class="pay-qrcode">
                 <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
                 <div class="payment-tip">请使用支付宝沙箱 App 扫描二维码完成支付</div>
@@ -471,10 +559,10 @@
           <el-icon><CircleCheck /></el-icon>
         </div>
         <h3>支付成功</h3>
-        <p>电子票已生成</p>
+        <p>订单已支付成功</p>
       </div>
       <template #footer>
-        <el-button type="primary" @click="viewETicket">查看电子票</el-button>
+        <el-button type="primary" @click="viewETicket">查看详情</el-button>
         <el-button @click="paySuccessVisible = false">关闭</el-button>
       </template>
     </el-dialog>
@@ -484,8 +572,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import dayjs from 'dayjs'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Location,
   Clock,
@@ -501,12 +588,22 @@ import {
   Minus,
   Plus,
   User,
-  CircleCheck
+  CircleCheck,
+  Shop,
+  ArrowRight,
+  ChatDotRound,
+  Delete
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { extractDisplayTags } from '@/utils/contentTags'
+import { buildPayQrCodeUrl } from '@/utils/payQrCode'
+import { formatDateTime, type DateInput } from '@/utils/date'
+import { normalizeMobilePhone } from '@/utils/attractionForm'
+import { loadAMapScript } from '@/utils/amap'
+import { normalizeImageUrl, parseImageList } from '@/utils/imageUrl'
 
 import TourismTopNav from '@/components/TourismTopNav.vue'
+import PaymentMethodCard from '@/components/PaymentMethodCard.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -520,9 +617,16 @@ const isCollected = ref(false)
 const ticketDialogVisible = ref(false)
 const commentDialogVisible = ref(false)
 const submittingComment = ref(false)
+const replyingTo = ref<any>(null)
+const replyRoot = ref<any>(null)
 const attractionDisplayTags = computed(() => {
   const tags = extractDisplayTags(attraction.value)
   return tags.filter((tag) => tag !== attraction.value.region && tag !== attraction.value.theme)
+})
+const merchantAvatarUrl = computed(() => attraction.value.merchantAvatar ? normalizeImageUrl(attraction.value.merchantAvatar, '') : '')
+const merchantInitial = computed(() => {
+  const name = attraction.value.merchantName || attraction.value.name || '商'
+  return String(name).trim().slice(0, 1)
 })
 const currentStep = ref(0)
 const creating = ref(false)
@@ -575,14 +679,7 @@ const loadAttractionDetail = async () => {
     if (res && res.data) {
       attraction.value = res.data
       isCollected.value = res.data.isCollected === 1
-      if (res.data.images) {
-        const imagesStr = res.data.images
-        if (imagesStr.startsWith('[')) {
-          imageList.value = JSON.parse(imagesStr)
-        } else {
-          imageList.value = imagesStr.split(',')
-        }
-      }
+      imageList.value = parseImageList(res.data.images)
       // 数据加载完成后初始化地图
       nextTick(() => {
         initMap()
@@ -594,46 +691,45 @@ const loadAttractionDetail = async () => {
 }
 
 // 初始化地图
-const initMap = () => {
+const initMap = async () => {
   if (!attraction.value.longitude || !attraction.value.latitude) {
     console.log('景点无坐标信息')
-    return
-  }
-  
-  if (!window.AMap) {
-    console.error('高德地图 API 未加载')
     return
   }
   
   const container = document.getElementById('attraction-map')
   if (!container) return
   
-  // 创建地图实例
-  const map = new window.AMap.Map('attraction-map', {
-    zoom: 15,
-    center: [attraction.value.longitude, attraction.value.latitude],
-    mapStyle: 'amap://styles/normal'
-  })
-  
-  // 添加标记
-  const marker = new window.AMap.Marker({
-    position: [attraction.value.longitude, attraction.value.latitude],
-    title: attraction.value.name
-  })
-  map.add(marker)
-  
-  // 添加信息窗体
-  const infoWindow = new window.AMap.InfoWindow({
-    content: `<div style="padding: 8px; font-size: 14px;">
-      <h4 style="margin: 0 0 8px 0;">${attraction.value.name}</h4>
-      <p style="margin: 0; color: #666;">${attraction.value.address}</p>
-    </div>`,
-    offset: new window.AMap.Pixel(0, -30)
-  })
-  
-  marker.on('click', () => {
-    infoWindow.open(map, marker.getPosition())
-  })
+  try {
+    await loadAMapScript()
+    container.innerHTML = ''
+
+    const map = new window.AMap.Map('attraction-map', {
+      zoom: 15,
+      center: [attraction.value.longitude, attraction.value.latitude],
+      mapStyle: 'amap://styles/normal'
+    })
+
+    const marker = new window.AMap.Marker({
+      position: [attraction.value.longitude, attraction.value.latitude],
+      title: attraction.value.name
+    })
+    map.add(marker)
+
+    const infoWindow = new window.AMap.InfoWindow({
+      content: `<div style="padding: 8px; font-size: 14px;">
+        <h4 style="margin: 0 0 8px 0;">${attraction.value.name}</h4>
+        <p style="margin: 0; color: #666;">${attraction.value.address}</p>
+      </div>`,
+      offset: new window.AMap.Pixel(0, -30)
+    })
+
+    marker.on('click', () => {
+      infoWindow.open(map, marker.getPosition())
+    })
+  } catch (error) {
+    console.error('高德地图加载失败:', error)
+  }
 }
 
 // 加载门票列表
@@ -673,6 +769,29 @@ const showCommentDialog = () => {
     router.push('/login')
     return
   }
+  replyingTo.value = null
+  replyRoot.value = null
+  commentForm.content = ''
+  commentDialogVisible.value = true
+}
+
+const closeCommentDialog = () => {
+  commentDialogVisible.value = false
+  replyingTo.value = null
+  replyRoot.value = null
+  commentForm.content = ''
+  commentForm.rating = 5
+}
+
+const replyComment = (comment: any, rootComment: any) => {
+  if (!localStorage.getItem('auth-token')) {
+    ElMessage.warning('请先登录后再回复')
+    router.push('/login')
+    return
+  }
+  replyingTo.value = comment
+  replyRoot.value = rootComment
+  commentForm.content = `@${comment.userName} `
   commentDialogVisible.value = true
 }
 
@@ -688,19 +807,33 @@ const submitComment = async () => {
       contentId: attractionId.value,
       contentType: 4,
       content: commentForm.content,
-      rating: commentForm.rating
+      rating: replyingTo.value ? null : commentForm.rating,
+      parentId: replyRoot.value?.id || null
     })
     if (res && res.code === 200) {
-      ElMessage.success('评论成功')
-      commentDialogVisible.value = false
-      commentForm.content = ''
-      commentForm.rating = 5
+      ElMessage.success(replyingTo.value ? '回复成功' : '评论成功')
+      closeCommentDialog()
       loadCommentList()
     }
   } catch (error: any) {
-    ElMessage.error(error.message || '评论失败')
+    if (!error.messageShown) ElMessage.error(error.message || '评论失败')
   } finally {
     submittingComment.value = false
+  }
+}
+
+const deleteComment = async (comment: any) => {
+  try {
+    await ElMessageBox.confirm('确定删除这条评论吗？', '删除评论', { type: 'warning' })
+    const res: any = await request.delete(`/comment/delete/${comment.id}`)
+    if (res && res.code === 200) {
+      ElMessage.success('删除成功')
+      loadCommentList()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
   }
 }
 
@@ -744,6 +877,10 @@ const nextStep = () => {
       ElMessage.warning('请填写完整的游客信息')
       return
     }
+    if (orderForm.visitorPhone.length !== 11) {
+      ElMessage.warning('请输入11位手机号')
+      return
+    }
   }
   currentStep.value++
 }
@@ -785,11 +922,11 @@ const handlePay = async () => {
   try {
     const res: any = await request.get(`/order/pay/qrcode/${orderNo.value}`)
     if (res && res.code === 200) {
-      payQrCodeUrl.value = res.data.qrCodeUrl || ''
+      payQrCodeUrl.value = await buildPayQrCodeUrl(res.data)
       if (!payQrCodeUrl.value) {
         throw new Error('未获取到支付宝支付二维码')
       }
-      payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
+      payStatusMessage.value = res.data?.scanTip || '请使用支付宝沙箱 App 和沙箱买家账号扫码，普通支付宝会提示订单不存在'
       startPayPolling(orderNo.value)
     }
   } catch (error: any) {
@@ -808,8 +945,12 @@ const startPayPolling = (currentOrderNo: string) => {
   isPollingPay.value = true
   payPollProgress.value = 0
   let pollCount = 0
+  let requestPending = false
+  let successHandled = false
 
   payPollingTimer = setInterval(async () => {
+    if (requestPending || successHandled) return
+
     pollCount++
     if (pollCount >= 60) {
       stopPayPolling()
@@ -820,8 +961,10 @@ const startPayPolling = (currentOrderNo: string) => {
     payPollProgress.value = Math.min((pollCount / 60) * 100, 95)
 
     try {
+      requestPending = true
       const res: any = await request.get(`/order/pay/status/${currentOrderNo}`)
       if (res && res.code === 200 && res.data && (res.data.paid || res.data.orderStatus === 1)) {
+        successHandled = true
         stopPayPolling()
         payPollProgress.value = 100
         payStatusMessage.value = '支付成功'
@@ -832,6 +975,8 @@ const startPayPolling = (currentOrderNo: string) => {
       }
     } catch (error) {
       console.error('轮询支付状态失败', error)
+    } finally {
+      requestPending = false
     }
   }, 3000)
 }
@@ -854,10 +999,12 @@ const toggleCollect = async () => {
       await request.delete(`/attraction/collect/${attractionId.value}`)
       ElMessage.success('取消收藏成功')
       isCollected.value = false
+      attraction.value.collectCount = Math.max(0, (attraction.value.collectCount || 0) - 1)
     } else {
       await request.post(`/attraction/collect/${attractionId.value}`)
       ElMessage.success('收藏成功')
       isCollected.value = true
+      attraction.value.collectCount = (attraction.value.collectCount || 0) + 1
     }
   } catch (error: any) {
     ElMessage.error(error.message || '操作失败')
@@ -868,9 +1015,7 @@ const disabledDate = (time: Date) => {
   return time.getTime() < Date.now() - 8.64e7
 }
 
-const formatTime = (time: string) => {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
-}
+const formatTime = (time: DateInput) => formatDateTime(time, '-', 'YYYY-MM-DD HH:mm')
 
 const resetOrderForm = () => {
   stopPayPolling()
@@ -890,6 +1035,9 @@ const resetOrderForm = () => {
 
 const goHome = () => router.push('/')
 const goBack = () => router.back()
+const goToMerchantHome = () => {
+  if (attraction.value.merchantId) router.push(`/user/${attraction.value.merchantId}`)
+}
 
 onMounted(() => {
   loadAttractionDetail()
@@ -1110,6 +1258,7 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
     }
   }
 
+  .merchant-section,
   .description-section,
   .map-section {
     margin-top: 32px;
@@ -1125,6 +1274,91 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
 
       .title-icon {
         font-size: 20px;
+      }
+    }
+
+    .merchant-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%);
+      border-radius: 12px;
+      border: 1px solid #ffe58f;
+      transition: all 0.3s;
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(255, 169, 64, 0.2);
+        transform: translateY(-2px);
+      }
+
+      .merchant-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ffa940 0%, #fa8c16 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 24px;
+        overflow: hidden;
+        flex: 0 0 56px;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+
+        &:hover {
+          transform: translateY(-1px) scale(1.04);
+          box-shadow: 0 8px 18px rgba(250, 140, 22, 0.24);
+        }
+
+        .merchant-avatar-image {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+        }
+
+        .merchant-avatar-text {
+          font-size: 22px;
+          font-weight: 700;
+          line-height: 1;
+        }
+      }
+
+      .merchant-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .merchant-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #d46b08;
+        margin-bottom: 6px;
+      }
+
+      .merchant-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .meta-text {
+        font-size: 12px;
+        color: $text-muted;
+      }
+
+      .merchant-desc {
+        font-size: 13px;
+        color: $text-secondary;
+        line-height: 1.6;
+        margin: 10px 0 0;
+      }
+
+      .merchant-arrow {
+        color: #d46b08;
+        font-size: 18px;
       }
     }
 
@@ -1568,6 +1802,35 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
           margin-bottom: 12px;
         }
 
+        .comment-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+
+        .reply-list {
+          margin-top: 12px;
+          padding: 12px;
+          background: $bg-light;
+          border-radius: 10px;
+
+          .reply-item {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+
+            &:not(:last-child) {
+              border-bottom: 1px solid $border;
+            }
+
+            .reply-body {
+              flex: 1;
+              min-width: 0;
+            }
+          }
+        }
+
         .comment-images {
           display: flex;
           gap: 10px;
@@ -1610,6 +1873,11 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
       color: $text-secondary;
       font-size: 14px;
     }
+  }
+
+  .reply-tip {
+    color: $text-secondary;
+    font-size: 14px;
   }
 }
 

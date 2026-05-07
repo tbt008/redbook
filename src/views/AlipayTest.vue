@@ -30,6 +30,7 @@
       <!-- 支付表单显示区域 -->
       <div v-if="payQrCodeUrl" class="pay-container">
         <h3>请使用支付宝沙箱 App 扫码支付</h3>
+        <PaymentMethodCard />
         <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
         <div class="qrcode-tip">完成支付后返回此页查询状态。</div>
         <el-button type="success" @click="checkPaymentStatus" class="check-btn">
@@ -127,9 +128,14 @@ ngrok http 9090
 
 <script>
 import axios from 'axios';
+import { buildPayQrCodeUrl } from '@/utils/payQrCode';
+import PaymentMethodCard from '@/components/PaymentMethodCard.vue';
 
 export default {
   name: 'AlipayTest',
+  components: {
+    PaymentMethodCard
+  },
   data() {
     return {
       orderForm: {
@@ -165,7 +171,7 @@ export default {
         const response = await axios.get(`/api/order/pay/qrcode/${this.orderForm.orderNo}`);
         
         if (response.data.code === 200) {
-          this.payQrCodeUrl = response.data.data.qrCodeUrl || '';
+          this.payQrCodeUrl = await buildPayQrCodeUrl(response.data.data);
           if (!this.payQrCodeUrl) {
             throw new Error('未获取到支付宝支付二维码');
           }

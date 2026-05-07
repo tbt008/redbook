@@ -75,7 +75,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="location" label="常住地" width="140" show-overflow-tooltip />
-        <el-table-column prop="createTime" label="注册时间" width="180" />
+        <el-table-column prop="createTime" label="注册时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="340" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="viewDetail(row)">详情</el-button>
@@ -98,13 +102,22 @@
               禁用
             </el-button>
             <el-button
-              v-if="row.status !== 1 && row.userType !== 4"
+              v-if="row.status === 0 && row.userType !== 4"
               link
               type="success"
               size="small"
               @click="handleStatusChange(row, 1)"
             >
-              启用
+              取消禁用
+            </el-button>
+            <el-button
+              v-if="row.status === 2 && row.userType !== 4"
+              link
+              type="success"
+              size="small"
+              @click="handleStatusChange(row, 1)"
+            >
+              取消禁言
             </el-button>
             <el-button v-if="row.userType !== 4" link type="primary" size="small" @click="handleUserTypeChange(row)">
               <el-icon><Switch /></el-icon>
@@ -133,7 +146,7 @@
         </el-form-item>
         <el-form-item label="操作">
           <el-tag v-if="statusForm.status === 0" type="danger">禁用</el-tag>
-          <el-tag v-else-if="statusForm.status === 1" type="success">启用</el-tag>
+          <el-tag v-else-if="statusForm.status === 1" type="success">{{ currentUser?.status === 0 ? '取消禁用' : '取消禁言' }}</el-tag>
           <el-tag v-else-if="statusForm.status === 2" type="warning">禁言</el-tag>
         </el-form-item>
         <el-form-item label="原因">
@@ -187,6 +200,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Switch } from '@element-plus/icons-vue'
 import request from '@/util/request'
+import { formatDateTime } from '@/util/datetime'
 
 const loading = ref(false)
 const submitting = ref(false)

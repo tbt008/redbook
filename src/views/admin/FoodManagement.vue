@@ -34,7 +34,7 @@
           <span class="search-shortcut">Enter 搜索</span>
         </div>
         <div class="filter-group">
-          <el-select v-model="searchForm.region" placeholder="全部地区" clearable class="filter-select">
+          <el-select v-model="searchForm.region" placeholder="全部地区" clearable class="filter-select" @change="handleSearch">
             <template #prefix>
               <el-icon><Location /></el-icon>
             </template>
@@ -44,7 +44,7 @@
             <el-option label="秀屿区" value="秀屿区" />
             <el-option label="湄洲岛" value="湄洲岛" />
           </el-select>
-          <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="filter-select">
+          <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="filter-select" @change="handleSearch">
             <template #prefix>
               <el-icon><SwitchButton /></el-icon>
             </template>
@@ -148,9 +148,14 @@
             <el-tag v-else type="danger">下架</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column prop="createTime" label="创建时间" width="180">
           <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="280" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="handleManageComments(row)">评论</el-button>
             <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button link type="warning" size="small" @click="handleManagePackages(row)">套餐管理</el-button>
             <el-button link type="info" size="small" @click="handleTakeoutToggle(row)">
@@ -192,14 +197,26 @@
           </el-select>
         </el-form-item>
         <el-form-item label="详细地址" prop="address">
-          <el-input v-model="foodForm.address" placeholder="请输入详细地址" />
+          <MapLocationPicker
+            v-model:address="foodForm.address"
+            v-model:longitude="foodForm.longitude"
+            v-model:latitude="foodForm.latitude"
+            v-model:region="foodForm.region"
+          />
         </el-form-item>
         <el-form-item label="人均消费" prop="avgPrice">
           <el-input-number v-model="foodForm.avgPrice" :min="0" :precision="2" style="width: 200px" />
           <span style="margin-left: 10px">元/人</span>
         </el-form-item>
         <el-form-item label="联系电话" prop="contactPhone">
-          <el-input v-model="foodForm.contactPhone" placeholder="请输入联系电话" />
+          <el-input
+            v-model="foodForm.contactPhone"
+            placeholder="请输入11位手机号"
+            maxlength="11"
+            show-word-limit
+            inputmode="numeric"
+            @input="foodForm.contactPhone = normalizeMobilePhone($event)"
+          />
         </el-form-item>
         <el-form-item label="美食描述" prop="description">
           <el-input v-model="foodForm.description" type="textarea" :rows="4" placeholder="请输入美食描述" />
@@ -326,6 +343,8 @@
         <el-button type="primary" @click="handlePackageSubmit" :loading="packageSubmitting">确定</el-button>
       </template>
     </el-dialog>
+
+    <AdminCommentDrawer ref="commentDrawerRef" />
   </div>
 </template>
 
@@ -347,6 +366,10 @@ import {
   ForkSpoon
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
+import { normalizeMobilePhone, validateMobilePhone } from '@/utils/attractionForm'
+import MapLocationPicker from '@/components/MapLocationPicker.vue'
+import { formatDateTime } from '@/util/datetime'
+import AdminCommentDrawer from '@/components/admin/AdminCommentDrawer.vue'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -355,8 +378,17 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('编辑美食')
 const formRef = ref<FormInstance>()
 const fileInput = ref<HTMLInputElement>()
+const commentDrawerRef = ref<InstanceType<typeof AdminCommentDrawer>>()
 
 const isEdit = ref(false)
+
+const handleManageComments = (row: any) => {
+  commentDrawerRef.value?.open({
+    id: row.id,
+    title: row.name || '未命名美食',
+    type: 5
+  })
+}
 
 // 套餐相关
 const packageDialogVisible = ref(false)
@@ -392,6 +424,8 @@ const foodForm = reactive({
   name: '',
   region: '',
   address: '',
+  longitude: null as number | null,
+  latitude: null as number | null,
   avgPrice: 0,
   contactPhone: '',
   description: '',
@@ -402,7 +436,8 @@ const formRules = {
   name: [{ required: true, message: '请输入美食名称', trigger: 'blur' }],
   region: [{ required: true, message: '请选择地区', trigger: 'change' }],
   address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
-  avgPrice: [{ required: true, message: '请输入人均消费', trigger: 'blur' }]
+  avgPrice: [{ required: true, message: '请输入人均消费', trigger: 'blur' }],
+  contactPhone: [{ validator: validateMobilePhone, trigger: 'blur' }]
 }
 
 // 套餐表单
@@ -466,6 +501,8 @@ const handleAdd = () => {
   foodForm.name = ''
   foodForm.region = ''
   foodForm.address = ''
+  foodForm.longitude = null
+  foodForm.latitude = null
   foodForm.avgPrice = 0
   foodForm.contactPhone = ''
   foodForm.description = ''
@@ -481,8 +518,10 @@ const handleEdit = (row: any) => {
   foodForm.name = row.name
   foodForm.region = row.region
   foodForm.address = row.address
+  foodForm.longitude = row.longitude || null
+  foodForm.latitude = row.latitude || null
   foodForm.avgPrice = row.avgPrice
-  foodForm.contactPhone = row.contactPhone || ''
+  foodForm.contactPhone = normalizeMobilePhone(row.contactPhone)
   foodForm.description = row.description || ''
   foodForm.images = row.images || '[]'
 
@@ -1257,4 +1296,3 @@ onMounted(() => {
   }
 }
 </style>
-

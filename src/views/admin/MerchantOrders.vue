@@ -4,6 +4,28 @@
       <h2 class="page-title">订单管理</h2>
     </div>
 
+    <!-- 订单号核销 -->
+    <el-card class="verify-card">
+      <div class="verify-panel">
+        <div class="verify-title">
+          <span class="verify-heading">订单号核销</span>
+          <span class="verify-subtitle">输入用户提供的订单号，系统会校验支付状态和商家归属</span>
+        </div>
+        <div class="verify-action">
+          <el-input
+            v-model.trim="verifyOrderNo"
+            placeholder="请输入订单号"
+            clearable
+            class="verify-input"
+            @keyup.enter="handleConfirmByOrderNo"
+          />
+          <el-button type="success" :loading="verifyLoading" @click="handleConfirmByOrderNo">
+            核销
+          </el-button>
+        </div>
+      </div>
+    </el-card>
+
     <!-- 搜索筛选 -->
     <el-card class="search-card">
       <el-form :inline="true" :model="searchForm">
@@ -21,9 +43,8 @@
             <el-option label="已使用" :value="2" />
             <el-option label="已取消" :value="3" />
             <el-option label="已退款" :value="4" />
-            <el-option label="待发货" :value="5" />
-            <el-option label="已发货" :value="6" />
-            <el-option label="已收货" :value="7" />
+            <el-option label="退款审核中" :value="5" />
+            <el-option label="已拒绝退款" :value="6" />
           </el-select>
         </el-form-item>
         <el-form-item label="关键词">
@@ -66,38 +87,52 @@
             <el-tag v-else-if="row.orderStatus === 2" type="info">已使用</el-tag>
             <el-tag v-else-if="row.orderStatus === 3" type="danger">已取消</el-tag>
             <el-tag v-else-if="row.orderStatus === 4">已退款</el-tag>
+            <el-tag v-else-if="row.orderStatus === 5" type="warning">退款审核中</el-tag>
+            <el-tag v-else-if="row.orderStatus === 6" type="info">已拒绝退款</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="核销状态" width="100">
           <template #default="{ row }">
-            <el-tag v-if="row.verifyStatus === 1" type="success">已核销</el-tag>
-            <el-tag v-else type="info">未核销</el-tag>
+            <template v-if="hasVerifyStatus(row)">
+              <el-tag v-if="row.verifyStatus === 1" type="success">已核销</el-tag>
+              <el-tag v-else type="info">未核销</el-tag>
+            </template>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="发货状态" width="100">
           <template #default="{ row }">
-            <el-tag v-if="row.deliveryStatus === 0" type="info">待发货</el-tag>
-            <el-tag v-else-if="row.deliveryStatus === 1" type="warning">已发货</el-tag>
-            <el-tag v-else-if="row.deliveryStatus === 2" type="success">已收货</el-tag>
-            <el-tag v-else-if="row.deliveryStatus === 3" type="danger">已取消</el-tag>
-            <el-tag v-else type="info">待发货</el-tag>
+            <template v-if="hasDeliveryStatus(row)">
+              <el-tag v-if="row.deliveryStatus === 0" type="info">待发货</el-tag>
+              <el-tag v-else-if="row.deliveryStatus === 1" type="warning">已发货</el-tag>
+              <el-tag v-else-if="row.deliveryStatus === 2" type="success">已收货</el-tag>
+              <el-tag v-else-if="row.deliveryStatus === 3" type="danger">已取消</el-tag>
+              <span v-else>-</span>
+            </template>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="下单时间" width="180">
           <template #default="{ row }">
-            {{ row.createTime }}
+            {{ formatDateTime(row.createTime) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleView(row)">查看</el-button>
             <!-- 美食订单：显示发货按钮 -->
-            <el-button link type="warning" size="small" @click="handleDelivery(row)" v-if="row.orderType === 3 && row.orderStatus === 1 && (row.deliveryStatus === 0 || row.deliveryStatus === null || row.deliveryStatus === undefined)">
+            <el-button link type="warning" size="small" @click="handleDelivery(row)" v-if="row.orderType === 3 && row.orderStatus === 1 && row.deliveryStatus === 0">
               发货
             </el-button>
             <!-- 门票和酒店订单：显示核销按钮 -->
             <el-button link type="success" size="small" @click="handleConfirm(row)" v-if="row.orderType !== 3 && row.orderStatus === 1 && row.verifyStatus !== 1">
               核销
+            </el-button>
+            <el-button link type="success" size="small" @click="handleApproveRefund(row)" v-if="row.orderStatus === 5">
+              同意退款
+            </el-button>
+            <el-button link type="danger" size="small" @click="handleRejectRefund(row)" v-if="row.orderStatus === 5">
+              拒绝退款
             </el-button>
           </template>
         </el-table-column>
@@ -135,17 +170,25 @@
           <el-tag v-else-if="currentOrder.orderStatus === 2" type="info">已使用</el-tag>
           <el-tag v-else-if="currentOrder.orderStatus === 3" type="danger">已取消</el-tag>
           <el-tag v-else-if="currentOrder.orderStatus === 4">已退款</el-tag>
+          <el-tag v-else-if="currentOrder.orderStatus === 5" type="warning">退款审核中</el-tag>
+          <el-tag v-else-if="currentOrder.orderStatus === 6" type="info">已拒绝退款</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="核销状态">
-          <el-tag v-if="currentOrder.verifyStatus === 1" type="success">已核销</el-tag>
-          <el-tag v-else type="info">未核销</el-tag>
+          <template v-if="hasVerifyStatus(currentOrder)">
+            <el-tag v-if="currentOrder.verifyStatus === 1" type="success">已核销</el-tag>
+            <el-tag v-else type="info">未核销</el-tag>
+          </template>
+          <span v-else>-</span>
         </el-descriptions-item>
-        <el-descriptions-item label="发货状态" v-if="currentOrder.orderType === 3">
-          <el-tag v-if="currentOrder.deliveryStatus === 0" type="info">待发货</el-tag>
-          <el-tag v-else-if="currentOrder.deliveryStatus === 1" type="warning">已发货</el-tag>
-          <el-tag v-else-if="currentOrder.deliveryStatus === 2" type="success">已收货</el-tag>
-          <el-tag v-else-if="currentOrder.deliveryStatus === 3" type="danger">已取消</el-tag>
-          <el-tag v-else type="info">待发货</el-tag>
+        <el-descriptions-item label="发货状态">
+          <template v-if="hasDeliveryStatus(currentOrder)">
+            <el-tag v-if="currentOrder.deliveryStatus === 0" type="info">待发货</el-tag>
+            <el-tag v-else-if="currentOrder.deliveryStatus === 1" type="warning">已发货</el-tag>
+            <el-tag v-else-if="currentOrder.deliveryStatus === 2" type="success">已收货</el-tag>
+            <el-tag v-else-if="currentOrder.deliveryStatus === 3" type="danger">已取消</el-tag>
+            <span v-else>-</span>
+          </template>
+          <span v-else>-</span>
         </el-descriptions-item>
 
         <!-- 美食订单信息 -->
@@ -154,6 +197,9 @@
           <el-descriptions-item label="用餐人数">{{ currentOrder.dinerCount }}人</el-descriptions-item>
           <el-descriptions-item label="预订桌号">{{ currentOrder.tableNumber || '-' }}</el-descriptions-item>
           <el-descriptions-item label="用餐时间">{{ currentOrder.mealTime || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="联系人">{{ currentOrder.guestName || currentOrder.visitorName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="联系电话">{{ currentOrder.guestPhone || currentOrder.visitorPhone || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="收货地址" :span="2">{{ currentOrder.deliveryAddress || '-' }}</el-descriptions-item>
         </template>
 
         <!-- 酒店订单信息 -->
@@ -166,24 +212,30 @@
 
         <!-- 门票订单信息 -->
         <template v-if="currentOrder.orderType === 1">
-          <el-descriptions-item label="游玩日期">{{ currentOrder.visitDate }}</el-descriptions-item>
+          <el-descriptions-item label="游玩日期">{{ formatDateTime(currentOrder.visitDate, 'YYYY-MM-DD', '-') }}</el-descriptions-item>
           <el-descriptions-item label="购买数量">{{ currentOrder.ticketCount }}张</el-descriptions-item>
           <el-descriptions-item label="游客姓名">{{ currentOrder.visitorName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="联系电话">{{ currentOrder.visitorPhone || '-' }}</el-descriptions-item>
         </template>
 
-        <el-descriptions-item label="下单时间">{{ currentOrder.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="支付时间">{{ currentOrder.payTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="下单时间">{{ formatDateTime(currentOrder.createTime) }}</el-descriptions-item>
+        <el-descriptions-item label="支付时间">{{ formatDateTime(currentOrder.payTime, 'YYYY-MM-DD HH:mm:ss', '-') }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
         <el-button @click="detailDialogVisible = false">关闭</el-button>
         <!-- 美食订单：显示发货按钮 -->
-        <el-button type="warning" @click="handleDelivery" v-if="currentOrder && currentOrder.orderType === 3 && currentOrder.orderStatus === 1 && (currentOrder.deliveryStatus === 0 || currentOrder.deliveryStatus === null || currentOrder.deliveryStatus === undefined)">
+        <el-button type="warning" @click="handleDelivery" v-if="currentOrder && currentOrder.orderType === 3 && currentOrder.orderStatus === 1 && currentOrder.deliveryStatus === 0">
           发货
         </el-button>
         <!-- 门票和酒店订单：显示核销按钮 -->
         <el-button type="success" @click="handleConfirm" v-if="currentOrder && currentOrder.orderType !== 3 && currentOrder.orderStatus === 1 && currentOrder.verifyStatus !== 1">
           核销订单
+        </el-button>
+        <el-button type="success" @click="handleApproveRefund" v-if="currentOrder && currentOrder.orderStatus === 5">
+          同意退款
+        </el-button>
+        <el-button type="danger" @click="handleRejectRefund" v-if="currentOrder && currentOrder.orderStatus === 5">
+          拒绝退款
         </el-button>
       </template>
     </el-dialog>
@@ -194,8 +246,11 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/util/request'
+import { formatDateTime } from '@/util/datetime'
 
 const loading = ref(false)
+const verifyLoading = ref(false)
+const verifyOrderNo = ref('')
 const orderList = ref<any[]>([])
 const detailDialogVisible = ref(false)
 const currentOrder = ref<any>({})
@@ -212,6 +267,14 @@ const pagination = reactive({
   total: 0
 })
 
+const hasVerifyStatus = (order: any) => {
+  return order?.orderType !== 3
+}
+
+const hasDeliveryStatus = (order: any) => {
+  return order?.orderType === 3 && order.deliveryStatus !== null && order.deliveryStatus !== undefined
+}
+
 const loadOrderList = async () => {
   loading.value = true
   try {
@@ -220,7 +283,7 @@ const loadOrderList = async () => {
         pageNum: pagination.pageNum,
         pageSize: pagination.pageSize,
         orderType: searchForm.orderType || undefined,
-        orderStatus: searchForm.orderStatus || undefined,
+        orderStatus: searchForm.orderStatus ?? undefined,
         keyword: searchForm.keyword || undefined,
         _t: Date.now()
       }
@@ -286,6 +349,39 @@ const handleConfirm = async (row?: any) => {
   }
 }
 
+const handleConfirmByOrderNo = async () => {
+  const orderNo = verifyOrderNo.value.trim()
+  if (!orderNo) {
+    ElMessage.warning('请输入订单号')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(`确定核销订单 ${orderNo} 吗？`, '订单号核销', {
+      confirmButtonText: '确定核销',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    verifyLoading.value = true
+    const res: any = await request.post('/admin/merchant/orders/confirm-by-no', null, {
+      params: { orderNo }
+    })
+    if (res.code === 200) {
+      ElMessage.success('核销成功')
+      verifyOrderNo.value = ''
+      detailDialogVisible.value = false
+      loadOrderList()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '核销失败')
+    }
+  } finally {
+    verifyLoading.value = false
+  }
+}
+
 const handleDelivery = async (row?: any) => {
   const order = row || currentOrder.value
   if (!order) return
@@ -312,6 +408,54 @@ const handleDelivery = async (row?: any) => {
   }
 }
 
+const handleApproveRefund = async (row?: any) => {
+  const order = row || currentOrder.value
+  if (!order) return
+
+  try {
+    await ElMessageBox.confirm('确定同意该订单退款吗？同意后订单状态将变为已退款。', '同意退款', {
+      confirmButtonText: '同意退款',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const res: any = await request.post(`/admin/merchant/orders/${order.id}/refund/approve`)
+    if (res.code === 200) {
+      ElMessage.success('已同意退款')
+      detailDialogVisible.value = false
+      loadOrderList()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '退款审核失败')
+    }
+  }
+}
+
+const handleRejectRefund = async (row?: any) => {
+  const order = row || currentOrder.value
+  if (!order) return
+
+  try {
+    await ElMessageBox.confirm('确定拒绝该订单退款吗？拒绝后订单状态将变为已拒绝退款。', '拒绝退款', {
+      confirmButtonText: '拒绝退款',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const res: any = await request.post(`/admin/merchant/orders/${order.id}/refund/reject`)
+    if (res.code === 200) {
+      ElMessage.success('已拒绝退款')
+      detailDialogVisible.value = false
+      loadOrderList()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '退款审核失败')
+    }
+  }
+}
+
 onMounted(() => {
   loadOrderList()
 })
@@ -334,6 +478,46 @@ onMounted(() => {
     margin-bottom: 20px;
   }
 
+  .verify-card {
+    margin-bottom: 20px;
+
+    .verify-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .verify-title {
+      min-width: 240px;
+    }
+
+    .verify-heading {
+      display: block;
+      margin-bottom: 6px;
+      color: #1f2937;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .verify-subtitle {
+      color: #6b7280;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .verify-action {
+      display: flex;
+      flex: 1;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .verify-input {
+      max-width: 360px;
+    }
+  }
+
   .table-card {
     .product-info {
       span {
@@ -347,6 +531,22 @@ onMounted(() => {
     .price {
       color: #ff6b00;
       font-weight: 600;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .merchant-orders {
+    .verify-card {
+      .verify-panel,
+      .verify-action {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .verify-input {
+        max-width: none;
+      }
     }
   }
 }

@@ -41,6 +41,7 @@
             placeholder="全部地区"
             clearable
             class="filter-select"
+            @change="handleSearch"
           >
             <template #prefix>
               <el-icon><Location /></el-icon>
@@ -56,6 +57,7 @@
             placeholder="全部状态"
             clearable
             class="filter-select"
+            @change="handleSearch"
           >
             <template #prefix>
               <el-icon><SwitchButton /></el-icon>
@@ -140,8 +142,9 @@
             <div class="attraction-info">
               <div class="image-wrapper">
                 <el-image
-                  :src="row.images ? JSON.parse(row.images)[0] : ''"
-                  :preview-src-list="row.images ? JSON.parse(row.images) : []"
+                  :src="getFirstImage(row.images)"
+                  :preview-src-list="parseImageList(row.images)"
+                  lazy
                   fit="cover"
                   class="attraction-image"
                 >
@@ -223,12 +226,22 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" fixed="right" align="center">
+        <el-table-column label="操作" width="260" fixed="right" align="center">
           <template #default="{ row }">
             <div class="attraction-actions">
+              <el-tooltip content="评论管理" placement="top">
+                <button class="action-btn comments" @click="handleManageComments(row)">
+                  <el-icon><ChatDotRound /></el-icon>
+                </button>
+              </el-tooltip>
               <el-tooltip content="编辑" placement="top">
                 <button class="action-btn edit" @click="handleEdit(row)">
                   <el-icon><Edit /></el-icon>
+                </button>
+              </el-tooltip>
+              <el-tooltip content="门票管理" placement="top">
+                <button class="action-btn ticket" @click="handleManageTickets(row)">
+                  <el-icon><Ticket /></el-icon>
                 </button>
               </el-tooltip>
               <el-tooltip :content="row.status === 1 ? '下架' : '上架'" placement="top">
@@ -308,11 +321,12 @@
             </el-form-item>
 
             <el-form-item label="详细地址" prop="address" class="form-item full-width">
-              <el-input v-model="attractionForm.address" placeholder="请输入详细地址">
-                <template #prefix>
-                  <el-icon><Place /></el-icon>
-                </template>
-              </el-input>
+              <MapLocationPicker
+                v-model:address="attractionForm.address"
+                v-model:longitude="attractionForm.longitude"
+                v-model:latitude="attractionForm.latitude"
+                v-model:region="attractionForm.region"
+              />
             </el-form-item>
 
             <el-form-item label="门票价格" prop="ticketPrice" class="form-item">
@@ -326,49 +340,33 @@
             </el-form-item>
 
             <el-form-item label="开放时间" prop="openTime" class="form-item">
-              <el-input v-model="attractionForm.openTime" placeholder="如：08:00-18:00">
-                <template #prefix>
-                  <el-icon><Clock /></el-icon>
-                </template>
-              </el-input>
+              <el-time-picker
+                v-model="attractionOpenTimeRange"
+                is-range
+                range-separator="至"
+                start-placeholder="开始时间"
+                end-placeholder="结束时间"
+                format="HH:mm"
+                value-format="HH:mm"
+                style="width: 100%"
+              />
             </el-form-item>
 
             <el-form-item label="联系电话" prop="contactPhone" class="form-item">
-              <el-input v-model="attractionForm.contactPhone" placeholder="请输入联系电话">
+              <el-input
+                v-model="attractionForm.contactPhone"
+                placeholder="请输入11位手机号"
+                maxlength="11"
+                show-word-limit
+                inputmode="numeric"
+                @input="attractionForm.contactPhone = normalizeMobilePhone($event)"
+              >
                 <template #prefix>
                   <el-icon><Phone /></el-icon>
                 </template>
               </el-input>
             </el-form-item>
 
-            <el-form-item label="经纬度定位" class="form-item full-width">
-              <div class="location-picker">
-                <div class="location-inputs">
-                  <el-input v-model.number="attractionForm.longitude" placeholder="经度" readonly style="width: 140px">
-                    <template #prefix>经度</template>
-                  </el-input>
-                  <el-input v-model.number="attractionForm.latitude" placeholder="纬度" readonly style="width: 140px">
-                    <template #prefix>纬度</template>
-                  </el-input>
-                  <el-button type="primary" @click="toggleMapPicker" :icon="showMapPicker ? 'Close' : 'MapLocation'">
-                    {{ showMapPicker ? '关闭地图' : '点击地图选点' }}
-                  </el-button>
-                </div>
-                <div v-if="showMapPicker" class="map-picker-container">
-                  <div id="attraction-map-picker" class="map-container" v-show="!mapLoadFailed"></div>
-                  <div v-if="mapLoadFailed" class="map-error">
-                    <el-icon class="error-icon"><Warning /></el-icon>
-                    <p>地图加载失败</p>
-                    <p class="error-tip">请检查网络连接后，点击"关闭地图"再重新打开</p>
-                    <el-button size="small" type="primary" @click="toggleMapPicker">重试</el-button>
-                  </div>
-                  <div class="map-tips" v-if="!mapLoadFailed">
-                    <el-icon><InfoFilled /></el-icon>
-                    <span>点击地图选择景点位置，系统将自动获取经纬度</span>
-                  </div>
-                </div>
-              </div>
-            </el-form-item>
           </div>
 
           <el-form-item label="景点描述" prop="description" class="form-item full-width">
@@ -426,6 +424,99 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 门票套餐管理对话框 -->
+    <el-dialog v-model="ticketDialogVisible" :title="`${currentAttractionName} - 门票套餐`" width="900px">
+      <div class="ticket-header">
+        <el-button type="primary" @click="handleAddTicket">
+          <el-icon><Plus /></el-icon>
+          添加票种
+        </el-button>
+      </div>
+
+      <el-table :data="ticketList" v-loading="ticketLoading" stripe style="margin-top: 15px">
+        <el-table-column prop="ticketName" label="票种名称" min-width="120" />
+        <el-table-column label="票种类型" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.ticketType === 1" type="primary">成人票</el-tag>
+            <el-tag v-else-if="row.ticketType === 2" type="success">儿童票</el-tag>
+            <el-tag v-else-if="row.ticketType === 3" type="warning">学生票</el-tag>
+            <el-tag v-else-if="row.ticketType === 4" type="info">老人票</el-tag>
+            <el-tag v-else type="info">其他</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="price" label="价格" width="100">
+          <template #default="{ row }">
+            <span class="ticket-price">¥{{ row.price }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="validDays" label="有效期" width="90">
+          <template #default="{ row }">
+            <span>{{ row.validDays || 1 }}天</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="库存" width="120">
+          <template #default="{ row }">
+            <span>{{ getTicketStockText(row) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag v-if="row.status === 1" type="success">上架</el-tag>
+            <el-tag v-else type="danger">下架</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="handleEditTicket(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDeleteTicket(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <template #footer>
+        <el-button @click="ticketDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 添加/编辑票种对话框 -->
+    <el-dialog v-model="ticketFormDialogVisible" :title="ticketFormTitle" width="600px">
+      <el-form :model="ticketForm" :rules="ticketFormRules" ref="ticketFormRef" label-width="100px">
+        <el-form-item label="票种名称" prop="ticketName">
+          <el-input v-model="ticketForm.ticketName" placeholder="如：成人票、学生票、老人票" />
+        </el-form-item>
+        <el-form-item label="票种类型" prop="ticketType">
+          <el-select v-model="ticketForm.ticketType" placeholder="请选择票种类型" style="width: 100%">
+            <el-option label="成人票" :value="1" />
+            <el-option label="儿童票" :value="2" />
+            <el-option label="学生票" :value="3" />
+            <el-option label="老人票" :value="4" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="价格" prop="price">
+          <el-input-number v-model="ticketForm.price" :min="0" :precision="2" style="width: 220px" />
+          <span style="margin-left: 10px">元</span>
+        </el-form-item>
+        <el-form-item label="有效期">
+          <el-input-number v-model="ticketForm.validDays" :min="1" :max="365" style="width: 220px" />
+          <span style="margin-left: 10px">天</span>
+        </el-form-item>
+        <el-form-item label="总票数">
+          <el-input-number v-model="ticketForm.totalCount" :min="0" :max="100000" style="width: 220px" />
+          <span style="margin-left: 10px">张（0表示不限量）</span>
+        </el-form-item>
+        <el-form-item label="票种描述">
+          <el-input v-model="ticketForm.description" type="textarea" :rows="3" placeholder="请输入购买说明或适用人群" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="ticketFormDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleTicketSubmit" :loading="ticketSubmitting">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <AdminCommentDrawer ref="commentDrawerRef" />
   </div>
 </template>
 
@@ -448,15 +539,19 @@ import {
   Delete,
   EditPen,
   Place,
-  Clock,
   Phone,
   ZoomIn,
   MapLocation,
   InfoFilled,
-  Warning
+  Warning,
+  Ticket
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { formatDateTime } from '@/util/datetime'
+import { formatOpenTimeRange, normalizeMobilePhone, parseOpenTimeRange, validateMobilePhone } from '@/utils/attractionForm'
+import MapLocationPicker from '@/components/MapLocationPicker.vue'
+import { loadAMapScript, waitForContainerVisible } from '@/utils/amap'
+import AdminCommentDrawer from '@/components/admin/AdminCommentDrawer.vue'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -465,8 +560,29 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('编辑景点')
 const formRef = ref()
 const fileInput = ref<HTMLInputElement>()
+const commentDrawerRef = ref<InstanceType<typeof AdminCommentDrawer>>()
 
 const isEdit = ref(false)
+
+const handleManageComments = (row: any) => {
+  commentDrawerRef.value?.open({
+    id: row.id,
+    title: row.name || '未命名景点',
+    type: 4
+  })
+}
+
+// 门票套餐相关
+const ticketDialogVisible = ref(false)
+const ticketFormDialogVisible = ref(false)
+const ticketLoading = ref(false)
+const ticketSubmitting = ref(false)
+const ticketFormRef = ref()
+const ticketList = ref<any[]>([])
+const ticketFormTitle = ref('添加票种')
+const currentAttractionId = ref<number | null>(null)
+const currentAttractionName = ref('')
+const isTicketEdit = ref(false)
 
 const searchForm = reactive({
   keyword: '',
@@ -498,15 +614,38 @@ const formRules = {
   name: [{ required: true, message: '请输入景点名称', trigger: 'blur' }],
   region: [{ required: true, message: '请选择地区', trigger: 'change' }],
   address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
-  ticketPrice: [{ required: true, message: '请输入门票价格', trigger: 'blur' }]
+  ticketPrice: [{ required: true, message: '请输入门票价格', trigger: 'blur' }],
+  openTime: [{ required: true, message: '请选择开放时间', trigger: 'change' }],
+  contactPhone: [{ validator: validateMobilePhone, trigger: 'blur' }]
 }
 
-const parsedImages = computed(() => {
-  try {
-    return JSON.parse(attractionForm.images || '[]')
-  } catch {
-    return []
+const ticketForm = reactive({
+  id: null as number | null,
+  attractionId: null as number | null,
+  ticketName: '',
+  ticketType: 1,
+  price: 0,
+  validDays: 1,
+  description: '',
+  totalCount: 0,
+  soldCount: 0
+})
+
+const ticketFormRules = {
+  ticketName: [{ required: true, message: '请输入票种名称', trigger: 'blur' }],
+  ticketType: [{ required: true, message: '请选择票种类型', trigger: 'change' }],
+  price: [{ required: true, message: '请输入票种价格', trigger: 'blur' }]
+}
+
+const attractionOpenTimeRange = computed({
+  get: () => parseOpenTimeRange(attractionForm.openTime),
+  set: (value: string[]) => {
+    attractionForm.openTime = formatOpenTimeRange(value)
   }
+})
+
+const parsedImages = computed(() => {
+  return parseImageList(attractionForm.images)
 })
 
 // 地图选点相关
@@ -514,71 +653,6 @@ const showMapPicker = ref(false)
 let mapPickerInstance: any = null
 let mapPickerMarker: any = null
 let mapLoadFailed = ref(false)
-
-// 动态加载高德地图API
-const loadAMapScript = (): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    // 如果已经加载，直接成功
-    if (window.AMap) {
-      resolve()
-      return
-    }
-
-    // 如果正在加载，等待完成
-    if ((window as any)._amapLoading) {
-      const checkInterval = setInterval(() => {
-        if (window.AMap) {
-          clearInterval(checkInterval)
-          resolve()
-        }
-      }, 100)
-      return
-    }
-
-    ;(window as any)._amapLoading = true
-
-    // 设置安全密钥
-    ;(window as any)._AMapSecurityConfig = {
-      securityJsCode: '1b5870e9227ca6f29ae1d37bee644626'
-    }
-
-    const script = document.createElement('script')
-    script.src = 'https://webapi.amap.com/maps?v=2.0&key=a7b3327e03aded1d1c991632d50f0d51&plugin=AMap.Tooltip'
-    script.async = false
-    script.onload = () => {
-      ;(window as any)._amapLoading = false
-      if ((window as any).AMap) {
-        resolve()
-      } else {
-        reject(new Error('AMap API loaded but window.AMap not available'))
-      }
-    }
-    script.onerror = () => {
-      ;(window as any)._amapLoading = false
-      reject(new Error('Failed to load AMap script'))
-    }
-    document.head.appendChild(script)
-  })
-}
-
-// 等待元素可见并有尺寸
-const waitForContainerVisible = (element: HTMLElement, maxAttempts = 20): Promise<void> => {
-  return new Promise((resolve) => {
-    const check = (attempt: number) => {
-      if (attempt >= maxAttempts) {
-        resolve()
-        return
-      }
-      const rect = element.getBoundingClientRect()
-      if (rect.width > 0 && rect.height > 0) {
-        resolve()
-      } else {
-        setTimeout(() => check(attempt + 1), 50)
-      }
-    }
-    check(0)
-  })
-}
 
 // 重置地图选点状态
 const resetMapPicker = () => {
@@ -610,7 +684,13 @@ const toggleMapPicker = async () => {
     await waitForContainerVisible(container)
   }
 
-  initMapPicker()
+  try {
+    await loadAMapScript()
+    initMapPicker()
+  } catch (error) {
+    console.error('高德地图加载失败:', error)
+    mapLoadFailed.value = true
+  }
 }
 
 const initMapPicker = () => {
@@ -734,6 +814,21 @@ const tableRowClassName = ({ row, rowIndex }: { row: any; rowIndex: number }) =>
   return ''
 }
 
+const parseImageList = (images?: string | string[]) => {
+  if (!images) return []
+  if (Array.isArray(images)) return images.filter(Boolean)
+  try {
+    const parsed = JSON.parse(images)
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : []
+  } catch {
+    return images ? [images] : []
+  }
+}
+
+const getFirstImage = (images?: string | string[]) => {
+  return parseImageList(images)[0] || ''
+}
+
 const loadAttractionList = async () => {
   loading.value = true
   try {
@@ -789,22 +884,31 @@ const handleAdd = () => {
   dialogVisible.value = true
 }
 
-const handleEdit = (row: any) => {
+const handleEdit = async (row: any) => {
   isEdit.value = true
   dialogTitle.value = '编辑景点'
-  attractionForm.id = row.id
-  attractionForm.name = row.name
-  attractionForm.region = row.region
-  attractionForm.address = row.address
-  attractionForm.ticketPrice = row.ticketPrice
-  attractionForm.openTime = row.openTime || ''
-  attractionForm.contactPhone = row.contactPhone || ''
-  attractionForm.description = row.description || ''
-  attractionForm.images = row.images || '[]'
-  attractionForm.longitude = row.longitude || null
-  attractionForm.latitude = row.latitude || null
-  resetMapPicker()
-  dialogVisible.value = true
+  loading.value = true
+  try {
+    const res: any = await request.get(`/attraction/${row.id}`)
+    const detail = res.code === 200 && res.data ? res.data : row
+    attractionForm.id = detail.id
+    attractionForm.name = detail.name
+    attractionForm.region = detail.region
+    attractionForm.address = detail.address
+    attractionForm.ticketPrice = detail.ticketPrice
+    attractionForm.openTime = detail.openTime || ''
+    attractionForm.contactPhone = normalizeMobilePhone(detail.contactPhone)
+    attractionForm.description = detail.description || ''
+    attractionForm.images = detail.images || '[]'
+    attractionForm.longitude = detail.longitude || null
+    attractionForm.latitude = detail.latitude || null
+    resetMapPicker()
+    dialogVisible.value = true
+  } catch (error: any) {
+    ElMessage.error(error.message || '加载景点详情失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleDelete = async (row: any) => {
@@ -871,6 +975,116 @@ const handleStatusChange = async (row: any, status: number) => {
       ElMessage.error(error.message || '操作失败')
     }
   }
+}
+
+const getTicketStockText = (ticket: any) => {
+  const total = Number(ticket.totalCount || 0)
+  if (total <= 0) return '不限量'
+  const sold = Number(ticket.soldCount || 0)
+  return `${Math.max(total - sold, 0)}/${total}`
+}
+
+const handleManageTickets = async (row: any) => {
+  currentAttractionId.value = row.id
+  currentAttractionName.value = row.name
+  ticketDialogVisible.value = true
+  await loadTickets()
+}
+
+const loadTickets = async () => {
+  if (!currentAttractionId.value) return
+  ticketLoading.value = true
+  try {
+    const res: any = await request.get(`/admin/attractions/${currentAttractionId.value}/tickets`)
+    if (res.code === 200) {
+      ticketList.value = res.data || []
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '加载票种失败')
+  } finally {
+    ticketLoading.value = false
+  }
+}
+
+const handleAddTicket = () => {
+  isTicketEdit.value = false
+  ticketFormTitle.value = '添加票种'
+  ticketForm.id = null
+  ticketForm.attractionId = currentAttractionId.value
+  ticketForm.ticketName = ''
+  ticketForm.ticketType = 1
+  ticketForm.price = 0
+  ticketForm.validDays = 1
+  ticketForm.description = ''
+  ticketForm.totalCount = 0
+  ticketForm.soldCount = 0
+  ticketFormDialogVisible.value = true
+}
+
+const handleEditTicket = (row: any) => {
+  isTicketEdit.value = true
+  ticketFormTitle.value = '编辑票种'
+  ticketForm.id = row.id
+  ticketForm.attractionId = row.attractionId || currentAttractionId.value
+  ticketForm.ticketName = row.ticketName
+  ticketForm.ticketType = row.ticketType || 1
+  ticketForm.price = row.price
+  ticketForm.validDays = row.validDays || 1
+  ticketForm.description = row.description || ''
+  ticketForm.totalCount = row.totalCount || 0
+  ticketForm.soldCount = row.soldCount || 0
+  ticketFormDialogVisible.value = true
+}
+
+const handleDeleteTicket = async (row: any) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除票种"${row.ticketName}"吗？`, '确认删除', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const res: any = await request.delete(`/admin/attractions/tickets/${row.id}`)
+    if (res.code === 200) {
+      ElMessage.success('删除成功')
+      await loadTickets()
+      await loadAttractionList()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
+}
+
+const handleTicketSubmit = async () => {
+  if (!ticketFormRef.value) return
+
+  await ticketFormRef.value.validate(async (valid: boolean) => {
+    if (valid) {
+      ticketSubmitting.value = true
+      try {
+        const payload = {
+          ...ticketForm,
+          attractionId: ticketForm.attractionId || currentAttractionId.value
+        }
+        const res: any = isTicketEdit.value
+          ? await request.put('/admin/attractions/tickets', payload)
+          : await request.post('/admin/attractions/tickets', payload)
+
+        if (res.code === 200) {
+          ElMessage.success(isTicketEdit.value ? '更新成功' : '添加成功')
+          ticketFormDialogVisible.value = false
+          await loadTickets()
+          await loadAttractionList()
+        }
+      } catch (error: any) {
+        ElMessage.error(error.message || '操作失败')
+      } finally {
+        ticketSubmitting.value = false
+      }
+    }
+  })
 }
 
 const triggerImageUpload = () => {
@@ -1296,6 +1510,22 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
 
 // 表格样式
 .attraction-table {
+  :deep(.el-table__inner-wrapper::before) {
+    display: none;
+  }
+
+  :deep(.el-table__body-wrapper),
+  :deep(.el-scrollbar__view),
+  :deep(.el-table__body),
+  :deep(.el-table__body tbody),
+  :deep(.el-table__fixed-body-wrapper tbody) {
+    height: auto !important;
+  }
+
+  :deep(.el-table__body) {
+    table-layout: fixed;
+  }
+
   :deep(.el-table__header-wrapper) {
     th {
       background: $bg-light;
@@ -1308,8 +1538,41 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
 
   :deep(.el-table__body-wrapper) {
     td {
-      padding: 16px 0;
+      height: 102px !important;
+      padding: 12px 0 !important;
+      vertical-align: middle;
     }
+  }
+
+  :deep(.el-table__fixed-body-wrapper td) {
+    height: 102px !important;
+    padding: 12px 0 !important;
+    vertical-align: middle;
+  }
+
+  :deep(.el-table__body .el-table__cell) {
+    height: 102px !important;
+    vertical-align: middle;
+  }
+
+  :deep(.el-table__body .cell) {
+    display: flex;
+    align-items: center;
+    min-height: 78px;
+    overflow: hidden;
+  }
+
+  :deep(.el-table__row),
+  :deep(.el-table__row .el-table__cell) {
+    height: 102px !important;
+    max-height: 102px !important;
+  }
+
+  :deep(.el-table-fixed-column--right),
+  :deep(.el-table__fixed-right),
+  :deep(.el-table__fixed-right-patch) {
+    background: #fff;
+    z-index: 3;
   }
 
   :deep(.striped-row) {
@@ -1334,6 +1597,9 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: center;
   gap: 14px;
+  width: 100%;
+  height: 78px;
+  overflow: hidden;
 
   .image-wrapper {
     position: relative;
@@ -1387,11 +1653,16 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
   }
 
   .attraction-meta {
+    min-width: 0;
+
     .name {
       font-size: 15px;
       font-weight: 600;
       color: $text-primary;
       margin-bottom: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .meta-location {
@@ -1400,6 +1671,9 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
       gap: 4px;
       font-size: 12px;
       color: $text-muted;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
 
       .el-icon {
         color: $primary-light;
@@ -1408,6 +1682,13 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
       .divider {
         margin: 0 6px;
         color: $border-color;
+        flex: 0 0 auto;
+      }
+
+      span:not(.divider) {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
   }
@@ -1531,6 +1812,24 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
       }
     }
 
+    &.ticket {
+      color: $primary-light;
+
+      &:hover {
+        background: rgba(45, 139, 111, 0.1);
+        transform: scale(1.1);
+      }
+    }
+
+    &.comments {
+      color: #8b5cf6;
+
+      &:hover {
+        background: rgba(139, 92, 246, 0.1);
+        transform: scale(1.1);
+      }
+    }
+
     &.up {
       color: $success-color;
 
@@ -1558,6 +1857,16 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
       }
     }
   }
+}
+
+.ticket-header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ticket-price {
+  color: $danger-color;
+  font-weight: 700;
 }
 
 // 分页
@@ -1980,6 +2289,3 @@ $shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
   }
 }
 </style>
-
-
-

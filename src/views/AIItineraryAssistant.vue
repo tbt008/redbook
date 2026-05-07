@@ -196,6 +196,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Promotion, Delete, Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
+import { authHeaders, parseResultResponse } from '@/util/fetchResult'
+import request from '@/util/request'
 
 const router = useRouter()
 
@@ -265,6 +267,16 @@ const addMessage = (role: 'user' | 'assistant', content: string, hasItinerary = 
   scrollToBottom()
 }
 
+const buildChatHistory = () => {
+  return messages.value
+    .filter((message) => message.content.trim())
+    .slice(-8)
+    .map((message) => ({
+      role: message.role === 'assistant' ? 'assistant' : 'user',
+      content: message.content
+    }))
+}
+
 // 发送消息（流式）
 const handleSend = () => {
   if (!inputMessage.value.trim()) return
@@ -273,6 +285,7 @@ const handleSend = () => {
 }
 
 const sendMessage = async (question: string) => {
+  const history = buildChatHistory()
   // 添加用户消息
   addMessage('user', question)
 
@@ -281,13 +294,13 @@ const sendMessage = async (question: string) => {
   streamingMessage.value = ''
 
   try {
-    const response = await fetch('/ai/chat/stream', {
+    const response = await fetch('/api/ai/chat/stream', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'auth-token': localStorage.getItem('auth-token') || ''
       },
-      body: JSON.stringify({ question })
+      body: JSON.stringify({ question, history })
     })
 
     if (!response.ok) {
@@ -296,31 +309,23 @@ const sendMessage = async (question: string) => {
 
     const reader = response.body?.getReader()
     const decoder = new TextDecoder()
+    let buffer = ''
 
     while (true) {
       const { done, value } = await reader!.read()
       if (done) break
 
-      const chunk = decoder.decode(value)
-      const lines = chunk.split('\n')
+      buffer += decoder.decode(value, { stream: true })
+      buffer = consumeSseBuffer(buffer)
+    }
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6)
-          if (data === '[DONE]') {
-            // 流式输出完成
-            streaming.value = false
-            const hasItinerary = detectItinerary(streamingMessage.value)
-            addMessage('assistant', streamingMessage.value, hasItinerary)
-            streamingMessage.value = ''
-            return
-          }
-          streamingMessage.value += data
-          scrollToBottom()
-        } else if (line.startsWith('event: error')) {
-          throw new Error('AI服务错误')
-        }
-      }
+    buffer += decoder.decode()
+    consumeSseBuffer(buffer, true)
+    if (streaming.value && streamingMessage.value) {
+      streaming.value = false
+      const hasItinerary = detectItinerary(streamingMessage.value)
+      addMessage('assistant', streamingMessage.value, hasItinerary)
+      streamingMessage.value = ''
     }
   } catch (error: any) {
     console.error('流式调用失败:', error)
@@ -330,6 +335,50 @@ const sendMessage = async (question: string) => {
     addMessage('assistant', '抱歉，我现在有点忙，请稍后再试 😅')
   } finally {
     loading.value = false
+  }
+}
+
+const consumeSseBuffer = (buffer: string, flush = false) => {
+  const normalized = buffer.replace(/\r\n/g, '\n')
+  const events = normalized.split('\n\n')
+  const rest = flush ? '' : events.pop() || ''
+
+  for (const eventText of events) {
+    const lines = eventText.split('\n')
+    const eventName = lines
+      .find((line) => line.startsWith('event:'))
+      ?.slice(6)
+      .trim()
+    const data = lines
+      .filter((line) => line.startsWith('data:'))
+      .map((line) => line.slice(5).replace(/^ /, ''))
+      .join('\n')
+
+    if (data === '[DONE]' || eventName === 'done') {
+      streaming.value = false
+      const hasItinerary = detectItinerary(streamingMessage.value)
+      addMessage('assistant', streamingMessage.value, hasItinerary)
+      streamingMessage.value = ''
+      return ''
+    }
+    if (eventName === 'error') {
+      throw new Error(decodeSseData(data) || 'AI服务错误')
+    }
+    if (data) {
+      streamingMessage.value += decodeSseData(data)
+      scrollToBottom()
+    }
+  }
+
+  return rest
+}
+
+const decodeSseData = (data: string) => {
+  try {
+    const parsed = JSON.parse(data)
+    return typeof parsed === 'string' ? parsed : data
+  } catch (error) {
+    return data
   }
 }
 
@@ -349,23 +398,22 @@ const generateItinerary = async (aiResponse: string) => {
     // 调用后端生成行程
     const response = await fetch('/api/itinerary/generate-itinerary', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'auth-token': localStorage.getItem('auth-token') || ''
-      },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(itineraryData)
     })
 
-    if (response.ok) {
-      const result = await response.json()
-      currentItinerary.value = result.data
-      ElMessage.success('行程生成成功！')
-    } else {
-      throw new Error('生成失败')
+    const result = await parseResultResponse<{ id: number }>(response)
+    const detail: any = await request.get(`/itinerary/${result.id}`)
+    currentItinerary.value = {
+      ...detail.data,
+      days: detail.data?.daysCount || detail.data?.days || itineraryData.days,
+      budget: detail.data?.budget || detail.data?.totalBudget || itineraryData.budget,
+      peopleCount: detail.data?.peopleCount || 2
     }
-  } catch (error) {
+    ElMessage.success('行程生成成功！')
+  } catch (error: any) {
     console.error('生成行程失败:', error)
-    ElMessage.error('生成失败，请重试')
+    ElMessage.error(error.message || '生成失败，请重试')
   } finally {
     loading.value = false
   }
@@ -379,8 +427,11 @@ const parseAIResponse = (content: string) => {
   
   return {
     title: `莆田${days}日游`,
+    startDate: dayjs().format('YYYY-MM-DD'),
+    endDate: dayjs().add((days || 2) - 1, 'day').format('YYYY-MM-DD'),
     days: days || 2,
     budget: parseInt(budget),
+    interests: [],
     aiContent: content
   }
 }
@@ -393,23 +444,16 @@ const saveItinerary = async () => {
   try {
     const response = await fetch('/api/itinerary/save', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'auth-token': localStorage.getItem('auth-token') || ''
-      },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(currentItinerary.value)
     })
 
-    if (response.ok) {
-      const result = await response.json()
-      ElMessage.success('行程保存成功！')
-      router.push(`/itinerary/${result.data}`)
-    } else {
-      throw new Error('保存失败')
-    }
-  } catch (error) {
+    await parseResultResponse<string>(response)
+    ElMessage.success('行程保存成功！')
+    router.push('/itinerary/list')
+  } catch (error: any) {
     console.error('保存失败:', error)
-    ElMessage.error('保存失败，请重试')
+    ElMessage.error(error.message || '保存失败，请重试')
   } finally {
     saving.value = false
   }
@@ -897,4 +941,3 @@ const goToMyItinerary = () => router.push('/itinerary/list')
   }
 }
 </style>
-

@@ -202,6 +202,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { authHeaders, parseResultResponse } from '@/util/fetchResult'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
@@ -218,6 +219,8 @@ const form = reactive({
   areas: [] as string[],
   specialRequirements: ''
 })
+
+const formatDateForApi = (date: Date) => date.toISOString().split('T')[0]
 
 // 表单验证规则
 const rules: FormRules = {
@@ -326,14 +329,11 @@ const handleAIGenerate = async () => {
         // 调用AI生成接口
         const response = await fetch('/api/itinerary/generate-itinerary', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'auth-token': localStorage.getItem('auth-token') || ''
-          },
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             title: form.title,
-            startDate: form.dateRange[0],
-            endDate: form.dateRange[1],
+            startDate: formatDateForApi(form.dateRange[0]),
+            endDate: formatDateForApi(form.dateRange[1]),
             days: days,
             peopleCount: form.peopleCount,
             budget: form.budget,
@@ -345,21 +345,17 @@ const handleAIGenerate = async () => {
           })
         })
 
-        if (response.ok) {
-          const result = await response.json()
-          ElMessage.success('AI行程生成成功！')
-          
-          // 跳转到编辑器页面
-          router.push({
-            path: '/itinerary/editor',
-            query: { id: result.data.id }
-          })
-        } else {
-          throw new Error('生成失败')
-        }
-      } catch (error) {
+        const result = await parseResultResponse<{ id: number }>(response)
+        ElMessage.success('AI行程生成成功！')
+        
+        // 跳转到编辑器页面
+        router.push({
+          path: '/itinerary/editor',
+          query: { id: result.id }
+        })
+      } catch (error: any) {
         console.error('AI生成失败:', error)
-        ElMessage.error('AI生成失败，请稍后重试')
+        ElMessage.error(error.message || 'AI生成失败，请稍后重试')
       } finally {
         aiGenerating.value = false
       }
@@ -402,16 +398,14 @@ const handleManualCreate = async () => {
         // 创建空白行程
         const response = await fetch('/api/itinerary/create', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'auth-token': localStorage.getItem('auth-token') || ''
-          },
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             title: form.title,
-            startDate: form.dateRange[0],
-            endDate: form.dateRange[1],
-            days: days,
+            startDate: formatDateForApi(form.dateRange[0]),
+            endDate: formatDateForApi(form.dateRange[1]),
+            daysCount: days,
             peopleCount: form.peopleCount,
+            totalBudget: form.budget,
             budget: form.budget,
             interests: form.interests.join(','),
             style: form.style,
@@ -420,21 +414,17 @@ const handleManualCreate = async () => {
           })
         })
 
-        if (response.ok) {
-          const result = await response.json()
-          ElMessage.success('行程创建成功！')
-          
-          // 跳转到编辑器页面
-          router.push({
-            path: '/itinerary/editor',
-            query: { id: result.data.id }
-          })
-        } else {
-          throw new Error('创建失败')
-        }
-      } catch (error) {
+        const result = await parseResultResponse<{ id: number }>(response)
+        ElMessage.success('行程创建成功！')
+        
+        // 跳转到编辑器页面
+        router.push({
+          path: '/itinerary/editor',
+          query: { id: result.id }
+        })
+      } catch (error: any) {
         console.error('创建失败:', error)
-        ElMessage.error('创建失败，请稍后重试')
+        ElMessage.error(error.message || '创建失败，请稍后重试')
       }
     }
   })
@@ -729,4 +719,3 @@ const goBack = () => {
   }
 }
 </style>
-

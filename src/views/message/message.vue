@@ -67,13 +67,13 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
+import { formatDateTime } from '@/utils/date'
 
 const messages = ref([])
 const loading = ref(false)
 const unreadCount = ref(0)
 const formatTime = (time) => {
-    console.log(time)
-    return new Date(time).toLocaleString()
+    return formatDateTime(time, '时间待确认')
 }
 // 获取系统通知
 const getSystemMessages = async () => {

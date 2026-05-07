@@ -76,6 +76,11 @@
               </div>
               <div class="stat-divider"></div>
               <div class="stat-item">
+                <div class="stat-value">{{ food.collectCount || 0 }}</div>
+                <div class="stat-label">收藏量</div>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
                 <div class="stat-value">{{ commentList.length }}</div>
                 <div class="stat-label">用户评价</div>
               </div>
@@ -109,7 +114,7 @@
                 </div>
                 <div class="card-content">
                   <div class="card-label">联系电话</div>
-                  <div class="card-value">{{ food.contactPhone || '暂无信息' }}</div>
+                  <div class="card-value phone-value">{{ merchantPhone || '暂无信息' }}</div>
                 </div>
               </div>
             </div>
@@ -120,10 +125,19 @@
                 <span class="title-icon">🏪</span>
                 商家信息
               </h3>
-              <div class="merchant-card" @click="goToMerchantHome">
-                <div class="merchant-avatar">
-                  <el-image v-if="merchantInfo.avatar" :src="merchantInfo.avatar" fit="cover" style="width:100%;height:100%;border-radius:50%;" />
-                  <el-icon v-else><Shop /></el-icon>
+              <div class="merchant-card">
+                <div class="merchant-avatar" title="进入个人主页" @click="goToMerchantHome">
+                  <el-image
+                    v-if="merchantInfo.avatar"
+                    :src="merchantInfo.avatar"
+                    fit="cover"
+                    class="merchant-avatar-img"
+                  >
+                    <template #error>
+                      <span class="merchant-avatar-text">{{ merchantInitial }}</span>
+                    </template>
+                  </el-image>
+                  <span v-else class="merchant-avatar-text">{{ merchantInitial }}</span>
                 </div>
                 <div class="merchant-info">
                   <div class="merchant-name">{{ merchantInfo.nickname || merchantInfo.username || '商家' }}</div>
@@ -131,12 +145,17 @@
                     <el-tag v-if="merchantInfo.isCertified === 1" type="warning" size="small" effect="plain">
                       <el-icon><CircleCheck /></el-icon> 认证商家
                     </el-tag>
+                    <span class="meta-text" v-if="merchantInfo.category">{{ merchantInfo.category }}</span>
                     <span class="meta-text" v-if="merchantInfo.location">{{ merchantInfo.location }}</span>
-                    <span class="meta-text" v-if="food.commentCount">{{ food.commentCount }}条评价</span>
+                    <span class="meta-text">{{ food.commentCount || commentList.length || 0 }}条评价</span>
                   </div>
-                </div>
-                <div class="merchant-arrow">
-                  <el-icon><ArrowRight /></el-icon>
+                  <div class="merchant-desc">
+                    {{ merchantInfo.bio || merchantInfo.address || '提供本地特色餐饮服务，支持套餐预订与到店用餐。' }}
+                  </div>
+                  <div class="merchant-contact">
+                    <span class="contact-label">商家电话</span>
+                    <span class="contact-phone">{{ merchantPhone || '暂无信息' }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -279,7 +298,7 @@
                   @click="toggleCollect"
                 >
                   <el-icon><component :is="isCollected ? 'StarFilled' : 'Star'" /></el-icon>
-                  {{ isCollected ? '已收藏' : '收藏' }}
+                  {{ isCollected ? '已收藏' : '收藏' }} ({{ food.collectCount || 0 }})
                 </el-button>
               </div>
 
@@ -354,6 +373,19 @@
                   <span class="comment-time">{{ formatTime(comment.createTime) }}</span>
                 </div>
                 <div class="comment-content">{{ comment.content }}</div>
+                <div class="comment-actions">
+                  <el-button text size="small" :icon="ChatDotRound" @click="replyComment(comment, comment)">回复</el-button>
+                  <el-button
+                    v-if="comment.canDelete"
+                    text
+                    size="small"
+                    type="danger"
+                    :icon="Delete"
+                    @click="deleteComment(comment)"
+                  >
+                    删除
+                  </el-button>
+                </div>
                 <div v-if="comment.images" class="comment-images">
                   <el-image
                     v-for="(img, idx) in comment.images.split(',')"
@@ -363,6 +395,33 @@
                     class="comment-img"
                     :preview-src-list="comment.images.split(',')"
                   />
+                </div>
+                <div v-if="comment.replies?.length" class="reply-list">
+                  <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                    <el-avatar :src="reply.userAvatar" :size="32" />
+                    <div class="reply-body">
+                      <div class="comment-header">
+                        <div class="comment-user">
+                          <span class="username">{{ reply.userName }}</span>
+                        </div>
+                        <span class="comment-time">{{ formatTime(reply.createTime) }}</span>
+                      </div>
+                      <div class="comment-content">{{ reply.content }}</div>
+                      <div class="comment-actions">
+                        <el-button text size="small" :icon="ChatDotRound" @click="replyComment(reply, comment)">回复</el-button>
+                        <el-button
+                          v-if="reply.canDelete"
+                          text
+                          size="small"
+                          type="danger"
+                          :icon="Delete"
+                          @click="deleteComment(reply)"
+                        >
+                          删除
+                        </el-button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -374,9 +433,10 @@
     </main>
 
     <!-- 璇勮瀵硅瘽妗?-->
-    <el-dialog v-model="commentDialogVisible" title="写评价" width="550px" class="comment-dialog">
+    <el-dialog v-model="commentDialogVisible" :title="replyingTo ? '回复评价' : '写评价'" width="550px" class="comment-dialog">
       <div class="comment-form">
-        <div class="rating-select">
+        <div v-if="replyingTo" class="reply-tip">正在回复 {{ replyingTo.userName }}</div>
+        <div v-else class="rating-select">
           <span class="label">评分</span>
           <el-rate v-model="commentForm.rating" size="large" />
         </div>
@@ -384,14 +444,16 @@
           v-model="commentForm.content"
           type="textarea"
           :rows="5"
-          placeholder="分享你的用餐体验..."
+          :placeholder="replyingTo ? `回复 ${replyingTo.userName}...` : '分享你的用餐体验...'"
           maxlength="500"
           show-word-limit
         />
       </div>
       <template #footer>
-        <el-button @click="commentDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitComment" :loading="submitting">提交评价</el-button>
+        <el-button @click="closeCommentDialog">取消</el-button>
+        <el-button type="primary" @click="submitComment" :loading="submitting">
+          {{ replyingTo ? '提交回复' : '提交评价' }}
+        </el-button>
       </template>
     </el-dialog>
 
@@ -489,7 +551,7 @@
                   v-model="dineinForm.remark"
                   type="textarea"
                   :rows="3"
-                  placeholder="鍙ｅ懗瑕佹眰銆佸繉鍙ｃ€佺壒娈婇渶姹傜瓑"
+                  placeholder="口味要求、忌口、特殊需求等"
                 />
               </el-form-item>
             </el-form>
@@ -565,6 +627,7 @@
                 <span class="label">应付金额</span>
                 <span class="amount">¥{{ dineinTotalAmount }}</span>
               </div>
+              <PaymentMethodCard />
               <div v-if="payQrCodeUrl" class="pay-qrcode">
                 <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
                 <div class="pay-tip">请使用支付宝沙箱 App 扫描二维码完成支付</div>
@@ -656,16 +719,38 @@
 
           <!-- 步骤2: 填写地址 -->
           <div v-show="takeoutStep === 1" class="step-panel">
-            <el-form :model="takeoutForm" label-position="top" class="takeout-form">
-              <el-form-item label="收货人姓名" required>
-                <el-input v-model="takeoutForm.receiverName" placeholder="请输入收货人姓名" />
-              </el-form-item>
-              <el-form-item label="联系电话" required>
-                <el-input v-model="takeoutForm.receiverPhone" placeholder="请输入联系电话" />
-              </el-form-item>
-              <el-form-item label="收货地址" required>
-                <el-input v-model="takeoutForm.address" placeholder="璇疯緭鍏ヨ缁嗘敹璐у湴鍧€" />
-              </el-form-item>
+            <div class="address-select-head">
+              <div>
+                <div class="address-select-title">选择收货地址</div>
+                <div class="address-select-desc">收货地址需要先在个人中心配置，可通过地图点击获取详细地址。</div>
+              </div>
+              <el-button type="primary" plain @click="goAddressSettings">管理地址</el-button>
+            </div>
+            <div v-loading="addressLoading" class="delivery-address-list">
+              <div
+                v-for="address in addressList"
+                :key="address.id"
+                :class="['delivery-address-card', { selected: selectedAddressId === address.id }]"
+                @click="selectDeliveryAddress(address)"
+              >
+                <div class="delivery-address-radio">
+                  <el-radio :model-value="selectedAddressId === address.id" />
+                </div>
+                <div class="delivery-address-main">
+                  <div class="delivery-address-head">
+                    <strong>{{ address.contactName }}</strong>
+                    <span>{{ address.contactPhone }}</span>
+                    <el-tag v-if="address.isDefault === 1" size="small" type="success" effect="plain">默认</el-tag>
+                  </div>
+                  <div class="delivery-address-text">{{ address.address }}</div>
+                  <div v-if="address.remark" class="delivery-address-remark">{{ address.remark }}</div>
+                </div>
+              </div>
+              <el-empty v-if="addressList.length === 0 && !addressLoading" description="还没有配置收货地址">
+                <el-button type="primary" @click="goAddressSettings">去个人中心配置</el-button>
+              </el-empty>
+            </div>
+            <el-form :model="takeoutForm" label-position="top" class="takeout-form takeout-remark-form">
               <el-form-item label="备注">
                 <el-input
                   v-model="takeoutForm.remark"
@@ -734,6 +819,7 @@
                 <span class="label">应付金额</span>
                 <span class="amount">¥{{ takeoutTotalAmount }}</span>
               </div>
+              <PaymentMethodCard />
               <div v-if="payQrCodeUrl" class="pay-qrcode">
                 <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
                 <div class="pay-tip">请使用支付宝沙箱 App 扫描二维码完成支付</div>
@@ -763,19 +849,23 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import dayjs from 'dayjs'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Location, Money, Phone, Star, StarFilled,
   Clock, Ticket, Present, Edit, User,
-  CircleCheck, ArrowRight,
+  CircleCheck,
   Food, Grid, Shop, ShoppingBag,
-  Ticket as Tickets, Calendar
+  Ticket as Tickets, Calendar, ChatDotRound, Delete
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { extractDisplayTags } from '@/utils/contentTags'
+import { buildPayQrCodeUrl } from '@/utils/payQrCode'
+import { loadAMapScript } from '@/utils/amap'
+import { formatDateTime, type DateInput } from '@/utils/date'
+import { normalizeImageUrl, parseImageList } from '@/utils/imageUrl'
 
 import TourismTopNav from '@/components/TourismTopNav.vue'
+import PaymentMethodCard from '@/components/PaymentMethodCard.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -787,6 +877,8 @@ const commentList = ref<any[]>([])
 const isCollected = ref(false)
 const commentDialogVisible = ref(false)
 const submitting = ref(false)
+const replyingTo = ref<any>(null)
+const replyRoot = ref<any>(null)
 const foodDisplayTags = computed(() => {
   const tags = extractDisplayTags(food.value)
   return tags.filter((tag) => tag !== food.value.region)
@@ -796,11 +888,20 @@ const foodDisplayTags = computed(() => {
 const merchantInfo = computed(() => ({
   nickname: food.value.merchantName,
   username: food.value.merchantName,
-  avatar: food.value.merchantAvatar,
+  avatar: food.value.merchantAvatar ? normalizeImageUrl(food.value.merchantAvatar, '') : '',
   bio: food.value.merchantBio,
   location: food.value.merchantLocation,
+  address: food.value.merchantAddress,
+  category: food.value.merchantCategory,
   isCertified: food.value.merchantCertified
 }))
+
+const merchantPhone = computed(() => food.value.merchantContactPhone || food.value.contactPhone || '')
+
+const merchantInitial = computed(() => {
+  const name = merchantInfo.value.nickname || merchantInfo.value.username || food.value.name || '商'
+  return String(name).trim().slice(0, 1)
+})
 
 // 套餐相关
 const packageList = ref<any[]>([])
@@ -959,11 +1060,11 @@ const handleDineinPay = async () => {
   try {
     const res: any = await request.get(`/order/pay/qrcode/${orderNo.value}`)
     if (res && res.code === 200) {
-      payQrCodeUrl.value = res.data.qrCodeUrl || ''
+      payQrCodeUrl.value = await buildPayQrCodeUrl(res.data)
       if (!payQrCodeUrl.value) {
         throw new Error('未获取到支付宝支付二维码')
       }
-      payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
+      payStatusMessage.value = res.data?.scanTip || '请使用支付宝沙箱 App 和沙箱买家账号扫码，普通支付宝会提示订单不存在'
       startPayPolling(orderNo.value, 'dinein')
     }
   } catch (error: any) {
@@ -1000,11 +1101,49 @@ const takeoutForm = reactive({
 })
 
 const deliveryFee = ref(5)
+const addressLoading = ref(false)
+const addressList = ref<any[]>([])
+const selectedAddressId = ref<number | null>(null)
 const takeoutSelectedPackage = computed(() => packageList.value.find(p => p.id === takeoutForm.packageId))
 const takeoutTotalAmount = computed(() => {
   const pkgPrice = takeoutSelectedPackage.value ? takeoutSelectedPackage.value.price : (food.value.avgPrice || 0)
   return (Number(pkgPrice) + deliveryFee.value).toFixed(2)
 })
+
+const applyDeliveryAddress = (address: any) => {
+  if (!address) return
+  selectedAddressId.value = address.id
+  takeoutForm.receiverName = address.contactName || ''
+  takeoutForm.receiverPhone = address.contactPhone || ''
+  takeoutForm.address = address.address || ''
+}
+
+const selectDeliveryAddress = (address: any) => {
+  applyDeliveryAddress(address)
+}
+
+const loadUserAddresses = async () => {
+  addressLoading.value = true
+  try {
+    const res: any = await request.get('/user/address/list')
+    if (res && res.code === 200) {
+      addressList.value = res.data || []
+      const preferred = addressList.value.find(address => address.isDefault === 1) || addressList.value[0]
+      if (preferred && !selectedAddressId.value) {
+        applyDeliveryAddress(preferred)
+      }
+    }
+  } catch (error) {
+    console.error('加载收货地址失败', error)
+    addressList.value = []
+  } finally {
+    addressLoading.value = false
+  }
+}
+
+const goAddressSettings = () => {
+  router.push('/user/center?tab=addresses')
+}
 
 const openTakeoutDialog = async () => {
   takeoutDialogVisible.value = true
@@ -1017,6 +1156,7 @@ const openTakeoutDialog = async () => {
   if (packageList.value.length === 1 && !takeoutForm.packageId) {
     takeoutForm.packageId = packageList.value[0].id
   }
+  await loadUserAddresses()
 }
 
 const prevTakeoutStep = () => {
@@ -1029,9 +1169,11 @@ const nextTakeoutStep = () => {
     return
   }
   if (takeoutStep.value === 1) {
+    if (!selectedAddressId.value) { ElMessage.warning('请选择收货地址'); return }
     if (!takeoutForm.receiverName) { ElMessage.warning('请输入收货人姓名'); return }
     if (!takeoutForm.receiverPhone) { ElMessage.warning('请输入联系电话'); return }
-    if (!takeoutForm.address) { ElMessage.warning('璇疯緭鍏ユ敹璐у湴鍧€'); return }
+    if (takeoutForm.receiverPhone.length !== 11) { ElMessage.warning('请输入11位手机号'); return }
+    if (!takeoutForm.address) { ElMessage.warning('请输入收货地址'); return }
   }
   takeoutStep.value++
 }
@@ -1048,6 +1190,9 @@ const createTakeoutOrder = async () => {
       totalAmount: takeoutTotalAmount.value,
       visitorName: takeoutForm.receiverName,
       visitorPhone: takeoutForm.receiverPhone,
+      guestName: takeoutForm.receiverName,
+      guestPhone: takeoutForm.receiverPhone,
+      deliveryAddress: takeoutForm.address,
       visitorIdCard: '',
       specialRequest: takeoutForm.remark,
       deliveryStatus: 0
@@ -1070,11 +1215,11 @@ const handleTakeoutPay = async () => {
   try {
     const res: any = await request.get(`/order/pay/qrcode/${orderNo.value}`)
     if (res && res.code === 200) {
-      payQrCodeUrl.value = res.data.qrCodeUrl || ''
+      payQrCodeUrl.value = await buildPayQrCodeUrl(res.data)
       if (!payQrCodeUrl.value) {
         throw new Error('未获取到支付宝支付二维码')
       }
-      payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
+      payStatusMessage.value = res.data?.scanTip || '请使用支付宝沙箱 App 和沙箱买家账号扫码，普通支付宝会提示订单不存在'
       startPayPolling(orderNo.value, 'takeout')
     }
   } catch (error: any) {
@@ -1091,6 +1236,7 @@ const resetTakeoutForm = () => {
   takeoutForm.receiverName = ''
   takeoutForm.receiverPhone = ''
   takeoutForm.address = ''
+  selectedAddressId.value = null
   takeoutForm.remark = ''
   takeoutStep.value = 0
   payQrCodeUrl.value = ''
@@ -1106,8 +1252,12 @@ const startPayPolling = (currentOrderNo: string, mode: 'dinein' | 'takeout') => 
   isPollingPay.value = true
   payPollProgress.value = 0
   let pollCount = 0
+  let requestPending = false
+  let successHandled = false
 
   payPollingTimer = setInterval(async () => {
+    if (requestPending || successHandled) return
+
     pollCount++
     if (pollCount >= 60) {
       stopPayPolling()
@@ -1118,8 +1268,10 @@ const startPayPolling = (currentOrderNo: string, mode: 'dinein' | 'takeout') => 
     payPollProgress.value = Math.min((pollCount / 60) * 100, 95)
 
     try {
+      requestPending = true
       const res: any = await request.get(`/order/pay/status/${currentOrderNo}`)
       if (res && res.code === 200 && res.data && (res.data.paid || res.data.orderStatus === 1)) {
+        successHandled = true
         stopPayPolling()
         payPollProgress.value = 100
         payStatusMessage.value = '支付成功'
@@ -1136,6 +1288,8 @@ const startPayPolling = (currentOrderNo: string, mode: 'dinein' | 'takeout') => 
       }
     } catch (error) {
       console.error('轮询支付状态失败', error)
+    } finally {
+      requestPending = false
     }
   }, 3000)
 }
@@ -1167,9 +1321,7 @@ const loadFoodDetail = async () => {
     if (res && res.code === 200 && res.data) {
       food.value = res.data
       isCollected.value = res.data.isCollected === 1
-      if (res.data.images) {
-        imageList.value = res.data.images.split(',')
-      }
+      imageList.value = parseImageList(res.data.images)
       nextTick(() => initMap())
     }
   } catch (error) {
@@ -1188,26 +1340,31 @@ const loadPackages = async () => {
   }
 }
 
-const initMap = () => {
+const initMap = async () => {
   if (!food.value.longitude || !food.value.latitude) return
-  if (!window.AMap) return
   const container = document.getElementById('food-map')
   if (!container) return
-  const map = new window.AMap.Map('food-map', {
-    zoom: 15,
-    center: [food.value.longitude, food.value.latitude],
-    mapStyle: 'amap://styles/normal'
-  })
-  const marker = new window.AMap.Marker({
-    position: [food.value.longitude, food.value.latitude],
-    title: food.value.name
-  })
-  map.add(marker)
-  const infoWindow = new window.AMap.InfoWindow({
-    content: `<div style="padding:8px;font-size:14px;"><h4 style="margin:0 0 8px 0;">${food.value.name}</h4><p style="margin:0;color:#666;">${food.value.address}</p></div>`,
-    offset: new window.AMap.Pixel(0, -30)
-  })
-  marker.on('click', () => infoWindow.open(map, marker.getPosition()))
+  try {
+    await loadAMapScript()
+    container.innerHTML = ''
+    const map = new window.AMap.Map('food-map', {
+      zoom: 15,
+      center: [food.value.longitude, food.value.latitude],
+      mapStyle: 'amap://styles/normal'
+    })
+    const marker = new window.AMap.Marker({
+      position: [food.value.longitude, food.value.latitude],
+      title: food.value.name
+    })
+    map.add(marker)
+    const infoWindow = new window.AMap.InfoWindow({
+      content: `<div style="padding:8px;font-size:14px;"><h4 style="margin:0 0 8px 0;">${food.value.name}</h4><p style="margin:0;color:#666;">${food.value.address}</p></div>`,
+      offset: new window.AMap.Pixel(0, -30)
+    })
+    marker.on('click', () => infoWindow.open(map, marker.getPosition()))
+  } catch (error) {
+    console.error('高德地图加载失败:', error)
+  }
 }
 
 const loadCommentList = async () => {
@@ -1230,10 +1387,12 @@ const toggleCollect = async () => {
       await request.delete(`/food/collect/${foodId.value}`)
       ElMessage.success('取消收藏成功')
       isCollected.value = false
+      food.value.collectCount = Math.max(0, (food.value.collectCount || 0) - 1)
     } else {
       await request.post(`/food/collect/${foodId.value}`)
       ElMessage.success('收藏成功')
       isCollected.value = true
+      food.value.collectCount = (food.value.collectCount || 0) + 1
     }
   } catch (error: any) {
     ElMessage.error(error.message || '操作失败')
@@ -1243,37 +1402,83 @@ const toggleCollect = async () => {
 // 评论
 const commentForm = reactive({ rating: 5, content: '' })
 
-const showCommentDialog = () => { commentDialogVisible.value = true }
+const showCommentDialog = () => {
+  if (!localStorage.getItem('auth-token')) {
+    ElMessage.warning('请先登录后再评价')
+    router.push('/login')
+    return
+  }
+  replyingTo.value = null
+  replyRoot.value = null
+  commentForm.content = ''
+  commentDialogVisible.value = true
+}
+
+const closeCommentDialog = () => {
+  commentDialogVisible.value = false
+  replyingTo.value = null
+  replyRoot.value = null
+  commentForm.content = ''
+  commentForm.rating = 5
+}
+
+const replyComment = (comment: any, rootComment: any) => {
+  if (!localStorage.getItem('auth-token')) {
+    ElMessage.warning('请先登录后再回复')
+    router.push('/login')
+    return
+  }
+  replyingTo.value = comment
+  replyRoot.value = rootComment
+  commentForm.content = `@${comment.userName} `
+  commentDialogVisible.value = true
+}
 
 const submitComment = async () => {
   if (!commentForm.content.trim()) { ElMessage.warning('请输入评价内容'); return }
   submitting.value = true
   try {
     const res: any = await request.post('/comment/add', {
-      contentId: foodId.value, contentType: 5, content: commentForm.content, rating: commentForm.rating
+      contentId: foodId.value,
+      contentType: 5,
+      content: commentForm.content,
+      rating: replyingTo.value ? null : commentForm.rating,
+      parentId: replyRoot.value?.id || null
     })
     if (res && res.code === 200) {
-      ElMessage.success('评价成功')
-      commentDialogVisible.value = false
-      commentForm.content = ''
-      commentForm.rating = 5
+      ElMessage.success(replyingTo.value ? '回复成功' : '评价成功')
+      closeCommentDialog()
       loadCommentList()
     }
   } catch (error: any) {
-    ElMessage.error(error.message || '评价失败')
+    if (!error.messageShown) ElMessage.error(error.message || '评价失败')
   } finally {
     submitting.value = false
   }
 }
 
-const formatTime = (time: string) => dayjs(time).format('YYYY-MM-DD HH:mm')
+const deleteComment = async (comment: any) => {
+  try {
+    await ElMessageBox.confirm('确定删除这条评论吗？', '删除评论', { type: 'warning' })
+    const res: any = await request.delete(`/comment/delete/${comment.id}`)
+    if (res && res.code === 200) {
+      ElMessage.success('删除成功')
+      loadCommentList()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
+}
+
+const formatTime = (time: DateInput) => formatDateTime(time, '-', 'YYYY-MM-DD HH:mm')
 
 const goHome = () => router.push('/')
 const goBack = () => router.back()
 const goToMerchantHome = () => {
-  if (food.value.merchantId) router.push(`/merchant/${food.value.merchantId}`)
+  if (food.value.merchantId) router.push(`/user/${food.value.merchantId}`)
 }
-
 onMounted(() => {
   loadFoodDetail()
   loadPackages()
@@ -1333,15 +1538,21 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
 .section-title { font-size: 18px; font-weight: 600; color: $text-primary; display: flex; align-items: center; gap: 10px; margin: 0 0 20px; }
 .section-title .title-icon { font-size: 20px; }
 .section-title .package-count { font-size: 13px; font-weight: 400; color: $text-muted; margin-left: 8px; }
-.merchant-card { display: flex; align-items: center; gap: 16px; padding: 16px; background: linear-gradient(135deg,#fff9e6 0%,#fff3cc 100%); border-radius: 12px; border: 1px solid #ffe58f; cursor: pointer; transition: all 0.3s; }
-.merchant-card:hover { box-shadow: 0 4px 16px rgba(255,169,64,0.2); transform: translateY(-2px); }
-.merchant-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg,#ffa940 0%,#fa8c16 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; overflow: hidden; }
-.merchant-info { flex: 1; }
-.merchant-name { font-size: 16px; font-weight: 600; color: #d46b08; margin-bottom: 6px; }
+.merchant-card { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: 18px; padding: 20px; background: linear-gradient(135deg,#fffaf0 0%,#fff7e3 100%); border-radius: 12px; border: 1px solid #ffd666; transition: all 0.3s; }
+.merchant-card:hover { box-shadow: 0 8px 24px rgba(255,169,64,0.18); transform: translateY(-2px); }
+.merchant-avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg,#ffa940 0%,#fa541c 100%); display: flex; align-items: center; justify-content: center; color: #fff; overflow: hidden; box-shadow: 0 8px 20px rgba(250,84,28,0.18); flex-shrink: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+.merchant-avatar:hover { transform: translateY(-1px) scale(1.03); box-shadow: 0 10px 24px rgba(250,84,28,0.24); }
+.merchant-avatar-img { width: 100%; height: 100%; border-radius: 50%; }
+.merchant-avatar-text { font-size: 28px; font-weight: 700; line-height: 1; }
+.merchant-info { min-width: 0; }
+.merchant-name { font-size: 19px; font-weight: 700; color: #ad4e00; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .merchant-badge { display: flex; gap: 8px; }
-.merchant-meta { display: flex; align-items: center; gap: 10px; }
+.merchant-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 .meta-text { font-size: 12px; color: $text-muted; }
-.merchant-arrow { color: #d46b08; font-size: 18px; }
+.merchant-desc { max-width: 680px; color: $text-secondary; font-size: 13px; line-height: 1.6; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.merchant-contact { display: inline-flex; align-items: center; gap: 10px; padding: 7px 12px; background: rgba(255,255,255,0.78); border: 1px solid rgba(255,214,102,0.72); border-radius: 8px; }
+.contact-label { color: $text-muted; font-size: 12px; }
+.contact-phone { color: $text-primary; font-size: 15px; font-weight: 700; }
 .packages-section { margin-top: 32px; }
 .package-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .package-tab { padding: 8px 18px; background: $white; border: 1px solid $border; border-radius: 20px; font-size: 13px; color: $text-secondary; cursor: pointer; transition: all 0.2s; }
@@ -1374,6 +1585,7 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
 .card-content { flex: 1; }
 .card-label { font-size: 12px; color: $text-muted; margin-bottom: 4px; }
 .card-value { font-size: 14px; font-weight: 500; }
+.card-value.phone-value { font-size: 17px; font-weight: 700; color: $text-primary; }
 .card-value.price { color: #f5576c; font-size: 18px; font-weight: 700; }
 .info-right { position: sticky; top: 80px; height: fit-content; display: flex; flex-direction: column; gap: 20px; }
 .booking-card { background: $white; border-radius: 16px; padding: 24px; box-shadow: $shadow-md; }
@@ -1417,6 +1629,12 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
 .username { font-weight: 600; color: $text-primary; margin-right: 12px; }
 .comment-time { font-size: 13px; color: $text-muted; }
 .comment-content { line-height: 1.7; color: $text-secondary; margin-bottom: 12px; }
+.comment-actions { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.reply-list { margin-top: 12px; padding: 12px; background: $white; border-radius: 10px; border: 1px solid $border; }
+.reply-item { display: flex; gap: 10px; padding: 10px 0; }
+.reply-item:not(:last-child) { border-bottom: 1px solid $border; }
+.reply-body { flex: 1; min-width: 0; }
+.reply-tip { color: $text-secondary; margin-bottom: 16px; font-size: 14px; }
 .comment-images { display: flex; gap: 10px; }
 .comment-img { width: 80px; height: 80px; border-radius: 8px; }
 .empty-comments { padding: 60px; }
@@ -1446,6 +1664,21 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
 .pkg-price .original-price { font-size: 12px; color: $text-muted; text-decoration: line-through; }
 .dinein-form { padding: 8px 0; }
 .takeout-form { padding: 8px 0; }
+.takeout-remark-form { padding-bottom: 0; }
+.address-select-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 14px; padding: 14px 16px; background: #f7fbf9; border: 1px solid #e5ede8; border-radius: 12px; }
+.address-select-title { font-size: 16px; font-weight: 700; color: $text-primary; }
+.address-select-desc { margin-top: 4px; color: $text-muted; font-size: 13px; line-height: 1.5; }
+.delivery-address-list { display: flex; flex-direction: column; gap: 12px; min-height: 160px; max-height: 300px; overflow-y: auto; margin-bottom: 12px; }
+.delivery-address-card { display: flex; align-items: flex-start; gap: 12px; padding: 16px; background: $bg-light; border: 2px solid $border; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+.delivery-address-card:hover { border-color: $primary-light; }
+.delivery-address-card.selected { border-color: $primary; background: rgba(26,95,74,0.05); }
+.delivery-address-radio { flex-shrink: 0; padding-top: 2px; }
+.delivery-address-main { min-width: 0; flex: 1; }
+.delivery-address-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; color: $text-primary; }
+.delivery-address-head strong { font-size: 15px; }
+.delivery-address-head span { color: $text-secondary; font-size: 13px; }
+.delivery-address-text { color: $text-primary; font-size: 14px; line-height: 1.6; word-break: break-word; }
+.delivery-address-remark { margin-top: 6px; color: #a06a16; font-size: 12px; }
 .package-tabs-small { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .pkg-tab-small { padding: 6px 14px; background: $white; border: 1px solid $border; border-radius: 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
 .pkg-tab-small.active { background: $primary; color: $white; border-color: $primary; }
@@ -1478,6 +1711,11 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
   .gallery-badges { left: 20px; }
   .info-container { padding: 0 20px; }
   .info-cards { grid-template-columns: 1fr; }
+  .merchant-card { grid-template-columns: 56px minmax(0, 1fr); align-items: flex-start; padding: 16px; }
+  .merchant-avatar { width: 56px; height: 56px; }
+  .merchant-avatar-text { font-size: 22px; }
+  .merchant-name { font-size: 16px; }
+  .merchant-contact { width: 100%; justify-content: space-between; }
   .food-title { font-size: 26px; }
   .package-grid { grid-template-columns: 1fr; }
   .section-container { padding: 0 20px; }

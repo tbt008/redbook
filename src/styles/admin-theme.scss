@@ -3,6 +3,13 @@
   padding: 24px;
   background: linear-gradient(180deg, #f5fbf8 0%, #eef7f4 100%);
 
+  .hotel-detail::before,
+  .food-detail::before,
+  .attraction-detail::before {
+    content: none !important;
+    display: none !important;
+  }
+
   .admin-hero,
   .page-header,
   .search-card,
@@ -208,6 +215,41 @@
 
   :deep(.el-table td) {
     color: #31475f;
+  }
+
+  .el-table {
+    --admin-table-fixed-bg: var(--el-table-bg-color, #fff);
+    --admin-table-fixed-stripe-bg: var(--el-table-tr-bg-color, #fafafa);
+    --admin-table-fixed-hover-bg: var(--el-table-row-hover-bg-color, rgba(31, 111, 92, 0.04));
+  }
+
+  .el-table .el-table__header-wrapper th.el-table-fixed-column--right,
+  .el-table .el-table__body-wrapper td.el-table-fixed-column--right,
+  .el-table .el-table__footer-wrapper td.el-table-fixed-column--right,
+  .el-table .el-table__fixed-right-patch {
+    position: sticky !important;
+    z-index: 12 !important;
+    background: var(--admin-table-fixed-bg) !important;
+    background-clip: padding-box;
+  }
+
+  .el-table .el-table__header-wrapper th.el-table-fixed-column--right {
+    z-index: 13 !important;
+    background: var(--el-table-header-bg-color, #f7fbf9) !important;
+  }
+
+  .el-table .el-table__body tr.el-table__row--striped td.el-table-fixed-column--right {
+    background: var(--admin-table-fixed-stripe-bg) !important;
+  }
+
+  .el-table .el-table__body tr:hover > td.el-table-fixed-column--right {
+    background: var(--admin-table-fixed-hover-bg) !important;
+  }
+
+  .el-table .el-table__body td.el-table-fixed-column--right .cell,
+  .el-table .el-table__header-wrapper th.el-table-fixed-column--right .cell {
+    position: relative;
+    z-index: 1;
   }
 
   :deep(.el-tag) {

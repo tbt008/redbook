@@ -76,6 +76,11 @@
               </div>
               <div class="stat-divider"></div>
               <div class="stat-item">
+                <div class="stat-value">{{ hotel.collectCount || 0 }}</div>
+                <div class="stat-label">收藏量</div>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
                 <div class="stat-value">{{ commentList.length }}</div>
                 <div class="stat-label">用户评价</div>
               </div>
@@ -187,37 +192,34 @@
               </div>
             </div>
 
-            <!-- 商家 / 运营主体（无 merchant 时也展示，避免用户找不到责任主体） -->
-            <div class="merchant-section">
+            <!-- 商家信息：必须来自真实绑定用户 -->
+            <div v-if="hotel.merchantId" class="merchant-section">
               <h3 class="section-title">
                 <span class="title-icon">🏪</span>
-                商家与客服
+                商家信息
               </h3>
-              <div class="merchant-card" :class="{ 'is-platform': !hotel.merchantId }">
-                <div class="merchant-avatar">
-                  <el-icon><Shop /></el-icon>
+              <div class="merchant-card">
+                <div class="merchant-avatar" title="进入个人主页" @click="goToMerchantHome">
+                  <el-image v-if="merchantAvatarUrl" :src="merchantAvatarUrl" fit="cover" class="merchant-avatar-image">
+                    <template #error>
+                      <span class="merchant-avatar-text">{{ merchantInitial }}</span>
+                    </template>
+                  </el-image>
+                  <el-icon v-else><Shop /></el-icon>
                 </div>
                 <div class="merchant-info">
-                  <template v-if="hotel.merchantId">
-                    <div class="merchant-name">{{ hotel.merchantName || '认证商家' }}</div>
-                    <div class="merchant-badge">
-                      <el-tag type="warning" size="small">平台认证商家</el-tag>
-                    </div>
-                    <p class="merchant-desc">房源由合作商家维护，入住问题可同时联系商家与酒店前台。</p>
-                  </template>
-                  <template v-else>
-                    <div class="merchant-name">平台合作酒店</div>
-                    <div class="merchant-badge">
-                      <el-tag type="success" size="small">莆田文旅收录</el-tag>
-                    </div>
-                    <p class="merchant-desc">本酒店由平台展示与预订，具体入住规则以酒店确认为准。</p>
-                  </template>
-                  <div class="merchant-actions" v-if="hotel.contactPhone">
-                    <el-button type="primary" plain round size="small" @click="dialPhone(hotel.contactPhone)">
-                      <el-icon><Phone /></el-icon>
-                      致电酒店 {{ hotel.contactPhone }}
-                    </el-button>
+                  <div class="merchant-name">{{ hotel.merchantName || '认证商家' }}</div>
+                  <div class="merchant-meta">
+                    <el-tag v-if="hotel.merchantCertified === 1" type="warning" size="small" effect="plain">
+                      <el-icon><Check /></el-icon> 认证商家
+                    </el-tag>
+                    <span class="meta-text" v-if="hotel.merchantLocation">{{ hotel.merchantLocation }}</span>
+                    <span class="meta-text" v-if="hotel.commentCount">{{ hotel.commentCount }}条评价</span>
                   </div>
+                  <p class="merchant-desc" v-if="hotel.merchantBio">{{ hotel.merchantBio }}</p>
+                </div>
+                <div class="merchant-arrow">
+                  <el-icon><ArrowRight /></el-icon>
                 </div>
               </div>
             </div>
@@ -286,7 +288,7 @@
                   @click="toggleCollect"
                 >
                   <el-icon><component :is="isCollected ? 'StarFilled' : 'Star'" /></el-icon>
-                  {{ isCollected ? '已收藏' : '收藏' }}
+                  {{ isCollected ? '已收藏' : '收藏' }} ({{ hotel.collectCount || 0 }})
                 </el-button>
                 <el-button class="share-btn" @click="showMap">
                   <el-icon><LocationInformation /></el-icon>
@@ -327,6 +329,19 @@
                   <span class="comment-time">{{ formatTime(comment.createTime) }}</span>
                 </div>
                 <div class="comment-content">{{ comment.content }}</div>
+                <div class="comment-actions">
+                  <el-button text size="small" :icon="ChatDotRound" @click="replyComment(comment, comment)">回复</el-button>
+                  <el-button
+                    v-if="comment.canDelete"
+                    text
+                    size="small"
+                    type="danger"
+                    :icon="Delete"
+                    @click="deleteComment(comment)"
+                  >
+                    删除
+                  </el-button>
+                </div>
                 <div v-if="comment.images" class="comment-images">
                   <el-image
                     v-for="(img, idx) in comment.images.split(',')"
@@ -336,6 +351,33 @@
                     class="comment-img"
                     :preview-src-list="comment.images.split(',')"
                   />
+                </div>
+                <div v-if="comment.replies?.length" class="reply-list">
+                  <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                    <el-avatar :src="reply.userAvatar" :size="32" />
+                    <div class="reply-body">
+                      <div class="comment-header">
+                        <div class="comment-user">
+                          <span class="username">{{ reply.userName }}</span>
+                        </div>
+                        <span class="comment-time">{{ formatTime(reply.createTime) }}</span>
+                      </div>
+                      <div class="comment-content">{{ reply.content }}</div>
+                      <div class="comment-actions">
+                        <el-button text size="small" :icon="ChatDotRound" @click="replyComment(reply, comment)">回复</el-button>
+                        <el-button
+                          v-if="reply.canDelete"
+                          text
+                          size="small"
+                          type="danger"
+                          :icon="Delete"
+                          @click="deleteComment(reply)"
+                        >
+                          删除
+                        </el-button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -469,7 +511,14 @@
                 </div>
               </el-form-item>
               <el-form-item label="联系电话" required>
-                <el-input v-model="bookingForm.guestPhone" placeholder="用于接收预订信息" />
+                <el-input
+                  v-model="bookingForm.guestPhone"
+                  placeholder="用于接收预订信息"
+                  maxlength="11"
+                  show-word-limit
+                  inputmode="numeric"
+                  @input="bookingForm.guestPhone = normalizeMobilePhone($event)"
+                />
               </el-form-item>
               <el-form-item label="特殊需求">
                 <el-input
@@ -553,8 +602,9 @@
               </div>
               <div v-if="countdown > 0" class="countdown-tip">
                 <el-icon><Clock /></el-icon>
-                璇峰湪 <span class="countdown-time">{{ formatCountdown }}</span> 鍐呭畬鎴愭敮浠?
+                请在 <span class="countdown-time">{{ formatCountdown }}</span> 内完成支付
               </div>
+              <PaymentMethodCard />
               <div v-if="payQrCodeUrl" class="pay-qrcode">
                 <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
                 <div class="payment-tip">请使用支付宝沙箱 App 扫描二维码完成支付</div>
@@ -587,18 +637,19 @@
           <el-icon><SuccessFilled /></el-icon>
         </div>
         <h3>支付成功</h3>
-        <p>电子票已生成</p>
+        <p>订单已支付成功</p>
       </div>
       <template #footer>
-        <el-button type="primary" @click="viewETicket">查看电子票</el-button>
+        <el-button type="primary" @click="viewETicket">查看详情</el-button>
         <el-button @click="paySuccessVisible = false">关闭</el-button>
       </template>
     </el-dialog>
 
     <!-- 璇勮瀵硅瘽妗?-->
-    <el-dialog v-model="commentDialogVisible" title="写评价" width="550px" class="comment-dialog">
+    <el-dialog v-model="commentDialogVisible" :title="replyingTo ? '回复评价' : '写评价'" width="550px" class="comment-dialog">
       <div class="comment-form">
-        <div class="rating-select">
+        <div v-if="replyingTo" class="reply-tip">正在回复 {{ replyingTo.userName }}</div>
+        <div v-else class="rating-select">
           <span class="label">评分</span>
           <el-rate v-model="commentForm.rating" size="large" />
         </div>
@@ -606,14 +657,16 @@
           v-model="commentForm.content"
           type="textarea"
           :rows="5"
-          placeholder="分享你的入住体验..."
+          :placeholder="replyingTo ? `回复 ${replyingTo.userName}...` : '分享你的入住体验...'"
           maxlength="500"
           show-word-limit
         />
       </div>
       <template #footer>
-        <el-button @click="commentDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitComment" :loading="submittingComment">提交评价</el-button>
+        <el-button @click="closeCommentDialog">取消</el-button>
+        <el-button type="primary" @click="submitComment" :loading="submittingComment">
+          {{ replyingTo ? '提交回复' : '提交评价' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -643,12 +696,19 @@ import {
   Delete,
   Clock,
   SuccessFilled,
+  ArrowRight,
+  ChatDotRound,
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { formatDateTime } from '@/util/datetime'
 import { extractDisplayTags } from '@/utils/contentTags'
+import { buildPayQrCodeUrl } from '@/utils/payQrCode'
+import { normalizeMobilePhone } from '@/utils/attractionForm'
+import { loadAMapScript } from '@/utils/amap'
+import { normalizeImageUrl, parseImageList } from '@/utils/imageUrl'
 
 import TourismTopNav from '@/components/TourismTopNav.vue'
+import PaymentMethodCard from '@/components/PaymentMethodCard.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -662,6 +722,8 @@ const isCollected = ref(false)
 const bookingDialogVisible = ref(false)
 const commentDialogVisible = ref(false)
 const submittingComment = ref(false)
+const replyingTo = ref<any>(null)
+const replyRoot = ref<any>(null)
 
 // 步骤流程相关变量
 const currentStep = ref(0)
@@ -679,6 +741,11 @@ let payPollingTimer: any = null
 const hotelDisplayTags = computed(() => {
   const tags = extractDisplayTags(hotel.value, ['tags', 'tagList', 'tagNames', 'labels', 'keywords', 'facilities'])
   return tags.filter((tag) => tag !== hotel.value.region && tag !== `${hotel.value.starLevel}星级`)
+})
+const merchantAvatarUrl = computed(() => hotel.value.merchantAvatar ? normalizeImageUrl(hotel.value.merchantAvatar, '') : '')
+const merchantInitial = computed(() => {
+  const name = hotel.value.merchantName || hotel.value.name || '商'
+  return String(name).trim().slice(0, 1)
 })
 
 const ROOM_TYPE_LABELS: Record<number, string> = {
@@ -763,14 +830,7 @@ const loadHotelDetail = async () => {
     if (res && res.data) {
       hotel.value = res.data
       isCollected.value = res.data.isCollected === 1
-      if (res.data.images) {
-        const imagesStr = res.data.images
-        if (imagesStr.startsWith('[')) {
-          imageList.value = JSON.parse(imagesStr)
-        } else {
-          imageList.value = imagesStr.split(',')
-        }
-      }
+      imageList.value = parseImageList(res.data.images)
       addBrowseHistory()
       loadHotelRooms()
       // 数据加载完成后初始化地图
@@ -797,46 +857,45 @@ const loadHotelRooms = async () => {
 }
 
 // 鍒濆鍖栧湴鍥?
-const initMap = () => {
+const initMap = async () => {
   if (!hotel.value.longitude || !hotel.value.latitude) {
     console.log('酒店无坐标信息')
-    return
-  }
-  
-  if (!window.AMap) {
-    console.error('高德地图 API 未加载')
     return
   }
   
   const container = document.getElementById('hotel-map-container')
   if (!container) return
   
-  // 创建地图实例
-  const map = new window.AMap.Map('hotel-map-container', {
-    zoom: 15,
-    center: [hotel.value.longitude, hotel.value.latitude],
-    mapStyle: 'amap://styles/normal'
-  })
-  
-  // 添加标记
-  const marker = new window.AMap.Marker({
-    position: [hotel.value.longitude, hotel.value.latitude],
-    title: hotel.value.name
-  })
-  map.add(marker)
-  
-  // 添加信息窗体
-  const infoWindow = new window.AMap.InfoWindow({
-    content: `<div style="padding: 8px; font-size: 14px;">
-      <h4 style="margin: 0 0 8px 0;">${hotel.value.name}</h4>
-      <p style="margin: 0; color: #666;">${hotel.value.address}</p>
-    </div>`,
-    offset: new window.AMap.Pixel(0, -30)
-  })
-  
-  marker.on('click', () => {
-    infoWindow.open(map, marker.getPosition())
-  })
+  try {
+    await loadAMapScript()
+    container.innerHTML = ''
+
+    const map = new window.AMap.Map('hotel-map-container', {
+      zoom: 15,
+      center: [hotel.value.longitude, hotel.value.latitude],
+      mapStyle: 'amap://styles/normal'
+    })
+
+    const marker = new window.AMap.Marker({
+      position: [hotel.value.longitude, hotel.value.latitude],
+      title: hotel.value.name
+    })
+    map.add(marker)
+
+    const infoWindow = new window.AMap.InfoWindow({
+      content: `<div style="padding: 8px; font-size: 14px;">
+        <h4 style="margin: 0 0 8px 0;">${hotel.value.name}</h4>
+        <p style="margin: 0; color: #666;">${hotel.value.address}</p>
+      </div>`,
+      offset: new window.AMap.Pixel(0, -30)
+    })
+
+    marker.on('click', () => {
+      infoWindow.open(map, marker.getPosition())
+    })
+  } catch (error) {
+    console.error('高德地图加载失败:', error)
+  }
 }
 
 // 添加浏览历史
@@ -895,6 +954,7 @@ const toggleCollect = async () => {
       })
       ElMessage.success('取消收藏成功')
       isCollected.value = false
+      hotel.value.collectCount = Math.max(0, (hotel.value.collectCount || 0) - 1)
     } else {
       await request({
         method: 'post',
@@ -906,14 +966,15 @@ const toggleCollect = async () => {
       })
       ElMessage.success('收藏成功')
       isCollected.value = true
+      hotel.value.collectCount = (hotel.value.collectCount || 0) + 1
     }
   } catch (error: any) {
     ElMessage.error(error.message || '操作失败')
   }
 }
 
-const dialPhone = (tel: string) => {
-  window.location.href = `tel:${tel.replace(/\s/g, '')}`
+const goToMerchantHome = () => {
+  if (hotel.value.merchantId) router.push(`/user/${hotel.value.merchantId}`)
 }
 
 /** 浠庢埧鍨嬪垪琛ㄧ偣鍑汇€岃姝ゆ埧鍨嬨€?*/
@@ -984,6 +1045,10 @@ const nextStep = () => {
     const validGuestNames = bookingForm.guestNames.filter((name: string) => name.trim() !== '')
     if (validGuestNames.length === 0 || !bookingForm.guestPhone) {
       ElMessage.warning('请填写入住人信息')
+      return
+    }
+    if (bookingForm.guestPhone.length !== 11) {
+      ElMessage.warning('请输入11位手机号')
       return
     }
   }
@@ -1075,11 +1140,11 @@ const handlePay = async () => {
   try {
     const res: any = await request.get(`/order/pay/qrcode/${orderNo.value}`)
     if (res && res.code === 200) {
-      payQrCodeUrl.value = res.data.qrCodeUrl || ''
+      payQrCodeUrl.value = await buildPayQrCodeUrl(res.data)
       if (!payQrCodeUrl.value) {
         throw new Error('未获取到支付宝支付二维码')
       }
-      payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
+      payStatusMessage.value = res.data?.scanTip || '请使用支付宝沙箱 App 和沙箱买家账号扫码，普通支付宝会提示订单不存在'
       startPayPolling(orderNo.value)
     }
   } catch (error: any) {
@@ -1098,8 +1163,12 @@ const startPayPolling = (currentOrderNo: string) => {
   isPollingPay.value = true
   payPollProgress.value = 0
   let pollCount = 0
+  let requestPending = false
+  let successHandled = false
 
   payPollingTimer = setInterval(async () => {
+    if (requestPending || successHandled) return
+
     pollCount++
     if (pollCount >= 60) {
       stopPayPolling()
@@ -1110,8 +1179,10 @@ const startPayPolling = (currentOrderNo: string) => {
     payPollProgress.value = Math.min((pollCount / 60) * 100, 95)
 
     try {
+      requestPending = true
       const res: any = await request.get(`/order/pay/status/${currentOrderNo}`)
       if (res && res.code === 200 && res.data && (res.data.paid || res.data.orderStatus === 1)) {
+        successHandled = true
         stopPayPolling()
         payPollProgress.value = 100
         payStatusMessage.value = '支付成功'
@@ -1127,6 +1198,8 @@ const startPayPolling = (currentOrderNo: string) => {
       }
     } catch (error) {
       console.error('轮询支付状态失败', error)
+    } finally {
+      requestPending = false
     }
   }, 3000)
 }
@@ -1152,6 +1225,30 @@ const showCommentDialog = () => {
     router.push('/login')
     return
   }
+  replyingTo.value = null
+  replyRoot.value = null
+  commentForm.content = ''
+  commentDialogVisible.value = true
+}
+
+const closeCommentDialog = () => {
+  commentDialogVisible.value = false
+  replyingTo.value = null
+  replyRoot.value = null
+  commentForm.content = ''
+  commentForm.rating = 5
+}
+
+const replyComment = (comment: any, rootComment: any) => {
+  const token = localStorage.getItem('auth-token')
+  if (!token) {
+    ElMessage.warning('请先登录后再回复')
+    router.push('/login')
+    return
+  }
+  replyingTo.value = comment
+  replyRoot.value = rootComment
+  commentForm.content = `@${comment.userName} `
   commentDialogVisible.value = true
 }
 
@@ -1168,25 +1265,39 @@ const submitComment = async () => {
       contentId: hotelId.value,
       contentType: 6,
       content: commentForm.content,
-      rating: commentForm.rating
+      rating: replyingTo.value ? null : commentForm.rating,
+      parentId: replyRoot.value?.id || null
     })
     if (res && res.code === 200) {
-      ElMessage.success('评价成功')
-      commentDialogVisible.value = false
-      commentForm.content = ''
-      commentForm.rating = 5
+      ElMessage.success(replyingTo.value ? '回复成功' : '评价成功')
+      closeCommentDialog()
       loadCommentList()
     }
   } catch (error: any) {
-    ElMessage.error(error.message || '评价失败')
+    if (!error.messageShown) ElMessage.error(error.message || '评价失败')
   } finally {
     submittingComment.value = false
   }
 }
 
+const deleteComment = async (comment: any) => {
+  try {
+    await ElMessageBox.confirm('确定删除这条评论吗？', '删除评论', { type: 'warning' })
+    const res: any = await request.delete(`/comment/delete/${comment.id}`)
+    if (res && res.code === 200) {
+      ElMessage.success('删除成功')
+      loadCommentList()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
+}
+
 // 显示地图
 const showMap = () => {
-  ElMessage.info('鍦板浘鍔熻兘寮€鍙戜腑')
+  ElMessage.info('地图功能开发中')
 }
 
 // 绂佺敤杩囧幓鐨勬棩鏈?
@@ -1656,6 +1767,12 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
       background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%);
       border-radius: 12px;
       border: 1px solid #ffe58f;
+      transition: all 0.3s;
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(255, 169, 64, 0.2);
+        transform: translateY(-2px);
+      }
 
       .merchant-avatar {
         width: 56px;
@@ -1667,10 +1784,32 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
         justify-content: center;
         color: #fff;
         font-size: 24px;
+        overflow: hidden;
+        flex: 0 0 56px;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+
+        &:hover {
+          transform: translateY(-1px) scale(1.04);
+          box-shadow: 0 8px 18px rgba(250, 140, 22, 0.24);
+        }
+
+        .merchant-avatar-image {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+        }
+
+        .merchant-avatar-text {
+          font-size: 22px;
+          font-weight: 700;
+          line-height: 1;
+        }
       }
 
       .merchant-info {
         flex: 1;
+        min-width: 0;
 
         .merchant-name {
           font-size: 16px;
@@ -1679,9 +1818,16 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
           margin-bottom: 6px;
         }
 
-        .merchant-badge {
+        .merchant-meta {
           display: flex;
+          align-items: center;
           gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .meta-text {
+          font-size: 12px;
+          color: $text-muted;
         }
 
         .merchant-desc {
@@ -1691,9 +1837,11 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
           margin: 10px 0 0;
         }
 
-        .merchant-actions {
-          margin-top: 12px;
-        }
+      }
+
+      .merchant-arrow {
+        color: #d46b08;
+        font-size: 18px;
       }
 
       &.is-platform {
@@ -2023,6 +2171,36 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
           margin-bottom: 12px;
         }
 
+        .comment-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+
+        .reply-list {
+          margin-top: 12px;
+          padding: 12px;
+          background: $white;
+          border-radius: 10px;
+          border: 1px solid $border;
+
+          .reply-item {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+
+            &:not(:last-child) {
+              border-bottom: 1px solid $border;
+            }
+
+            .reply-body {
+              flex: 1;
+              min-width: 0;
+            }
+          }
+        }
+
         .comment-images {
           display: flex;
           gap: 10px;
@@ -2055,6 +2233,12 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
         font-weight: 500;
         color: $text-secondary;
       }
+    }
+
+    .reply-tip {
+      color: $text-secondary;
+      margin-bottom: 16px;
+      font-size: 14px;
     }
   }
 }

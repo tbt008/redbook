@@ -54,7 +54,9 @@
                   maxlength="6"
                 />
                 <el-button
-                  :disabled="countdown > 0"
+                  native-type="button"
+                  :disabled="countdown > 0 || sendingCode"
+                  :loading="sendingCode"
                   @click="sendCode"
                   size="large"
                 >
@@ -174,8 +176,10 @@ const router = useRouter()
 // 状态
 const registerType = ref('email')
 const loading = ref(false)
+const sendingCode = ref(false)
 const agree = ref(false)
 const countdown = ref(0)
+let codeTimer: ReturnType<typeof setInterval> | null = null
 
 // 表单
 const emailForm = reactive({
@@ -260,10 +264,17 @@ const passwordRules = {
 
 // 发送验证码
 const sendCode = async () => {
-  if (!emailForm.email) {
-    ElMessage.warning('请先输入邮箱')
+  if (countdown.value > 0 || sendingCode.value) {
     return
   }
+
+  try {
+    await emailFormRef.value?.validateField('email')
+  } catch {
+    return
+  }
+
+  sendingCode.value = true
   try {
     const res: any = await request.post('/user/send-code', null, {
       params: {
@@ -271,16 +282,32 @@ const sendCode = async () => {
         type: 'register'
       }
     })
-    ElMessage.success('验证码已发送到您的邮箱')
+
+    if (res?.code === 200 && res?.data !== false) {
+      ElMessage.success('验证码已发送到您的邮箱')
+    } else {
+      ElMessage.error(res?.msg || '验证码发送失败，请稍后重试')
+      return
+    }
+
     countdown.value = 60
-    const timer = setInterval(() => {
+    if (codeTimer) {
+      clearInterval(codeTimer)
+    }
+    codeTimer = setInterval(() => {
       countdown.value--
       if (countdown.value <= 0) {
-        clearInterval(timer)
+        if (codeTimer) {
+          clearInterval(codeTimer)
+          codeTimer = null
+        }
       }
     }, 1000)
   } catch (error: any) {
     console.error('发送验证码错误：', error)
+    ElMessage.error(error?.message || '验证码发送失败，请稍后重试')
+  } finally {
+    sendingCode.value = false
   }
 }
 

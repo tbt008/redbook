@@ -58,7 +58,11 @@ let typeChart: echarts.ECharts | null = null
 let statusChart: echarts.ECharts | null = null
 
 const userTypeNames: Record<number, string> = { 1: '游客', 2: '商家', 3: '达人', 4: '管理员' }
-const userStatusNames: Record<number, string> = { 0: '正常', 1: '禁用', 2: '禁言' }
+const userStatusItems = [
+  { code: 1, name: '正常' },
+  { code: 0, name: '禁用' },
+  { code: 2, name: '禁言' }
+]
 
 const loadStats = async () => {
   const res: any = await request.get('/admin/statistics/dashboard')
@@ -82,7 +86,7 @@ const loadUserStatistics = async () => {
     const userStatusDistribution = res.data?.userStatusDistribution || {}
     stats.value.userType4 = userTypeDistribution[4] || 0
     typeChart?.setOption({ tooltip: { trigger: 'item' }, legend: { bottom: '0', left: 'center' }, series: [{ name: '用户类型', type: 'pie', radius: ['40%', '70%'], avoidLabelOverlap: false, itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 }, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, data: Object.entries(userTypeDistribution).map(([key, value]) => ({ value: value as number, name: userTypeNames[parseInt(key)] || `类型${key}` })) }] })
-    statusChart?.setOption({ tooltip: { trigger: 'item' }, legend: { bottom: '0', left: 'center' }, series: [{ name: '用户状态', type: 'pie', radius: ['40%', '70%'], avoidLabelOverlap: false, itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 }, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, data: Object.entries(userStatusDistribution).map(([key, value]) => ({ value: value as number, name: userStatusNames[parseInt(key)] || `状态${key}` })) }] })
+    statusChart?.setOption({ tooltip: { trigger: 'item' }, legend: { bottom: '0', left: 'center' }, series: [{ name: '用户状态', type: 'pie', radius: ['40%', '70%'], avoidLabelOverlap: false, itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 }, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, data: userStatusItems.map(({ code, name }) => ({ value: userStatusDistribution[code] || 0, name })) }] })
   }
 }
 

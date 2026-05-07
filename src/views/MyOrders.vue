@@ -55,6 +55,9 @@
             <el-tab-pane label="已支付" name="status-1" />
             <el-tab-pane label="已使用" name="status-2" />
             <el-tab-pane label="已取消" name="status-3" />
+            <el-tab-pane label="已退款" name="status-4" />
+            <el-tab-pane label="退款审核中" name="status-5" />
+            <el-tab-pane label="已拒绝退款" name="status-6" />
           </el-tabs>
         </div>
 
@@ -126,7 +129,7 @@
                   class="app-soft-button"
                   @click="viewETicket(order)"
                 >
-                  查看电子票
+                  查看详情
                 </el-button>
                 <el-button
                   v-if="order.orderStatus === 1 && order.orderType === 2"
@@ -145,6 +148,15 @@
                   @click="handleReceive(order)"
                 >
                   确认收货
+                </el-button>
+                <el-button
+                  v-if="order.orderStatus === 1"
+                  type="warning"
+                  plain
+                  class="app-soft-button"
+                  @click="handleRefund(order)"
+                >
+                  申请退款
                 </el-button>
                 <el-button class="app-soft-button" @click="viewDetail(order)">
                   查看详情
@@ -181,6 +193,8 @@
           <span class="label">支付金额</span>
           <span class="amount">¥{{ formatAmount(payingOrder?.totalAmount) }}</span>
         </div>
+
+        <PaymentMethodCard />
 
         <div v-if="payQrCodeUrl" class="pay-qrcode">
           <el-image :src="payQrCodeUrl" fit="contain" style="width: 220px; height: 220px" />
@@ -221,7 +235,9 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Clock } from '@element-plus/icons-vue'
 import request from '@/util/request'
-import { formatDateOnly, formatDateTime } from '@/utils/date'
+import { formatDateOnly, formatDateTime, type DateInput } from '@/utils/date'
+import { buildPayQrCodeUrl } from '@/utils/payQrCode'
+import PaymentMethodCard from '@/components/PaymentMethodCard.vue'
 
 type OrderRecord = {
   id?: number | string
@@ -229,24 +245,25 @@ type OrderRecord = {
   orderType: number
   orderStatus: number
   totalAmount?: number | string
-  createTime?: string
-  expireTime?: string
+  createTime?: DateInput
+  expireTime?: DateInput
   deliveryStatus?: number
+  deliveryAddress?: string
   ticketName?: string
   hotelName?: string
   foodName?: string
   hotelId?: number | string
   foodId?: number | string
-  checkInDate?: string
-  checkOutDate?: string
+  checkInDate?: DateInput
+  checkOutDate?: DateInput
   guestName?: string
   guestPhone?: string
   roomName?: string
   roomCount?: number
-  bookingDate?: string
+  bookingDate?: DateInput
   mealTime?: string
   dinerCount?: number
-  visitDate?: string
+  visitDate?: DateInput
   ticketCount?: number
   visitorName?: string
   visitorPhone?: string
@@ -279,19 +296,25 @@ const tabLabelMap: Record<string, string> = {
   'status-0': '待支付',
   'status-1': '已支付',
   'status-2': '已使用',
-  'status-3': '已取消'
+  'status-3': '已取消',
+  'status-4': '已退款',
+  'status-5': '退款审核中',
+  'status-6': '已拒绝退款'
 }
 
 const activeDescription = computed(() => {
   const descriptionMap: Record<string, string> = {
     all: '查看你所有的旅游消费记录',
-    'type-1': '门票订单会优先展示游玩日期和电子票入口',
+    'type-1': '门票订单会优先展示游玩日期和订单详情入口',
     'type-2': '酒店订单会突出入住与离店信息',
     'type-3': '美食订单会展示预订时间与联系人信息',
     'status-0': '优先处理未完成支付的订单',
     'status-1': '已完成支付，等待消费或履约',
     'status-2': '订单已经使用或完成核销',
-    'status-3': '已取消订单仅保留查看记录'
+    'status-3': '已取消订单仅保留查看记录',
+    'status-4': '商家已同意退款',
+    'status-5': '退款申请已提交，等待商家审核',
+    'status-6': '商家已拒绝退款'
   }
   return descriptionMap[activeTab.value] || descriptionMap.all
 })
@@ -307,7 +330,10 @@ const loadOrders = async () => {
     'status-0': { status: 0 },
     'status-1': { status: 1 },
     'status-2': { status: 2 },
-    'status-3': { status: 3 }
+    'status-3': { status: 3 },
+    'status-4': { status: 4 },
+    'status-5': { status: 5 },
+    'status-6': { status: 6 }
   }
 
   const filter = typeStatusMap[activeTab.value] || {}
@@ -346,8 +372,8 @@ const formatAmount = (amount?: number | string) => {
   return Number.isNaN(numericAmount) ? String(amount) : numericAmount.toFixed(2)
 }
 
-const formatTime = (time?: string) => formatDateTime(time, '时间待确认')
-const formatDate = (time?: string) => formatDateOnly(time, '待确认')
+const formatTime = (time?: DateInput) => formatDateTime(time, '时间待确认')
+const formatDate = (time?: DateInput) => formatDateOnly(time, '待确认')
 
 const getOrderTitle = (order: OrderRecord) => {
   if (order.orderType === 2) return order.hotelName || '酒店订单'
@@ -381,8 +407,9 @@ const getOrderDetails = (order: OrderRecord) => {
       { label: '预订日期', value: formatDate(order.bookingDate) },
       { label: '用餐时间', value: order.mealTime || '-' },
       { label: '用餐人数', value: order.dinerCount ? `${order.dinerCount} 人` : '-' },
-      { label: '联系人', value: order.guestName || '-' },
-      { label: '联系电话', value: order.guestPhone || '-' }
+      { label: '联系人', value: order.guestName || order.visitorName || '-' },
+      { label: '联系电话', value: order.guestPhone || order.visitorPhone || '-' },
+      { label: '收货地址', value: order.deliveryAddress || '-' }
     ]
   }
 
@@ -397,7 +424,7 @@ const getOrderDetails = (order: OrderRecord) => {
 const getOrderFootnote = (order: OrderRecord) => {
   if (order.orderType === 2) return '酒店订单建议在出行前再次核对入住日期、入住人和联系电话。'
   if (order.orderType === 3) return '美食订单可在商家发货后确认收货，也可随时返回查看预订信息。'
-  return '门票订单支付完成后可直接查看电子票信息，避免到现场重复排队。'
+  return '门票订单支付完成后可查看订单详情，出行前请核对游玩日期和联系人信息。'
 }
 
 const getAmountCaption = (order: OrderRecord) => {
@@ -405,6 +432,9 @@ const getAmountCaption = (order: OrderRecord) => {
   if (order.orderStatus === 1) return '订单已支付，等待使用'
   if (order.orderStatus === 2) return '订单已完成核销'
   if (order.orderStatus === 3) return '该订单已取消'
+  if (order.orderStatus === 4) return '商家已同意退款'
+  if (order.orderStatus === 5) return '退款申请已提交，等待商家审核'
+  if (order.orderStatus === 6) return '商家已拒绝退款'
   return '查看订单状态详情'
 }
 
@@ -428,11 +458,11 @@ const generatePayQrCode = async (orderNo: string) => {
     const res: any = await request.get(`/order/pay/qrcode/${orderNo}`)
 
     if (res?.code === 200) {
-      payQrCodeUrl.value = res.data?.qrCodeUrl || ''
+      payQrCodeUrl.value = await buildPayQrCodeUrl(res.data)
       if (!payQrCodeUrl.value) {
         throw new Error('未获取到支付二维码')
       }
-      payStatusMessage.value = '请使用支付宝沙箱 App 扫码支付'
+      payStatusMessage.value = res.data?.scanTip || '请使用支付宝沙箱 App 和沙箱买家账号扫码，普通支付宝会提示订单不存在'
       startPayPolling(orderNo)
     } else {
       payStatusMessage.value = res?.message || '生成支付二维码失败'
@@ -463,8 +493,12 @@ const startPayPolling = (orderNo: string) => {
   isPollingPay.value = true
   payPollProgress.value = 0
   let pollCount = 0
+  let requestPending = false
+  let successHandled = false
 
   payPollingTimer = setInterval(async () => {
+    if (requestPending || successHandled) return
+
     pollCount += 1
 
     if (pollCount >= 60) {
@@ -477,8 +511,10 @@ const startPayPolling = (orderNo: string) => {
     payPollProgress.value = Math.min((pollCount / 60) * 100, 95)
 
     try {
+      requestPending = true
       const res: any = await request.get(`/order/pay/status/${orderNo}`)
       if (res?.code === 200 && res.data && (res.data.paid || res.data.orderStatus === 1)) {
+        successHandled = true
         stopPayPolling()
         payPollProgress.value = 100
         payStatusMessage.value = '支付成功'
@@ -492,6 +528,8 @@ const startPayPolling = (orderNo: string) => {
       }
     } catch (error) {
       console.error('轮询支付状态失败', error)
+    } finally {
+      requestPending = false
     }
   }, 3000)
 }
@@ -544,6 +582,26 @@ const handleCancel = async (order: OrderRecord) => {
   }
 }
 
+const handleRefund = async (order: OrderRecord) => {
+  try {
+    await ElMessageBox.confirm('确定要申请退货退款吗？提交后需要等待商家审核。', '申请退款', {
+      confirmButtonText: '提交申请',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const res: any = await request.post(`/order/refund/request/${order.orderNo}`)
+    if (res?.code === 200) {
+      ElMessage.success('退款申请已提交，等待商家审核')
+      loadOrders()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error?.message || '申请退款失败')
+    }
+  }
+}
+
 const viewETicket = (order: OrderRecord) => {
   router.push(`/eticket/${order.orderNo}`)
 }
@@ -574,7 +632,9 @@ const getStatusType = (status: number) => {
     1: 'success',
     2: 'info',
     3: 'danger',
-    4: 'danger'
+    4: 'danger',
+    5: 'warning',
+    6: 'info'
   }
   return types[status] || 'info'
 }
@@ -603,7 +663,9 @@ const getStatusText = (status: number) => {
     1: '已支付',
     2: '已使用',
     3: '已取消',
-    4: '已退款'
+    4: '已退款',
+    5: '退款审核中',
+    6: '已拒绝退款'
   }
   return texts[status] || '未知状态'
 }

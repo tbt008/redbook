@@ -91,7 +91,7 @@
           <article v-for="item in results" :key="`${item.id}-${item.dataType || item.category}`" class="result-card" @click="goDetail(item)">
             <div class="result-card__media">
               <el-image
-                :src="item.coverImage || '/default-cover.jpg'"
+                :src="item.coverImage || '/local-images/default-cover.svg'"
                 fit="cover"
                 class="result-card__image"
                 loading="lazy"
@@ -121,6 +121,7 @@
                 <div class="metric-list">
                   <span><el-icon><View /></el-icon>{{ item.viewCount || 0 }}</span>
                   <span><el-icon><Star /></el-icon>{{ item.likeCount || 0 }}</span>
+                  <span><el-icon><Collection /></el-icon>{{ item.collectCount || 0 }}</span>
                 </div>
               </div>
             </div>
@@ -153,7 +154,7 @@
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Search, Star, VideoPlay, View } from '@element-plus/icons-vue'
+import { Collection, Search, Star, VideoPlay, View } from '@element-plus/icons-vue'
 import request from '@/util/request'
 
 const router = useRouter()

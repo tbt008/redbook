@@ -12,7 +12,12 @@
     </el-header>
 
     <div class="main-container">
-      <div class="panels-container">
+      <div
+        class="panels-container"
+        ref="panelsContainerRef"
+        :class="{ 'is-resizing': resizingPanel }"
+        :style="panelGridStyle"
+      >
         <!-- 左侧：AI对话区 -->
         <div class="panel left-panel">
           <div class="left-panel-inner">
@@ -24,7 +29,7 @@
                 <div class="bubble" v-html="renderMarkdown(msg.content)"></div>
               </div>
               <!-- 加载动画 -->
-              <div v-if="loading" class="message assistant">
+              <div v-if="loading && !hasStreamingContent" class="message assistant">
                 <div class="bubble loading-bubble">
                   <div class="typing-indicator">
                     <span></span>
@@ -42,6 +47,14 @@
             </div>
           </div>
         </div>
+
+        <div
+          class="panel-resizer"
+          role="separator"
+          aria-label="调整AI助手和地图区域宽度"
+          title="拖动调整左右宽度"
+          @pointerdown="startPanelResize('left', $event)"
+        ></div>
 
         <!-- 中间：地图区 -->
         <div class="panel map-panel-wrapper">
@@ -69,60 +82,90 @@
           </div>
         </div>
 
-      <!-- 右侧：行程编辑区 -->
-      <div class="panel right-panel">
-        <div class="right-panel-inner">
-          <div class="panel-header">
-            <h3>📅 我的行程</h3>
-            <el-button size="small" @click="addDay">+ 添加一天</el-button>
-          </div>
+        <div
+          class="panel-resizer"
+          role="separator"
+          aria-label="调整地图和我的行程区域宽度"
+          title="拖动调整左右宽度"
+          @pointerdown="startPanelResize('right', $event)"
+        ></div>
 
-          <div class="itinerary-container" @dragover.prevent @drop="handleDrop">
-            <div v-for="(day, dayIndex) in itinerary" :key="dayIndex" class="day-section">
-              <div class="day-header">
-                <h4>第{{ dayIndex + 1 }}天</h4>
-                <span class="day-budget">预算: ¥{{ calculateDayBudget(day) }}</span>
+        <!-- 右侧：行程编辑区 -->
+        <div class="panel right-panel">
+          <div class="right-panel-inner">
+            <div class="panel-header">
+              <h3>📅 我的行程</h3>
+              <div class="day-actions">
+                <el-select
+                  v-model="selectedDayIndex"
+                  size="small"
+                  style="width: 108px"
+                  aria-label="选择添加到哪一天"
+                >
+                  <el-option
+                    v-for="option in dayOptions"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </el-select>
+                <el-button size="small" @click="addDay">+ 添加一天</el-button>
               </div>
+            </div>
 
-              <draggable v-model="day.items" group="itinerary" item-key="id" class="day-items" @change="updateRoute">
-                <template #item="{ element: item }">
-                  <div class="itinerary-item">
-                    <div class="drag-handle">⋮⋮</div>
-                    <div class="item-time">
-                      <el-time-picker v-model="item.time" format="HH:mm" size="small" style="width: 80px" />
-                    </div>
-                    <div class="item-content">
-                      <span class="item-icon">{{ item.icon }}</span>
-                      <div class="item-info">
-                        <div class="item-name">{{ item.name }}</div>
-                        <div class="item-address">{{ item.address }}</div>
+            <div class="itinerary-container" @dragover.prevent @drop="handleDrop">
+              <div
+                v-for="(day, dayIndex) in itinerary"
+                :key="dayIndex"
+                :class="['day-section', { active: selectedDayIndex === dayIndex }]"
+                @click="selectDay(dayIndex)"
+                @dragover.prevent
+                @drop.stop="handleDrop($event, dayIndex)"
+              >
+                <div class="day-header">
+                  <h4>第{{ dayIndex + 1 }}天</h4>
+                  <span class="day-budget">预算: ¥{{ calculateDayBudget(day) }}</span>
+                </div>
+
+                <draggable v-model="day.items" group="itinerary" item-key="id" class="day-items" @change="updateRoute">
+                  <template #item="{ element: item }">
+                    <div class="itinerary-item">
+                      <div class="drag-handle">⋮⋮</div>
+                      <div class="item-time">
+                        <el-time-picker v-model="item.time" format="HH:mm" size="small" style="width: 80px" />
                       </div>
-                      <span class="item-price">¥{{ item.price }}</span>
+                      <div class="item-content">
+                        <span class="item-icon">{{ item.icon }}</span>
+                        <div class="item-info">
+                          <div class="item-name">{{ item.name }}</div>
+                          <div class="item-address">{{ item.address }}</div>
+                        </div>
+                        <span class="item-price">¥{{ item.price }}</span>
+                      </div>
+                      <el-button icon="Delete" circle size="small" @click="removeItem(dayIndex, item.id)" />
                     </div>
-                    <el-button icon="Delete" circle size="small" @click="removeItem(dayIndex, item.id)" />
-                  </div>
-                </template>
-              </draggable>
+                  </template>
+                </draggable>
 
-              <div v-if="day.items.length === 0" class="empty-day">
-                拖拽地图标记到这里
+                <div v-if="day.items.length === 0" class="empty-day">
+                  拖拽地图标记到这里
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="itinerary-summary">
-            <div class="summary-item">
-              <span>总天数</span>
-              <strong>{{ itinerary.length }}天</strong>
-            </div>
-            <div class="summary-item">
-              <span>总预算</span>
-              <strong>¥{{ totalBudget }}</strong>
+            <div class="itinerary-summary">
+              <div class="summary-item">
+                <span>总天数</span>
+                <strong>{{ itinerary.length }}天</strong>
+              </div>
+              <div class="summary-item">
+                <span>总预算</span>
+                <strong>¥{{ totalBudget }}</strong>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
       <!-- 标记详情弹窗 -->
       <el-dialog v-model="showMarkerDialog" title="详情" width="400px">
@@ -133,6 +176,17 @@
           <p>💰 {{ selectedMarker.priceLabel }}</p>
           <p>⭐ 评分 {{ selectedMarker.rating }}</p>
           <p class="description">{{ selectedMarker.description }}</p>
+          <div class="dialog-day-selector">
+            <span>添加到</span>
+            <el-select v-model="selectedDayIndex" size="small" style="width: 120px">
+              <el-option
+                v-for="option in dayOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+          </div>
         </div>
         <template #footer>
           <el-button @click="showMarkerDialog = false">取消</el-button>
@@ -147,12 +201,13 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onBeforeUnmount, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import draggable from 'vuedraggable'
 import request from '@/util/request'
 import { marked } from 'marked'
+import { loadAMapScript } from '@/utils/amap'
 
 const router = useRouter()
 
@@ -170,8 +225,6 @@ const renderMarkdown = (content: string) => {
 
 // 地图标记数据（从API加载）
 const markers = ref([])
-const markersText = ref('') // 供AI使用的文本数据
-
 // 筛选类型
 const visibleTypes = ref(['attraction', 'food', 'hotel'])
 
@@ -189,6 +242,11 @@ const filteredMarkers = computed(() => {
 const itinerary = ref([
   { day: 1, items: [] }
 ])
+const selectedDayIndex = ref(0)
+const dayOptions = computed(() => itinerary.value.map((_, index) => ({
+  label: `第${index + 1}天`,
+  value: index
+})))
 
 // 拖拽状态
 const draggingId = ref(null)
@@ -200,6 +258,10 @@ const messages = ref([
 ])
 const inputMessage = ref('')
 const loading = ref(false)
+const hasStreamingContent = computed(() => {
+  const lastMessage = messages.value[messages.value.length - 1]
+  return loading.value && lastMessage?.role === 'assistant' && Boolean(lastMessage.content)
+})
 
 // 标记详情
 const showMarkerDialog = ref(false)
@@ -209,17 +271,73 @@ const mapLoadError = ref(false)
 
 // 消息容器引用
 const messagesRef = ref<HTMLElement | null>(null)
+const panelsContainerRef = ref<HTMLElement | null>(null)
 
 // 路线连线
 const routeLines = ref([])
 
-// Splitter 面板尺寸变量（保留用于可能的未来需求）
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const leftPanelSize = ref(20)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mapPanelSize = ref(60)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const rightPanelSize = ref(20)
+const resizingPanel = ref<'left' | 'right' | null>(null)
+const MIN_LEFT_PANEL_WIDTH = 260
+const MIN_MAP_PANEL_WIDTH = 320
+const MIN_RIGHT_PANEL_WIDTH = 300
+
+const panelGridStyle = computed(() => {
+  const left = leftPanelSize.value
+  const right = rightPanelSize.value
+  const map = 100 - left - right
+  return {
+    gridTemplateColumns: `minmax(${MIN_LEFT_PANEL_WIDTH}px, ${left}fr) 4px minmax(${MIN_MAP_PANEL_WIDTH}px, ${map}fr) 4px minmax(${MIN_RIGHT_PANEL_WIDTH}px, ${right}fr)`
+  }
+})
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
+
+let resizeFrameId = 0
+const refreshMapSize = () => {
+  window.cancelAnimationFrame(resizeFrameId)
+  resizeFrameId = window.requestAnimationFrame(() => {
+    realMapInstance.value?.resize?.()
+  })
+}
+
+const updatePanelSize = (event: PointerEvent) => {
+  if (!resizingPanel.value || !panelsContainerRef.value) return
+
+  const rect = panelsContainerRef.value.getBoundingClientRect()
+  const pointerX = clamp(event.clientX - rect.left, 0, rect.width)
+  const minLeft = MIN_LEFT_PANEL_WIDTH / rect.width * 100
+  const minMap = MIN_MAP_PANEL_WIDTH / rect.width * 100
+  const minRight = MIN_RIGHT_PANEL_WIDTH / rect.width * 100
+
+  if (resizingPanel.value === 'left') {
+    leftPanelSize.value = clamp(pointerX / rect.width * 100, minLeft, 100 - rightPanelSize.value - minMap)
+  } else {
+    rightPanelSize.value = clamp((rect.width - pointerX) / rect.width * 100, minRight, 100 - leftPanelSize.value - minMap)
+  }
+
+  refreshMapSize()
+}
+
+const stopPanelResize = () => {
+  if (!resizingPanel.value) return
+  resizingPanel.value = null
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  window.removeEventListener('pointermove', updatePanelSize)
+  window.removeEventListener('pointerup', stopPanelResize)
+  refreshMapSize()
+}
+
+const startPanelResize = (panel: 'left' | 'right', event: PointerEvent) => {
+  resizingPanel.value = panel
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+  event.preventDefault()
+  window.addEventListener('pointermove', updatePanelSize)
+  window.addEventListener('pointerup', stopPanelResize)
+}
 
 // 监听真实地图开关
 watch(useRealMap, async (newVal) => {
@@ -230,16 +348,7 @@ watch(useRealMap, async (newVal) => {
 })
 
 // 初始化真实地图
-const initRealMap = () => {
-  console.log('正在初始化地图, AMap对象:', !!window.AMap)
-  
-  if (!window.AMap) {
-    console.error('AMap 对象不存在，API可能未加载成功')
-    ElMessage.error('地图加载失败，已自动切换到示意图模式')
-    useRealMap.value = false
-    return
-  }
-  
+const initRealMap = async () => {
   const container = document.getElementById('amap-container')
   if (!container) {
     console.error('地图容器不存在')
@@ -250,6 +359,8 @@ const initRealMap = () => {
   if (realMapInstance.value) return
   
   try {
+    await loadAMapScript()
+
     // 创建地图实例 - 莆田市中心坐标
     const map = new window.AMap.Map('amap-container', {
       zoom: 11,
@@ -381,18 +492,41 @@ const handleDragEnd = () => {
   draggingMarker.value = null
 }
 
+const normalizeDayIndex = (dayIndex = selectedDayIndex.value) => {
+  if (!itinerary.value.length) return 0
+  const index = Number(dayIndex)
+  return Number.isInteger(index) && index >= 0 && index < itinerary.value.length
+    ? index
+    : itinerary.value.length - 1
+}
+
+const selectDay = (dayIndex) => {
+  selectedDayIndex.value = normalizeDayIndex(dayIndex)
+}
+
+const normalizeResourceId = (value) => {
+  if (typeof value === 'number') return value
+  if (typeof value !== 'string') return null
+  if (/^\d+$/.test(value)) return Number(value)
+  const match = value.match(/^[a-zA-Z]+-(\d+)(?:-.+)?$/)
+  return match ? Number(match[1]) : null
+}
+
 // 放置到行程
-const handleDrop = (event) => {
+const handleDrop = (event, dayIndex = selectedDayIndex.value) => {
   event.preventDefault()
   if (draggingMarker.value) {
-    addToItinerary(draggingMarker.value)
+    addToItinerary(draggingMarker.value, dayIndex)
   }
 }
 
 // 添加到行程
-const addToItinerary = (marker) => {
+const addToItinerary = (marker, dayIndex = selectedDayIndex.value) => {
+  const targetDayIndex = normalizeDayIndex(dayIndex)
+  const refId = normalizeResourceId(marker.id)
   const item = {
-    id: Date.now(),
+    id: `${marker.type || 'item'}-${marker.id || Date.now()}-${Date.now()}`,
+    refId,
     type: marker.type,
     icon: marker.icon,
     name: marker.name,
@@ -402,10 +536,10 @@ const addToItinerary = (marker) => {
     coordinates: { x: marker.x, y: marker.y }
   }
 
-  // 添加到最后一天
-  itinerary.value[itinerary.value.length - 1].items.push(item)
+  itinerary.value[targetDayIndex].items.push(item)
+  selectedDayIndex.value = targetDayIndex
 
-  ElMessage.success(`已添加 ${marker.name} 到行程`)
+  ElMessage.success(`已添加 ${marker.name} 到第${targetDayIndex + 1}天`)
   updateRoute()
 }
 
@@ -441,6 +575,7 @@ const addDay = () => {
     day: itinerary.value.length + 1,
     items: []
   })
+  selectedDayIndex.value = itinerary.value.length - 1
 }
 
 // 计算每天预算
@@ -471,20 +606,80 @@ const updateRoute = () => {
   routeLines.value = lines
 }
 
+const toNumber = (value: any, fallback = 0) => {
+  const numberValue = Number(value)
+  return Number.isFinite(numberValue) ? numberValue : fallback
+}
+
+const convertLongitudeToX = (longitude: any) => {
+  const lon = Number(longitude)
+  if (!Number.isFinite(lon)) return 500
+  return clamp(Math.round(((lon - 118.65) / (119.15 - 118.65)) * 600 + 250), 250, 850)
+}
+
+const convertLatitudeToY = (latitude: any) => {
+  const lat = Number(latitude)
+  if (!Number.isFinite(lat)) return 350
+  return clamp(Math.round(((25.55 - lat) / (25.55 - 25.05)) * 340 + 180), 180, 520)
+}
+
+const getAttractionIcon = (name = '') => {
+  if (name.includes('寺') || name.includes('庙')) return '🏛️'
+  if (name.includes('岛')) return '🏝️'
+  if (name.includes('湖') || name.includes('溪')) return '🌊'
+  if (name.includes('山')) return '⛰️'
+  if (name.includes('公园')) return '🌳'
+  if (name.includes('博物馆')) return '🎭'
+  return '🏞️'
+}
+
+const getFoodIcon = (name = '') => {
+  if (name.includes('海鲜')) return '🦞'
+  if (name.includes('面')) return '🍜'
+  if (name.includes('米粉')) return '🥘'
+  if (name.includes('素')) return '🥗'
+  if (name.includes('肉')) return '🍖'
+  if (name.includes('糕') || name.includes('团')) return '🍲'
+  if (name.includes('扁食')) return '🥟'
+  return '🍜'
+}
+
+const createMapMarker = (item: any, type: 'attraction' | 'food' | 'hotel') => {
+  const name = item.name || item.title || ''
+  const longitude = item.longitude
+  const latitude = item.latitude
+  return {
+    id: item.id,
+    type,
+    icon: type === 'attraction' ? getAttractionIcon(name) : type === 'food' ? getFoodIcon(name) : '🏨',
+    name,
+    address: item.address || '',
+    region: item.region || '',
+    price: toNumber(type === 'attraction' ? item.ticketPrice : item.avgPrice ?? item.price, 0),
+    rating: toNumber(item.rating, 4.5),
+    description: item.description || '',
+    latitude,
+    longitude,
+    x: convertLongitudeToX(longitude),
+    y: convertLatitudeToY(latitude)
+  }
+}
+
 // 加载地图数据
 const loadMapData = async () => {
   try {
     const res: any = await request.get('/map/markers')
-    if (res.code === 200 && res.data) {
-      // 合并所有标记
-      const allMarkers = [
-        ...res.data.attractions,
-        ...res.data.foods,
-        ...res.data.hotels
-      ]
-      markers.value = allMarkers
-      ElMessage.success(`已加载 ${allMarkers.length} 个地点`)
+    if (res.code !== 200 || !res.data) {
+      throw new Error(res.message || '加载地图数据失败')
     }
+
+    const attractions = res.data.attractions || []
+    const foods = res.data.foods || []
+    const hotels = res.data.hotels || []
+
+    markers.value = [...attractions, ...foods, ...hotels]
+    visibleTypes.value = ['attraction', 'food', 'hotel']
+    ElMessage.success(`已加载 ${attractions.length} 个景点、${foods.length} 个美食、${hotels.length} 个酒店`)
   } catch (error) {
     console.error('加载地图数据失败', error)
     // 优先使用后端返回的错误消息，其次使用 axios error message
@@ -493,55 +688,117 @@ const loadMapData = async () => {
   }
 }
 
-// 加载AI使用的文本数据
-const loadMarkersText = async () => {
-  try {
-    const res: any = await request.get('/map/markers/text')
-    if (res.code === 200 && res.data) {
-      markersText.value = res.data
+const buildChatHistory = () => {
+  return messages.value
+    .filter(message => message.content.trim())
+    .slice(-8)
+    .map(message => ({
+      role: message.role === 'assistant' ? 'assistant' : 'user',
+      content: message.content
+    }))
+}
+
+const appendMessage = (index: number, content: string) => {
+  const target = messages.value[index]
+  if (!target) return
+  target.content += content
+  scrollToBottom()
+}
+
+const consumeSseBuffer = (buffer: string, onMessage: (data: string) => void, flush = false) => {
+  const normalized = buffer.replace(/\r\n/g, '\n')
+  const events = normalized.split('\n\n')
+  const rest = flush ? '' : events.pop() || ''
+
+  for (const eventText of events) {
+    const lines = eventText.split('\n')
+    const eventName = lines
+      .find(line => line.startsWith('event:'))
+      ?.slice(6)
+      .trim()
+    const data = lines
+      .filter(line => line.startsWith('data:'))
+      .map(line => line.slice(5).replace(/^ /, ''))
+      .join('\n')
+
+    if (!data || data === '[DONE]' || eventName === 'done') {
+      continue
     }
+    if (eventName === 'error') {
+      throw new Error(decodeSseData(data) || 'AI服务错误')
+    }
+    onMessage(decodeSseData(data))
+  }
+
+  return rest
+}
+
+const decodeSseData = (data: string) => {
+  try {
+    const parsed = JSON.parse(data)
+    return typeof parsed === 'string' ? parsed : data
   } catch (error) {
-    console.error('加载文本数据失败', error)
-    // 优先使用后端返回的错误消息
-    const errorMsg = error?.response?.data?.message || error?.message || '加载文本数据失败'
-    ElMessage.error(errorMsg)
+    return data
   }
 }
 
-// 发送消息给AI（非流式）
+// 发送消息给AI（SSE流式）
 const sendMessage = async () => {
-  if (!inputMessage.value.trim()) return
+  if (!inputMessage.value.trim() || loading.value) return
 
+  const history = buildChatHistory()
+  const question = inputMessage.value.trim()
   messages.value.push({
     role: 'user',
-    content: inputMessage.value
+    content: question
   })
 
-  const question = inputMessage.value
   inputMessage.value = ''
   loading.value = true
+  const assistantIndex = messages.value.length
+  messages.value.push({
+    role: 'assistant',
+    content: ''
+  })
+  scrollToBottom()
 
   try {
     console.log('发送给AI的问题:', question)
 
-    // 调用非流式API
-    const res: any = await request.post('/ai/chat', {
-      question: question
+    const response = await fetch('/api/ai/chat/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'auth-token': localStorage.getItem('auth-token') || ''
+      },
+      body: JSON.stringify({ question, history })
     })
 
-    console.log('AI响应:', res)
-
-    if (res.code === 200 && res.data) {
-      messages.value.push({
-        role: 'assistant',
-        content: res.data
-      })
-    } else {
+    if (!response.ok || !response.body) {
       throw new Error('AI响应失败')
     }
 
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      buffer = consumeSseBuffer(buffer, data => {
+        appendMessage(assistantIndex, data)
+      })
+    }
+
+    buffer += decoder.decode()
+    consumeSseBuffer(buffer, data => {
+      appendMessage(assistantIndex, data)
+    }, true)
+
   } catch (error) {
     console.error('AI服务错误', error)
+    messages.value.splice(assistantIndex, 1)
 
     // 降级：使用简单的规则回复
     const attractionNames = markers.value.filter(m => m.type === 'attraction').slice(0, 3).map(m => m.name).join('、')
@@ -559,11 +816,15 @@ const sendMessage = async () => {
 
 // 组件挂载时加载数据并初始化地图
 onMounted(async () => {
-  await loadMapData()
-  await loadMarkersText()
   nextTick(() => {
     initRealMap()
   })
+  await loadMapData()
+})
+
+onBeforeUnmount(() => {
+  stopPanelResize()
+  window.cancelAnimationFrame(resizeFrameId)
 })
 
 // 保存行程
@@ -636,7 +897,7 @@ const saveItinerary = async () => {
         description: `第${day.day}天`,
         items: day.items.map((item, itemIndex) => ({
           type: item.type,
-          refId: item.id,
+          refId: item.refId || normalizeResourceId(item.id),
           name: item.name,
           startTime: item.time ? new Date(item.time).toTimeString().split(' ')[0].substring(0, 5) : '09:00',
           duration: 120, // 默认2小时
@@ -763,12 +1024,16 @@ const goBack = () => router.back()
   .panels-container {
     width: 100%;
     height: 100%;
-    display: flex;
+    display: grid;
     border-radius: 16px;
     background: white;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
     overflow: hidden;
     border: 1px solid rgba(26, 95, 74, 0.1);
+
+    &.is-resizing {
+      cursor: col-resize;
+    }
   }
 
   .panel {
@@ -779,22 +1044,49 @@ const goBack = () => router.back()
   }
 
   .left-panel {
-    width: 20%;
-    min-width: 200px;
-    flex-shrink: 0;
+    min-width: 0;
     border-right: 1px solid #e5e7eb;
   }
 
   .map-panel-wrapper {
-    flex: 1;
-    min-width: 400px;
+    min-width: 0;
   }
 
   .right-panel {
-    width: 20%;
-    min-width: 250px;
-    flex-shrink: 0;
+    min-width: 0;
     border-left: 1px solid #e5e7eb;
+  }
+
+  .panel-resizer {
+    position: relative;
+    height: 100%;
+    cursor: col-resize;
+    background: #e5e7eb;
+    touch-action: none;
+    transition: background 0.2s ease;
+    z-index: 2;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 28px;
+      height: 100%;
+      border-radius: 999px;
+      background: transparent;
+      transform: translate(-50%, -50%);
+      transition: background 0.2s ease;
+    }
+
+    &:hover,
+    &:active {
+      background: #2d8b6f;
+
+      &::before {
+        background: rgba(45, 139, 111, 0.12);
+      }
+    }
   }
 }
 
@@ -816,11 +1108,34 @@ const goBack = () => router.back()
   border-radius: 0 12px 12px 0;
 }
 
+.right-panel {
+  .panel-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+
+    .day-actions {
+      width: 100%;
+
+      .el-select {
+        flex: 1;
+        min-width: 108px;
+      }
+
+      .el-button {
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+.map-panel-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
 .left-panel,
 .right-panel {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -830,12 +1145,39 @@ const goBack = () => router.back()
 .map-panel {
   flex: 1;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .main-container {
+    height: auto;
+    overflow: auto;
+
+    .panels-container {
+      display: flex;
+      flex-direction: column;
+      overflow: visible;
+    }
+
+    .panel {
+      min-height: 420px;
+    }
+
+    .panel-resizer {
+      display: none;
+    }
+
+    .left-panel,
+    .map-panel-wrapper,
+    .right-panel {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+    }
+  }
 }
 
 .panel-header {
@@ -844,11 +1186,22 @@ const goBack = () => router.back()
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
 
   h3 {
     margin: 0;
     font-size: 16px;
     color: #333;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .day-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
   }
 }
 
@@ -1403,16 +1756,27 @@ const goBack = () => router.back()
 
 .day-section {
   margin-bottom: 24px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 2px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+
+  &.active {
+    border-color: #2d8b6f;
+    background: rgba(45, 139, 111, 0.06);
+  }
 
   .day-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
     margin-bottom: 12px;
     padding: 10px 14px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    cursor: pointer;
 
     h4 {
       margin: 0;
@@ -1422,10 +1786,12 @@ const goBack = () => router.back()
       display: flex;
       align-items: center;
       gap: 8px;
+      min-width: 0;
 
       &::before {
         content: '📅';
         font-size: 18px;
+        flex-shrink: 0;
       }
     }
 
@@ -1436,6 +1802,8 @@ const goBack = () => router.back()
       display: flex;
       align-items: center;
       gap: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
 
       &::before {
         content: '💰';
@@ -1480,7 +1848,7 @@ const goBack = () => router.back()
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 80px;
+  min-height: 80px;
   padding: 10px 12px;
   background: white;
   border-radius: 10px;
@@ -1525,6 +1893,7 @@ const goBack = () => router.back()
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
 
     .item-icon {
       font-size: 24px;
@@ -1547,6 +1916,9 @@ const goBack = () => router.back()
         color: #1e293b;
         font-size: 14px;
         margin-bottom: 3px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .item-address {
@@ -1558,7 +1930,7 @@ const goBack = () => router.back()
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        max-width: 5em;
+        width: 100%;
 
         &::before {
           content: '📍';
@@ -1591,15 +1963,17 @@ const goBack = () => router.back()
   border-top: 2px solid #e5e7eb;
   display: flex;
   justify-content: space-around;
+  gap: 16px;
   background: linear-gradient(to bottom, white, #f9fafb);
 
   .summary-item {
+    flex: 1;
     text-align: center;
     padding: 12px 20px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    min-width: 100px;
+    min-width: 0;
     transition: all 0.3s ease;
 
     &:hover {
@@ -1661,6 +2035,16 @@ const goBack = () => router.back()
     color: #475569;
     font-size: 14px;
     line-height: 1.6;
+  }
+
+  .dialog-day-selector {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    color: #4b5563;
+    font-weight: 600;
   }
 }
 

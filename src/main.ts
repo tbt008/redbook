@@ -7,6 +7,7 @@ import 'element-plus/dist/index.css'
 import './styles/theme.css'
 import './styles/admin-theme.scss'
 import './styles/experience-theme.scss'
+import './styles/loading-skeleton.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 // 导入中文语言包
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'

@@ -31,7 +31,7 @@
             </div>
           </div>
 
-          <div v-if="loading" class="message assistant">
+          <div v-if="loading && !hasStreamingContent" class="message assistant">
             <div class="message-content">
               <div class="avatar">🤖</div>
               <div class="bubble">
@@ -126,6 +126,10 @@ const messagesRef = ref()
 const suggestions = ref<string[]>([])
 
 const showSuggestions = computed(() => messages.value.length <= 1)
+const hasStreamingContent = computed(() => {
+  const lastMessage = messages.value[messages.value.length - 1]
+  return loading.value && lastMessage?.role === 'assistant' && Boolean(lastMessage.content)
+})
 
 // 建议问题图标
 const getSuggestionIcon = (index: number) => {
@@ -174,6 +178,23 @@ const addMessage = (role: 'user' | 'assistant', content: string) => {
   scrollToBottom()
 }
 
+const appendMessage = (index: number, content: string) => {
+  const target = messages.value[index]
+  if (!target) return
+  target.content += content
+  scrollToBottom()
+}
+
+const buildChatHistory = () => {
+  return messages.value
+    .filter((message) => message.content.trim())
+    .slice(-8)
+    .map((message) => ({
+      role: message.role,
+      content: message.content
+    }))
+}
+
 // 发送消息
 const handleSend = () => {
   if (!inputMessage.value.trim()) return
@@ -182,23 +203,88 @@ const handleSend = () => {
 }
 
 const sendMessage = async (question: string) => {
+  const history = buildChatHistory()
   // 添加用户消息
   addMessage('user', question)
 
   loading.value = true
+  const assistantIndex = messages.value.length
+  addMessage('assistant', '')
 
   try {
-    const res: any = await request.post('/ai/chat', { question })
+    const response = await fetch('/api/ai/chat/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'auth-token': localStorage.getItem('auth-token') || ''
+      },
+      body: JSON.stringify({ question, history })
+    })
 
-    if (res && res.data) {
-      // 添加AI回答
-      addMessage('assistant', res.data)
+    if (!response.ok || !response.body) {
+      throw new Error('AI服务暂时不可用')
     }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      buffer = consumeSseBuffer(buffer, (data) => {
+        appendMessage(assistantIndex, data)
+      })
+    }
+
+    buffer += decoder.decode()
+    consumeSseBuffer(buffer, (data) => {
+      appendMessage(assistantIndex, data)
+    }, true)
   } catch (error: any) {
     ElMessage.error(error.message || 'AI服务暂时不可用')
+    messages.value.splice(assistantIndex, 1)
     addMessage('assistant', '抱歉，我现在有点忙，请稍后再试 😅')
   } finally {
     loading.value = false
+  }
+}
+
+const consumeSseBuffer = (buffer: string, onMessage: (data: string) => void, flush = false) => {
+  const normalized = buffer.replace(/\r\n/g, '\n')
+  const events = normalized.split('\n\n')
+  const rest = flush ? '' : events.pop() || ''
+
+  for (const eventText of events) {
+    const lines = eventText.split('\n')
+    const eventName = lines
+      .find((line) => line.startsWith('event:'))
+      ?.slice(6)
+      .trim()
+    const data = lines
+      .filter((line) => line.startsWith('data:'))
+      .map((line) => line.slice(5).replace(/^ /, ''))
+      .join('\n')
+
+    if (!data || data === '[DONE]' || eventName === 'done') {
+      continue
+    }
+    if (eventName === 'error') {
+      throw new Error(decodeSseData(data) || 'AI服务错误')
+    }
+    onMessage(decodeSseData(data))
+  }
+
+  return rest
+}
+
+const decodeSseData = (data: string) => {
+  try {
+    const parsed = JSON.parse(data)
+    return typeof parsed === 'string' ? parsed : data
+  } catch (error) {
+    return data
   }
 }
 
@@ -530,4 +616,3 @@ const goBack = () => router.back()
   }
 }
 </style>
-

@@ -66,6 +66,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import request from '@/util/request'
+import { formatDateOnly, type DateInput } from '@/utils/date'
 
 const router = useRouter()
 const loading = ref(false)
@@ -129,15 +130,7 @@ const getArticleTypeLabel = (type: number) => {
 }
 
 // 格式化日期
-const formatDate = (dateArray: number[]) => {
-  if (!dateArray) return 'error'
-  const date = new Date(dateArray[0], dateArray[1] - 1, dateArray[2])
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }).format(date)
-}
+const formatDate = (dateArray: DateInput) => formatDateOnly(dateArray, '时间待确认')
 
 // 获取文章列表
 const getArticleList = async () => {

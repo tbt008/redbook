@@ -38,7 +38,7 @@ onMounted(() => {
         <aside class="profile-sidebar">
           <div class="profile-card">
             <img
-              :src="userInfo.avatar || 'https://via.placeholder.com/80x80?text=U'"
+              :src="userInfo.avatar || '/local-images/default-avatar.svg'"
               class="profile-avatar"
               alt="avatar"
             />

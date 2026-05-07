@@ -29,17 +29,17 @@
 
     <!-- 景点列表 -->
     <el-card class="table-card">
-      <el-table :data="attractionList" v-loading="loading" stripe>
+      <el-table :data="attractionList" v-loading="loading" stripe class="attraction-table">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="景点信息" width="300">
           <template #default="{ row }">
             <div class="attraction-info">
-              <el-image :src="row.images ? JSON.parse(row.images)[0] : ''" :preview-src-list="row.images ? JSON.parse(row.images) : []" fit="cover" style="width: 80px; height: 60px; border-radius: 4px">
+              <el-image :src="row.images ? JSON.parse(row.images)[0] : ''" :preview-src-list="row.images ? JSON.parse(row.images) : []" fit="cover" class="attraction-cover">
                 <template #error>
                   <div class="image-slot"><el-icon><Picture /></el-icon></div>
                 </template>
               </el-image>
-              <div class="attraction-detail">
+              <div class="merchant-attraction-meta">
                 <div class="name">{{ row.name }}</div>
                 <div class="address">{{ row.region }} - {{ row.address }}</div>
               </div>
@@ -69,14 +69,20 @@
             <el-tag v-else type="danger">下架</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column prop="createTime" label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="warning" size="small" @click="handleManageTickets(row)">票种管理</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
-            <el-button link type="success" size="small" @click="handleStatusChange(row)" v-if="row.status === 0">上架</el-button>
-            <el-button link type="info" size="small" @click="handleStatusChange(row)" v-if="row.status === 1">下架</el-button>
+            <div class="row-actions">
+              <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+              <el-button link type="warning" size="small" @click="handleManageTickets(row)">票种管理</el-button>
+              <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+              <el-button link type="success" size="small" @click="handleStatusChange(row)" v-if="row.status === 0">上架</el-button>
+              <el-button link type="info" size="small" @click="handleStatusChange(row)" v-if="row.status === 1">下架</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -110,13 +116,34 @@
           </el-select>
         </el-form-item>
         <el-form-item label="详细地址" prop="address">
-          <el-input v-model="attractionForm.address" placeholder="请输入详细地址" />
+          <MapLocationPicker
+            v-model:address="attractionForm.address"
+            v-model:longitude="attractionForm.longitude"
+            v-model:latitude="attractionForm.latitude"
+            v-model:region="attractionForm.region"
+          />
         </el-form-item>
         <el-form-item label="开放时间" prop="openTime">
-          <el-input v-model="attractionForm.openTime" placeholder="如：08:00-18:00" />
+          <el-time-picker
+            v-model="attractionOpenTimeRange"
+            is-range
+            range-separator="至"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+            format="HH:mm"
+            value-format="HH:mm"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="联系电话" prop="contactPhone">
-          <el-input v-model="attractionForm.contactPhone" placeholder="请输入联系电话" />
+          <el-input
+            v-model="attractionForm.contactPhone"
+            placeholder="请输入11位手机号"
+            maxlength="11"
+            show-word-limit
+            inputmode="numeric"
+            @input="attractionForm.contactPhone = normalizeMobilePhone($event)"
+          />
         </el-form-item>
         <el-form-item label="景点描述" prop="description">
           <el-input v-model="attractionForm.description" type="textarea" :rows="3" placeholder="请输入景点描述" />
@@ -241,6 +268,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { Picture, Delete, Plus } from '@element-plus/icons-vue'
 import request from '@/util/request'
+import { formatOpenTimeRange, normalizeMobilePhone, parseOpenTimeRange, validateMobilePhone } from '@/utils/attractionForm'
+import MapLocationPicker from '@/components/MapLocationPicker.vue'
+import { formatDateTime } from '@/util/datetime'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -279,6 +309,8 @@ const attractionForm = reactive({
   name: '',
   region: '',
   address: '',
+  longitude: null as number | null,
+  latitude: null as number | null,
   openTime: '',
   contactPhone: '',
   description: '',
@@ -296,8 +328,17 @@ const imageList = computed(() => {
 const formRules = {
   name: [{ required: true, message: '请输入景点名称', trigger: 'blur' }],
   region: [{ required: true, message: '请选择地区', trigger: 'change' }],
-  address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }]
+  address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
+  openTime: [{ required: true, message: '请选择开放时间', trigger: 'change' }],
+  contactPhone: [{ validator: validateMobilePhone, trigger: 'blur' }]
 }
+
+const attractionOpenTimeRange = computed({
+  get: () => parseOpenTimeRange(attractionForm.openTime),
+  set: (value: string[]) => {
+    attractionForm.openTime = formatOpenTimeRange(value)
+  }
+})
 
 // 票种表单
 const ticketForm = reactive({
@@ -358,6 +399,8 @@ const handleAdd = () => {
   attractionForm.name = ''
   attractionForm.region = ''
   attractionForm.address = ''
+  attractionForm.longitude = null
+  attractionForm.latitude = null
   attractionForm.openTime = ''
   attractionForm.contactPhone = ''
   attractionForm.description = ''
@@ -372,8 +415,10 @@ const handleEdit = (row: any) => {
   attractionForm.name = row.name
   attractionForm.region = row.region
   attractionForm.address = row.address
+  attractionForm.longitude = row.longitude || null
+  attractionForm.latitude = row.latitude || null
   attractionForm.openTime = row.openTime || ''
-  attractionForm.contactPhone = row.contactPhone || ''
+  attractionForm.contactPhone = normalizeMobilePhone(row.contactPhone)
   attractionForm.description = row.description || ''
   attractionForm.images = row.images || '[]'
 
@@ -617,20 +662,97 @@ onMounted(() => {
   }
 
   .table-card {
+    .attraction-table {
+      :deep(.el-table__inner-wrapper::before) {
+        display: none;
+      }
+
+      :deep(.el-table__body-wrapper),
+      :deep(.el-scrollbar__view),
+      :deep(.el-table__body),
+      :deep(.el-table__body tbody),
+      :deep(.el-table__fixed-body-wrapper tbody) {
+        height: auto !important;
+      }
+
+      :deep(.el-table__body) {
+        table-layout: fixed;
+      }
+
+      :deep(.el-table__body-wrapper td),
+      :deep(.el-table__fixed-body-wrapper td) {
+        height: 92px !important;
+        padding: 12px 0 !important;
+        vertical-align: middle;
+      }
+
+      :deep(.el-table__body .el-table__cell) {
+        height: 92px !important;
+        vertical-align: middle;
+      }
+
+      :deep(.el-table__body .cell) {
+        display: flex;
+        align-items: center;
+        min-height: 68px;
+        overflow: hidden;
+      }
+
+      :deep(.el-table__row),
+      :deep(.el-table__row .el-table__cell) {
+        height: 92px !important;
+        max-height: 92px !important;
+      }
+
+      :deep(.el-rate) {
+        height: 24px;
+        line-height: 24px;
+        overflow: hidden;
+      }
+
+      :deep(.el-table-fixed-column--right),
+      :deep(.el-table__fixed-right),
+      :deep(.el-table__fixed-right-patch) {
+        background: #fff;
+        z-index: 3;
+      }
+    }
+
     .attraction-info {
       display: flex;
       align-items: center;
       gap: 12px;
+      width: 100%;
+      height: 68px;
+      min-height: 60px;
+      overflow: hidden;
 
-      .attraction-detail {
+      .attraction-cover {
+        flex: 0 0 80px;
+        width: 80px;
+        height: 60px !important;
+        max-height: 60px;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .merchant-attraction-meta {
+        min-width: 0;
+
         .name {
           font-weight: 600;
           margin-bottom: 4px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .address {
           font-size: 12px;
           color: #999;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       }
     }
@@ -643,6 +765,19 @@ onMounted(() => {
     .no-data {
       color: #999;
       font-size: 12px;
+    }
+
+    .row-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      white-space: nowrap;
+
+      :deep(.el-button) {
+        margin-left: 0;
+      }
     }
   }
 

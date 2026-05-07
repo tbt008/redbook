@@ -33,7 +33,7 @@ export const createTicketDraft = (): TicketDraft => ({
 export const parseOpenTimeRange = (openTime?: string) => {
   if (!openTime) return []
   const values = openTime
-    .split('-')
+    .split(/\s*(?:-|–|—|至|~)\s*/)
     .map(item => item.trim())
     .filter(Boolean)
   return values.length === 2 ? values : []
@@ -42,4 +42,17 @@ export const parseOpenTimeRange = (openTime?: string) => {
 export const formatOpenTimeRange = (value?: string[]) => {
   if (!value || value.length !== 2) return ''
   return `${value[0]}-${value[1]}`
+}
+
+export const MOBILE_PHONE_LENGTH = 11
+
+export const normalizeMobilePhone = (value?: string | number | null) =>
+  String(value ?? '').replace(/\D/g, '').slice(0, MOBILE_PHONE_LENGTH)
+
+export const validateMobilePhone = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+  if (!value || /^\d{11}$/.test(value)) {
+    callback()
+    return
+  }
+  callback(new Error('请输入11位手机号'))
 }

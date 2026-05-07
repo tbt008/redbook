@@ -39,7 +39,7 @@
           <template v-if="isLogin">
             <el-dropdown @command="handleCommand">
               <div class="user-avatar-wrapper">
-                <el-avatar :src="userInfo.avatar || '/default-avatar.png'" :size="36">
+                <el-avatar :src="userInfo.avatar || '/local-images/default-avatar.svg'" :size="36">
                   {{ displayUserName.slice(0, 1) }}
                 </el-avatar>
                 <span class="user-name">{{ displayUserName }}</span>

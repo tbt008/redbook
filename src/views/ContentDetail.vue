@@ -8,8 +8,8 @@
         <div class="content-main">
           <h1 class="title">{{ content.title }}</h1>
           
-          <div class="author-info">
-            <el-avatar :src="resolveAvatar(content)" :size="40">
+          <div class="author-info" @click="goUserProfile(content)">
+            <el-avatar :src="resolveAvatar(content)" :size="40" class="clickable-avatar">
               {{ getAvatarText(getDisplayName(content)) }}
             </el-avatar>
             <div class="author-detail">
@@ -34,8 +34,7 @@
             <div class="text-content markdown-body" v-html="renderedContent"></div>
           </div>
 
-          <div class="tags">
-            <el-tag type="danger" effect="dark">攻略</el-tag>
+          <div v-if="displayTags.length" class="tags">
             <el-tag v-for="tag in displayTags" :key="tag" type="info">{{ tag }}</el-tag>
           </div>
 
@@ -55,13 +54,19 @@
             <h3>评论 ({{ comments.length }})</h3>
             
             <div v-if="isLogin" class="comment-input">
+              <div v-if="replyingTo" class="reply-tip">
+                正在回复 {{ getDisplayName(replyingTo) }}
+                <el-button text size="small" @click="cancelReply">取消回复</el-button>
+              </div>
               <el-input
                 v-model="commentText"
                 type="textarea"
                 :rows="3"
-                placeholder="写下你的评论..."
+                :placeholder="replyingTo ? `回复 ${getDisplayName(replyingTo)}...` : '写下你的评论...'"
               />
-              <el-button type="primary" @click="submitComment" :loading="submitting">发表评论</el-button>
+              <el-button type="primary" @click="submitComment" :loading="submitting">
+                {{ replyingTo ? '发表回复' : '发表评论' }}
+              </el-button>
             </div>
             <div v-else class="login-tip">
               <el-link type="primary" @click="goLogin">登录后发表评论</el-link>
@@ -69,7 +74,12 @@
 
             <div class="comments-list">
               <div v-for="comment in comments" :key="comment.id" class="comment-item">
-                <el-avatar :src="resolveAvatar(comment)" :size="36">
+                <el-avatar
+                  :src="resolveAvatar(comment)"
+                  :size="36"
+                  class="clickable-avatar"
+                  @click.stop="goUserProfile(comment)"
+                >
                   {{ getAvatarText(getDisplayName(comment)) }}
                 </el-avatar>
                 <div class="comment-content">
@@ -79,10 +89,56 @@
                   </div>
                   <div class="comment-text">{{ comment.content }}</div>
                   <div class="comment-actions">
-                    <el-button text :icon="Star" @click="likeComment(comment)">
+                    <el-button
+                      text
+                      :icon="Pointer"
+                      class="comment-like-button"
+                      :class="{ liked: comment.liked }"
+                      @click="toggleCommentLike(comment)"
+                    >
                       {{ comment.likeCount }}
                     </el-button>
-                    <el-button text @click="replyComment(comment)">回复</el-button>
+                    <el-button text @click="replyComment(comment, comment)">回复</el-button>
+                    <el-button
+                      v-if="comment.canDelete"
+                      text
+                      type="danger"
+                      :icon="Delete"
+                      @click="deleteComment(comment)"
+                    >
+                      删除
+                    </el-button>
+                  </div>
+                  <div v-if="comment.replies?.length" class="reply-list">
+                    <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                      <el-avatar
+                        :src="resolveAvatar(reply)"
+                        :size="28"
+                        class="clickable-avatar"
+                        @click.stop="goUserProfile(reply)"
+                      >
+                        {{ getAvatarText(getDisplayName(reply)) }}
+                      </el-avatar>
+                      <div class="reply-body">
+                        <div class="comment-header">
+                          <span class="username">{{ getDisplayName(reply) }}</span>
+                          <span class="time">{{ formatTime(reply.createTime) }}</span>
+                        </div>
+                        <div class="comment-text">{{ reply.content }}</div>
+                        <div class="comment-actions">
+                          <el-button text @click="replyComment(reply, comment)">回复</el-button>
+                          <el-button
+                            v-if="reply.canDelete"
+                            text
+                            type="danger"
+                            :icon="Delete"
+                            @click="deleteComment(reply)"
+                          >
+                            删除
+                          </el-button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -107,6 +163,7 @@
                   <div class="related-title">{{ item.title }}</div>
                   <div class="related-stats">
                     <span><el-icon><View /></el-icon> {{ item.viewCount }}</span>
+                    <span><el-icon><Collection /></el-icon> {{ item.collectCount || 0 }}</span>
                   </div>
                 </div>
               </div>
@@ -121,12 +178,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { Star, StarFilled, ChatDotRound, Share, View } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Star, StarFilled, ChatDotRound, Share, View, Pointer, Delete, Collection } from '@element-plus/icons-vue'
 import request from '@/util/request'
-import dayjs from 'dayjs'
 import { renderMarkdown } from '@/utils/markdown'
 import { extractDisplayTags } from '@/utils/contentTags'
+import { formatDateTime, type DateInput } from '@/utils/date'
 import TourismTopNav from '@/components/TourismTopNav.vue'
 
 const router = useRouter()
@@ -138,6 +195,8 @@ const content = ref<any>({})
 const comments = ref<any[]>([])
 const relatedList = ref<any[]>([])
 const commentText = ref('')
+const replyingTo = ref<any>(null)
+const replyRoot = ref<any>(null)
 const isLiked = ref(false)
 const isCollected = ref(false)
 const hasMoreComments = ref(false)
@@ -150,7 +209,7 @@ const isAuthor = computed(() => {
 })
 
 const renderedContent = computed(() => renderMarkdown(content.value?.content))
-const displayTags = computed(() => extractDisplayTags(content.value, ['tags', 'tagList', 'tagNames', 'labels', 'keywords']))
+const displayTags = computed(() => extractDisplayTags(content.value, ['tags', 'tagList', 'tagNames', 'labels', 'keywords', 'theme']))
 
 const getDisplayName = (target: any) => {
   if (!target) return '平台用户'
@@ -168,6 +227,11 @@ const getDisplayName = (target: any) => {
 const resolveAvatar = (target: any) => {
   if (!target) return ''
   return target.authorAvatar || target.userAvatar || target.avatar || target.user?.avatar || ''
+}
+
+const resolveUserId = (target: any) => {
+  if (!target) return ''
+  return target.authorId || target.userId || target.uid || target.user?.id || target.user?.uid || ''
 }
 
 const getAvatarText = (name?: string) => name?.trim()?.charAt(0) || '游'
@@ -209,7 +273,7 @@ const loadComments = async () => {
       params: {
         contentId: route.params.id,
         contentType: 1, // 1表示内容类型
-        current: commentPage.value,
+        pageNum: commentPage.value,
         pageSize: 10
       }
     })
@@ -334,12 +398,14 @@ const submitComment = async () => {
       contentId: Number(route.params.id),
       contentType: 1, // 1表示内容类型
       content: commentText.value,
-      parentId: null,
+      parentId: replyRoot.value?.id || null,
       status: 1 // 1表示已发布
     })
     if (res.code === 200) {
-      ElMessage.success('评论成功')
+      ElMessage.success(replyingTo.value ? '回复成功' : '评论成功')
       commentText.value = ''
+      replyingTo.value = null
+      replyRoot.value = null
       commentPage.value = 1
       loadComments()
       // 更新评论数
@@ -348,7 +414,7 @@ const submitComment = async () => {
       }
     }
   } catch (error: any) {
-    ElMessage.error(error.message || '评论失败')
+    if (!error.messageShown) ElMessage.error(error.message || '评论失败')
   } finally {
     submitting.value = false
   }
@@ -360,37 +426,88 @@ const loadMoreComments = () => {
   loadComments()
 }
 
-// 点赞评论
-const likeComment = async (comment: any) => {
+// 切换评论点赞
+const toggleCommentLike = async (comment: any) => {
   if (!isLogin.value) {
     goLogin()
     return
   }
   try {
-    const res: any = await request.post(`/comment/like/${comment.id}`)
-    if (res.code === 200) {
-      comment.likeCount = (comment.likeCount || 0) + 1
-      ElMessage.success('点赞成功')
+    if (comment.liked) {
+      const res: any = await request.delete(`/comment/like/${comment.id}`)
+      if (res.code === 200) {
+        comment.liked = false
+        comment.likeCount = Math.max(0, (comment.likeCount || 0) - 1)
+        ElMessage.success('取消点赞')
+      }
+    } else {
+      const res: any = await request.post(`/comment/like/${comment.id}`)
+      if (res.code === 200) {
+        comment.liked = true
+        comment.likeCount = (comment.likeCount || 0) + 1
+        ElMessage.success('点赞成功')
+      }
     }
   } catch (error: any) {
+    if (error.message && error.message.includes('已点赞')) {
+      comment.liked = true
+    }
     ElMessage.error(error.message || '操作失败')
   }
 }
 
 // 回复评论
-const replyComment = (comment: any) => {
-  commentText.value = `@${comment.userName} `
+const replyComment = (comment: any, rootComment: any) => {
+  if (!isLogin.value) {
+    goLogin()
+    return
+  }
+  replyingTo.value = comment
+  replyRoot.value = rootComment
+  commentText.value = `@${getDisplayName(comment)} `
+}
+
+const cancelReply = () => {
+  replyingTo.value = null
+  replyRoot.value = null
+  commentText.value = ''
+}
+
+const deleteComment = async (comment: any) => {
+  try {
+    await ElMessageBox.confirm('确定删除这条评论吗？', '删除评论', { type: 'warning' })
+    const res: any = await request.delete(`/comment/delete/${comment.id}`)
+    if (res.code === 200) {
+      ElMessage.success('删除成功')
+      commentPage.value = 1
+      loadComments()
+      if (content.value.commentCount !== undefined) {
+        content.value.commentCount = Math.max(0, content.value.commentCount - 1)
+      }
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
 }
 
 // 格式化时间
-const formatTime = (time: string) => {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
-}
+const formatTime = (time: DateInput) => formatDateTime(time, '-', 'YYYY-MM-DD HH:mm')
 
 // 跳转详情
 const goDetail = (id: number) => {
   router.push(`/content/${id}`)
   loadContent()
+}
+
+const goUserProfile = (target: any) => {
+  const userId = resolveUserId(target)
+  if (!userId) {
+    ElMessage.warning('暂未获取到用户信息')
+    return
+  }
+  router.push(`/user/${userId}`)
 }
 
 const goBack = () => router.back()
@@ -461,6 +578,14 @@ onMounted(() => {
     align-items: center;
     gap: 12px;
     margin-bottom: 16px;
+    width: fit-content;
+    cursor: pointer;
+
+    &:hover {
+      .author-name {
+        color: #409eff;
+      }
+    }
 
     .author-detail {
       min-width: 0;
@@ -590,6 +715,16 @@ onMounted(() => {
   }
 }
 
+.clickable-avatar {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(64, 158, 255, 0.22);
+  }
+}
+
 .comments-section {
   margin-top: 32px;
 
@@ -599,6 +734,15 @@ onMounted(() => {
 
   .comment-input {
     margin-bottom: 24px;
+
+    .reply-tip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: #606266;
+      font-size: 13px;
+    }
 
     .el-button {
       margin-top: 12px;
@@ -646,6 +790,35 @@ onMounted(() => {
         .comment-actions {
           display: flex;
           gap: 16px;
+
+          .comment-like-button {
+            color: #606266;
+
+            &.liked {
+              color: #0f8f73;
+            }
+          }
+        }
+
+        .reply-list {
+          margin-top: 12px;
+          padding: 12px;
+          background: #f8f9fb;
+          border-radius: 8px;
+
+          .reply-item {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+
+            &:not(:last-child) {
+              border-bottom: 1px solid #e9edf3;
+            }
+
+            .reply-body {
+              flex: 1;
+            }
+          }
         }
       }
     }
@@ -707,4 +880,3 @@ onMounted(() => {
   }
 }
 </style>
-

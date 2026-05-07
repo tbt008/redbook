@@ -202,10 +202,10 @@ const features = ref([
 
 // 技术栈
 const techStack = ref([
-  { name: 'Vue 3', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/vuedotjs.svg', url: 'https://vuejs.org/' },
-  { name: 'TypeScript', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/typescript.svg', url: 'https://www.typescriptlang.org/' },
-  { name: 'Element Plus', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/element.svg', url: 'https://element-plus.org/' },
-  { name: 'Spring Boot', icon: 'https://cdn.jsdelivr.net/npm/simple-icons/icons/springboot.svg', url: 'https://spring.io/projects/spring-boot' }
+  { name: 'Vue 3', icon: '/local-images/icons/vuedotjs.svg', url: 'https://vuejs.org/' },
+  { name: 'TypeScript', icon: '/local-images/icons/typescript.svg', url: 'https://www.typescriptlang.org/' },
+  { name: 'Element Plus', icon: '/local-images/icons/element.svg', url: 'https://element-plus.org/' },
+  { name: 'Spring Boot', icon: '/local-images/icons/springboot.svg', url: 'https://spring.io/projects/spring-boot' }
 ]);
 
 // 联系方式

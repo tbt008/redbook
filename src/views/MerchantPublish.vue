@@ -45,15 +45,12 @@
           </el-form-item>
 
           <el-form-item label="详细地址" prop="address">
-            <el-input v-model="attractionForm.address" placeholder="请输入详细地址" />
-          </el-form-item>
-
-          <el-form-item label="经度">
-            <el-input v-model.number="attractionForm.longitude" placeholder="请输入经度" type="number" />
-          </el-form-item>
-
-          <el-form-item label="纬度">
-            <el-input v-model.number="attractionForm.latitude" placeholder="请输入纬度" type="number" />
+            <MapLocationPicker
+              v-model:address="attractionForm.address"
+              v-model:longitude="attractionForm.longitude"
+              v-model:latitude="attractionForm.latitude"
+              v-model:region="attractionForm.region"
+            />
           </el-form-item>
 
           <el-form-item label="景点图片">
@@ -83,7 +80,16 @@
           </el-form-item>
 
           <el-form-item label="开放时间" prop="openTime">
-            <el-input v-model="attractionForm.openTime" placeholder="如：08:00-18:00" />
+            <el-time-picker
+              v-model="attractionOpenTimeRange"
+              is-range
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              format="HH:mm"
+              value-format="HH:mm"
+              style="width: 100%"
+            />
           </el-form-item>
 
           <el-form-item label="门票价格">
@@ -93,7 +99,14 @@
           </el-form-item>
 
           <el-form-item label="联系电话" prop="contactPhone">
-            <el-input v-model="attractionForm.contactPhone" placeholder="请输入联系电话" />
+            <el-input
+              v-model="attractionForm.contactPhone"
+              placeholder="请输入11位手机号"
+              maxlength="11"
+              show-word-limit
+              inputmode="numeric"
+              @input="attractionForm.contactPhone = normalizeMobilePhone($event)"
+            />
           </el-form-item>
 
           <el-form-item>
@@ -120,15 +133,12 @@
           </el-form-item>
 
           <el-form-item label="详细地址" prop="address">
-            <el-input v-model="hotelForm.address" placeholder="请输入详细地址" />
-          </el-form-item>
-
-          <el-form-item label="经度">
-            <el-input v-model.number="hotelForm.longitude" placeholder="请输入经度" type="number" />
-          </el-form-item>
-
-          <el-form-item label="纬度">
-            <el-input v-model.number="hotelForm.latitude" placeholder="请输入纬度" type="number" />
+            <MapLocationPicker
+              v-model:address="hotelForm.address"
+              v-model:longitude="hotelForm.longitude"
+              v-model:latitude="hotelForm.latitude"
+              v-model:region="hotelForm.region"
+            />
           </el-form-item>
 
           <el-form-item label="酒店图片">
@@ -182,7 +192,14 @@
           </el-form-item>
 
           <el-form-item label="联系电话" prop="contactPhone">
-            <el-input v-model="hotelForm.contactPhone" placeholder="请输入联系电话" />
+            <el-input
+              v-model="hotelForm.contactPhone"
+              placeholder="请输入11位手机号"
+              maxlength="11"
+              show-word-limit
+              inputmode="numeric"
+              @input="hotelForm.contactPhone = normalizeMobilePhone($event)"
+            />
           </el-form-item>
 
           <el-form-item>
@@ -308,6 +325,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import request from '@/util/request'
+import { formatOpenTimeRange, normalizeMobilePhone, parseOpenTimeRange, validateMobilePhone } from '@/utils/attractionForm'
+import MapLocationPicker from '@/components/MapLocationPicker.vue'
 
 const router = useRouter()
 
@@ -341,8 +360,16 @@ const attractionRules = {
   region: [{ required: true, message: '请选择地区', trigger: 'change' }],
   address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
   description: [{ required: true, message: '请输入景点描述', trigger: 'blur' }],
-  openTime: [{ required: true, message: '请输入开放时间', trigger: 'blur' }]
+  openTime: [{ required: true, message: '请选择开放时间', trigger: 'change' }],
+  contactPhone: [{ validator: validateMobilePhone, trigger: 'blur' }]
 }
+
+const attractionOpenTimeRange = computed({
+  get: () => parseOpenTimeRange(attractionForm.openTime),
+  set: (value: string[]) => {
+    attractionForm.openTime = formatOpenTimeRange(value)
+  }
+})
 
 // 酒店表单
 const hotelFormRef = ref()
@@ -365,7 +392,8 @@ const hotelRules = {
   name: [{ required: true, message: '请输入酒店名称', trigger: 'blur' }],
   region: [{ required: true, message: '请选择地区', trigger: 'change' }],
   address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
-  description: [{ required: true, message: '请输入酒店描述', trigger: 'blur' }]
+  description: [{ required: true, message: '请输入酒店描述', trigger: 'blur' }],
+  contactPhone: [{ validator: validateMobilePhone, trigger: 'blur' }]
 }
 
 // 门票表单
@@ -778,4 +806,3 @@ onMounted(() => {
   }
 }
 </style>
-

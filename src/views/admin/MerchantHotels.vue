@@ -29,17 +29,17 @@
 
     <!-- 酒店列表 -->
     <el-card class="table-card">
-      <el-table :data="hotelList" v-loading="loading" stripe>
+      <el-table :data="hotelList" v-loading="loading" stripe class="hotel-table">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="酒店信息" width="300">
           <template #default="{ row }">
             <div class="hotel-info">
-              <el-image :src="row.images ? JSON.parse(row.images)[0] : ''" :preview-src-list="row.images ? JSON.parse(row.images) : []" fit="cover" style="width: 80px; height: 60px; border-radius: 4px">
+              <el-image :src="row.images ? JSON.parse(row.images)[0] : ''" :preview-src-list="row.images ? JSON.parse(row.images) : []" fit="cover" class="hotel-cover">
                 <template #error>
                   <div class="image-slot"><el-icon><Picture /></el-icon></div>
                 </template>
               </el-image>
-              <div class="hotel-detail">
+              <div class="merchant-hotel-meta">
                 <div class="name">{{ row.name }}</div>
                 <div class="address">{{ row.region }} - {{ row.address }}</div>
               </div>
@@ -73,14 +73,20 @@
             <el-tag v-else type="danger">下架</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column prop="createTime" label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="warning" size="small" @click="handleManageRooms(row)">房型管理</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
-            <el-button link type="success" size="small" @click="handleStatusChange(row)" v-if="row.status === 0">上架</el-button>
-            <el-button link type="info" size="small" @click="handleStatusChange(row)" v-if="row.status === 1">下架</el-button>
+            <div class="row-actions">
+              <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+              <el-button link type="warning" size="small" @click="handleManageRooms(row)">房型管理</el-button>
+              <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+              <el-button link type="success" size="small" @click="handleStatusChange(row)" v-if="row.status === 0">上架</el-button>
+              <el-button link type="info" size="small" @click="handleStatusChange(row)" v-if="row.status === 1">下架</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -114,13 +120,25 @@
           </el-select>
         </el-form-item>
         <el-form-item label="详细地址" prop="address">
-          <el-input v-model="hotelForm.address" placeholder="请输入详细地址" />
+          <MapLocationPicker
+            v-model:address="hotelForm.address"
+            v-model:longitude="hotelForm.longitude"
+            v-model:latitude="hotelForm.latitude"
+            v-model:region="hotelForm.region"
+          />
         </el-form-item>
         <el-form-item label="酒店星级" prop="starLevel">
           <el-rate v-model="hotelForm.starLevel" :max="5" />
         </el-form-item>
         <el-form-item label="联系电话" prop="contactPhone">
-          <el-input v-model="hotelForm.contactPhone" placeholder="请输入联系电话" />
+          <el-input
+            v-model="hotelForm.contactPhone"
+            placeholder="请输入11位手机号"
+            maxlength="11"
+            show-word-limit
+            inputmode="numeric"
+            @input="hotelForm.contactPhone = normalizeMobilePhone($event)"
+          />
         </el-form-item>
         <el-form-item label="酒店描述" prop="description">
           <el-input v-model="hotelForm.description" type="textarea" :rows="3" placeholder="请输入酒店描述" />
@@ -290,6 +308,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { Picture, Delete, Plus } from '@element-plus/icons-vue'
 import request from '@/util/request'
+import MapLocationPicker from '@/components/MapLocationPicker.vue'
+import { normalizeMobilePhone, validateMobilePhone } from '@/utils/attractionForm'
+import { formatDateTime } from '@/util/datetime'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -329,6 +350,8 @@ const hotelForm = reactive({
   name: '',
   region: '',
   address: '',
+  longitude: null as number | null,
+  latitude: null as number | null,
   price: 0,
   starLevel: 3,
   contactPhone: '',
@@ -347,7 +370,8 @@ const imageList = computed(() => {
 const formRules = {
   name: [{ required: true, message: '请输入酒店名称', trigger: 'blur' }],
   region: [{ required: true, message: '请选择地区', trigger: 'change' }],
-  address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }]
+  address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
+  contactPhone: [{ validator: validateMobilePhone, trigger: 'blur' }]
 }
 
 // 房型表单
@@ -416,6 +440,8 @@ const handleAdd = () => {
   hotelForm.name = ''
   hotelForm.region = ''
   hotelForm.address = ''
+  hotelForm.longitude = null
+  hotelForm.latitude = null
   hotelForm.price = 0
   hotelForm.starLevel = 3
   hotelForm.contactPhone = ''
@@ -431,9 +457,11 @@ const handleEdit = (row: any) => {
   hotelForm.name = row.name
   hotelForm.region = row.region
   hotelForm.address = row.address
+  hotelForm.longitude = row.longitude || null
+  hotelForm.latitude = row.latitude || null
   hotelForm.price = row.price
   hotelForm.starLevel = row.starLevel || 3
-  hotelForm.contactPhone = row.contactPhone || ''
+  hotelForm.contactPhone = normalizeMobilePhone(row.contactPhone)
   hotelForm.description = row.description || ''
   hotelForm.images = row.images || '[]'
 
@@ -649,15 +677,19 @@ const handleRoomSubmit = async () => {
     if (valid) {
       roomSubmitting.value = true
       try {
+        const payload = {
+          ...roomForm,
+          remainingCount: isRoomEdit.value ? roomForm.remainingCount : roomForm.totalCount
+        }
         if (isRoomEdit.value) {
-          const res: any = await request.put('/admin/merchant/hotels/rooms', roomForm)
+          const res: any = await request.put('/admin/merchant/hotels/rooms', payload)
           if (res.code === 200) {
             ElMessage.success('更新成功')
             roomFormDialogVisible.value = false
             await loadRooms()
           }
         } else {
-          const res: any = await request.post('/admin/merchant/hotels/rooms', roomForm)
+          const res: any = await request.post('/admin/merchant/hotels/rooms', payload)
           if (res.code === 200) {
             ElMessage.success('添加成功')
             roomFormDialogVisible.value = false
@@ -699,20 +731,91 @@ onMounted(() => {
   }
 
   .table-card {
+    .hotel-table {
+      :deep(.el-table__inner-wrapper::before) {
+        display: none;
+      }
+
+      :deep(.el-table__body-wrapper),
+      :deep(.el-scrollbar__view),
+      :deep(.el-table__body),
+      :deep(.el-table__body tbody),
+      :deep(.el-table__fixed-body-wrapper tbody) {
+        height: auto !important;
+      }
+
+      :deep(.el-table__body) {
+        table-layout: fixed;
+      }
+
+      :deep(.el-table__body-wrapper td),
+      :deep(.el-table__fixed-body-wrapper td) {
+        height: 92px !important;
+        padding: 12px 0 !important;
+        vertical-align: middle;
+      }
+
+      :deep(.el-table__body .el-table__cell) {
+        height: 92px !important;
+        vertical-align: middle;
+      }
+
+      :deep(.el-table__body .cell) {
+        display: flex;
+        align-items: center;
+        min-height: 68px;
+        overflow: hidden;
+      }
+
+      :deep(.el-table__row),
+      :deep(.el-table__row .el-table__cell) {
+        height: 92px !important;
+        max-height: 92px !important;
+      }
+
+      :deep(.el-table-fixed-column--right),
+      :deep(.el-table__fixed-right),
+      :deep(.el-table__fixed-right-patch) {
+        background: #fff;
+        z-index: 3;
+      }
+    }
+
     .hotel-info {
       display: flex;
       align-items: center;
       gap: 12px;
+      width: 100%;
+      height: 68px;
+      min-height: 60px;
+      overflow: hidden;
 
-      .hotel-detail {
+      .hotel-cover {
+        flex: 0 0 80px;
+        width: 80px;
+        height: 60px !important;
+        max-height: 60px;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .merchant-hotel-meta {
+        min-width: 0;
+
         .name {
           font-weight: 600;
           margin-bottom: 4px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .address {
           font-size: 12px;
           color: #999;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       }
     }
@@ -731,6 +834,19 @@ onMounted(() => {
     .no-data {
       color: #999;
       font-size: 12px;
+    }
+
+    .row-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      white-space: nowrap;
+
+      :deep(.el-button) {
+        margin-left: 0;
+      }
     }
   }
 

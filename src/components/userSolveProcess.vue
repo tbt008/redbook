@@ -24,6 +24,10 @@ const acInfo = ref({
   passRate: 0
 })
 const format = (percentage) => (percentage === 100 ? '' : ``)
+const getPercent = (value, total) => {
+  if (!total) return 0
+  return Math.floor((value / total) * 10000) / 100
+}
 const noPermission = ref(false)
 watch(
   () => route.params.id,
@@ -76,8 +80,7 @@ onMounted(async () => {
 
             {{ '/' + acInfo.submitNumberTotal }}
           </div>
-          <el-progress type="dashboard" :percentage="Math.floor((acInfo.acNumberTotal / acInfo.submitNumberTotal) * 100 * 100) / 100
-            ">
+          <el-progress type="dashboard" :percentage="getPercent(acInfo.acNumberTotal, acInfo.submitNumberTotal)">
             <template #default="{ percentage }">
               <span class="percentage-value">{{ percentage }}%</span>
               <span class="percentage-label">通过率</span>
@@ -101,7 +104,7 @@ onMounted(async () => {
                 {{ '/' + acInfo.allBase }}
               </div>
             </div>
-            <el-progress :percentage="(acInfo.base / acInfo.allBase) * 100" :format="format" :color="`#909399`" />
+            <el-progress :percentage="getPercent(acInfo.base, acInfo.allBase)" :format="format" :color="`#909399`" />
           </div>
           <div class="font-item">
             <div style="display: flex; font-size: medium; color: black">
@@ -111,7 +114,7 @@ onMounted(async () => {
                 {{ '/' + acInfo.allEasy }}
               </div>
             </div>
-            <el-progress :percentage="(acInfo.easy / acInfo.allEasy) * 100" :color="`#67c23a`" :format="format" />
+            <el-progress :percentage="getPercent(acInfo.easy, acInfo.allEasy)" :color="`#67c23a`" :format="format" />
           </div>
           <div class="font-item">
             <div style="display: flex; font-size: medium; color: black">
@@ -121,7 +124,7 @@ onMounted(async () => {
                 {{ '/' + acInfo.allPopular }}
               </div>
             </div>
-            <el-progress :percentage="(acInfo.popular / acInfo.allPopular) * 100" :color="`#e6a23c`" :format="format" />
+            <el-progress :percentage="getPercent(acInfo.popular, acInfo.allPopular)" :color="`#e6a23c`" :format="format" />
           </div>
           <div class="font-item">
             <div style="display: flex; font-size: medium; color: black">
@@ -131,7 +134,7 @@ onMounted(async () => {
                 {{ '/' + acInfo.allIncrease }}
               </div>
             </div>
-            <el-progress :percentage="(acInfo.increase / acInfo.allIncrease) * 100" :format="format"
+            <el-progress :percentage="getPercent(acInfo.increase, acInfo.allIncrease)" :format="format"
               :color="`#1989fa`" />
           </div>
           <div class="font-item">

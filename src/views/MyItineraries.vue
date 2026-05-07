@@ -79,10 +79,6 @@
                   <span class="icon">💰</span>
                   <span>预算 ¥{{ itinerary.budget }}</span>
                 </div>
-                <div class="info-item">
-                  <span class="icon">👥</span>
-                  <span>{{ itinerary.peopleCount }}人</span>
-                </div>
               </div>
 
               <div class="card-tags" v-if="itinerary.interests">
@@ -118,12 +114,6 @@
                     </el-button>
                     <template #dropdown>
                       <el-dropdown-menu>
-                        <el-dropdown-item command="duplicate">
-                          📋 复制
-                        </el-dropdown-item>
-                        <el-dropdown-item command="share">
-                          🔗 分享
-                        </el-dropdown-item>
                         <el-dropdown-item command="export">
                           📥 导出
                         </el-dropdown-item>
@@ -157,25 +147,6 @@
       </div>
     </div>
 
-    <!-- 分享对话框 -->
-    <el-dialog v-model="showShareDialog" title="分享行程" width="500px">
-      <div class="share-content">
-        <div class="share-qr">
-          <div class="qr-placeholder">
-            <div style="font-size: 64px">📱</div>
-            <div>扫码查看行程</div>
-          </div>
-        </div>
-        <div class="share-link">
-          <el-input v-model="shareLink" readonly>
-            <template #append>
-              <el-button @click="copyLink">复制</el-button>
-            </template>
-          </el-input>
-        </div>
-      </div>
-    </el-dialog>
-
     <!-- 修改状态对话框 -->
     <el-dialog v-model="showStatusDialog" title="修改行程状态" width="400px">
       <div class="status-dialog-content">
@@ -198,6 +169,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { authHeaders, parseResultResponse } from '@/util/fetchResult'
 
 const router = useRouter()
 
@@ -208,8 +180,6 @@ const sortBy = ref('createTime')
 const currentPage = ref(1)
 const pageSize = ref(6)
 const total = ref(0)
-const showShareDialog = ref(false)
-const shareLink = ref('')
 const showStatusDialog = ref(false)
 const selectedItinerary = ref<any>(null)
 const newStatus = ref('0')
@@ -336,12 +306,6 @@ const editItinerary = (itinerary: any) => {
 // 处理下拉菜单命令
 const handleCommand = (command: string, itinerary: any) => {
   switch (command) {
-    case 'duplicate':
-      duplicateItinerary(itinerary)
-      break
-    case 'share':
-      shareItinerary(itinerary)
-      break
     case 'export':
       exportItinerary(itinerary)
       break
@@ -354,50 +318,11 @@ const handleCommand = (command: string, itinerary: any) => {
   }
 }
 
-// 复制行程
-const duplicateItinerary = async (itinerary: any) => {
-  try {
-    const response = await fetch('/api/itinerary/duplicate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'auth-token': localStorage.getItem('auth-token') || ''
-      },
-      body: JSON.stringify({ id: itinerary.id })
-    })
-
-    if (response.ok) {
-      ElMessage.success('复制成功！')
-      loadItineraries()
-    } else {
-      throw new Error('复制失败')
-    }
-  } catch (error) {
-    console.error('复制失败:', error)
-    ElMessage.error('复制失败，请稍后重试')
-  }
-}
-
-// 分享行程
-const shareItinerary = (itinerary: any) => {
-  shareLink.value = `${window.location.origin}/itinerary/share/${itinerary.id}`
-  showShareDialog.value = true
-}
-
-// 复制链接
-const copyLink = () => {
-  navigator.clipboard.writeText(shareLink.value).then(() => {
-    ElMessage.success('链接已复制到剪贴板')
-  })
-}
-
 // 导出行程
 const exportItinerary = async (itinerary: any) => {
   try {
     const response = await fetch(`/api/itinerary/export/${itinerary.id}`, {
-      headers: {
-        'auth-token': localStorage.getItem('auth-token') || ''
-      }
+      headers: authHeaders()
     })
 
     if (response.ok) {
@@ -405,15 +330,16 @@ const exportItinerary = async (itinerary: any) => {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${itinerary.title}.pdf`
+      a.download = `${itinerary.title || '行程'}.txt`
       a.click()
+      window.URL.revokeObjectURL(url)
       ElMessage.success('导出成功！')
     } else {
       throw new Error('导出失败')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('导出失败:', error)
-    ElMessage.error('导出失败，请稍后重试')
+    ElMessage.error(error.message || '导出失败，请稍后重试')
   }
 }
 
@@ -432,20 +358,15 @@ const deleteItinerary = (itinerary: any) => {
     try {
       const response = await fetch(`/api/itinerary/${itinerary.id}`, {
         method: 'DELETE',
-        headers: {
-          'auth-token': localStorage.getItem('auth-token') || ''
-        }
+        headers: authHeaders()
       })
 
-      if (response.ok) {
-        ElMessage.success('删除成功！')
-        loadItineraries()
-      } else {
-        throw new Error('删除失败')
-      }
-    } catch (error) {
+      await parseResultResponse(response)
+      ElMessage.success('删除成功！')
+      loadItineraries()
+    } catch (error: any) {
       console.error('删除失败:', error)
-      ElMessage.error('删除失败，请稍后重试')
+      ElMessage.error(error.message || '删除失败，请稍后重试')
     }
   }).catch(() => {})
 }
@@ -465,26 +386,20 @@ const confirmUpdateStatus = async () => {
   try {
     const response = await fetch('/api/itinerary/status', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'auth-token': localStorage.getItem('auth-token') || ''
-      },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         id: selectedItinerary.value.id,
         status: parseInt(newStatus.value)
       })
     })
 
-    if (response.ok) {
-      ElMessage.success('状态更新成功！')
-      showStatusDialog.value = false
-      loadItineraries()
-    } else {
-      throw new Error('更新失败')
-    }
-  } catch (error) {
+    await parseResultResponse(response)
+    ElMessage.success('状态更新成功！')
+    showStatusDialog.value = false
+    loadItineraries()
+  } catch (error: any) {
     console.error('更新状态失败:', error)
-    ElMessage.error('更新失败，请稍后重试')
+    ElMessage.error(error.message || '更新失败，请稍后重试')
   }
 }
 
@@ -505,19 +420,17 @@ const loadItineraries = async () => {
 
   try {
     const response = await fetch('/api/itinerary/list', {
-      headers: {
-        'auth-token': localStorage.getItem('auth-token') || ''
-      }
+      headers: authHeaders()
     })
 
-    if (response.ok) {
-      const result = await response.json()
-      itineraries.value = result.data || []
-      total.value = result.total || 0
-    } else {
-      throw new Error('加载失败')
-    }
-  } catch (error) {
+    const list = await parseResultResponse<any[]>(response)
+    itineraries.value = (list || []).map((item) => ({
+      ...item,
+      days: item.days ?? item.daysCount ?? 0,
+      budget: item.budget ?? item.totalBudget ?? 0
+    }))
+    total.value = itineraries.value.length
+  } catch (error: any) {
     console.error('加载行程列表失败:', error)
     // 使用模拟数据
     itineraries.value = [
@@ -527,7 +440,6 @@ const loadItineraries = async () => {
         startDate: '2024-12-20',
         endDate: '2024-12-21',
         days: 2,
-        peopleCount: 2,
         budget: 800,
         interests: 'religion,beach,culture',
         status: 'draft',
@@ -543,7 +455,6 @@ const loadItineraries = async () => {
         startDate: '2024-12-25',
         endDate: '2024-12-27',
         days: 3,
-        peopleCount: 3,
         budget: 1200,
         interests: 'food,culture',
         status: 'ongoing',
@@ -559,7 +470,6 @@ const loadItineraries = async () => {
         startDate: '2024-11-15',
         endDate: '2024-11-16',
         days: 2,
-        peopleCount: 4,
         budget: 1000,
         interests: 'nature,outdoor,photo',
         status: 'completed',
@@ -816,29 +726,6 @@ onMounted(() => {
     }
   }
 
-  .share-content {
-    .share-qr {
-      margin-bottom: 24px;
-
-      .qr-placeholder {
-        width: 200px;
-        height: 200px;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: #f8f9fa;
-        border-radius: 12px;
-        border: 2px dashed #ddd;
-      }
-    }
-
-    .share-link {
-      margin-top: 16px;
-    }
-  }
-
   .status-dialog-content {
     padding: 20px 0;
 
@@ -867,4 +754,3 @@ onMounted(() => {
   }
 }
 </style>
-

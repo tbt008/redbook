@@ -228,7 +228,7 @@ const handleImgAdd = (pos, $file) => {
   formData.append('file', $file)
 
   // 使用新的OSS上传接口
-  request.post('/api/file/upload?directory=content', formData, {
+  request.post('/file/upload?directory=content', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }

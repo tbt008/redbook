@@ -179,7 +179,7 @@ const selectItem = (item: any) => {
 const loadData = async () => {
   try {
     // 加载景点
-    const attractionsRes = await fetch('/attraction/list?pageNum=1&pageSize=100', {
+    const attractionsRes = await fetch('/api/attraction/list?pageNum=1&pageSize=100', {
       headers: {
         'auth-token': localStorage.getItem('auth-token') || ''
       }
@@ -192,7 +192,7 @@ const loadData = async () => {
     }
 
     // 加载美食
-    const foodsRes = await fetch('/food/list?pageNum=1&pageSize=100', {
+    const foodsRes = await fetch('/api/food/list?pageNum=1&pageSize=100', {
       headers: {
         'auth-token': localStorage.getItem('auth-token') || ''
       }
@@ -204,7 +204,7 @@ const loadData = async () => {
     }
 
     // 加载酒店
-    const hotelsRes = await fetch('/hotel/list?pageNum=1&pageSize=100', {
+    const hotelsRes = await fetch('/api/hotel/list?pageNum=1&pageSize=100', {
       headers: {
         'auth-token': localStorage.getItem('auth-token') || ''
       }
@@ -493,4 +493,3 @@ onMounted(() => {
   }
 }
 </style>
-

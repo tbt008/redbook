@@ -207,6 +207,32 @@ const form = reactive({
   region: ''
 })
 
+const typeToNumber = (type: string) => {
+  const map: Record<string, number> = {
+    attraction: 1,
+    food: 2,
+    hotel: 3
+  }
+  return map[type] || 5
+}
+
+const normalizeItinerary = (data: any) => ({
+  ...data,
+  days: data.daysCount || data.days || form.days,
+  totalBudget: data.totalBudget || data.budget || form.budget,
+  interestTags: data.interests ? String(data.interests).split(',').filter(Boolean) : form.interestTags,
+  dayList: (data.dayList || []).map((day: any) => ({
+    ...day,
+    items: (day.items || []).map((item: any, index: number) => ({
+      ...item,
+      itemType: item.itemType || typeToNumber(item.type),
+      itemName: item.itemName || item.name,
+      endTime: item.endTime || '',
+      sortOrder: item.sortOrder ?? index
+    }))
+  }))
+})
+
 const rules = {
   dateRange: [{ required: true, message: '请选择旅行时间', trigger: 'change' }],
   days: [{ required: true, message: '请输入旅行天数', trigger: 'blur' }],
@@ -242,19 +268,21 @@ const generateItinerary = async () => {
 
     generating.value = true
     try {
-      const res: any = await request.post('/itinerary/generate', {
+      const res: any = await request.post('/itinerary/generate-itinerary', {
+        title: `莆田${form.days}日游`,
         startDate: dayjs(form.dateRange[0]).format('YYYY-MM-DD'),
         endDate: dayjs(form.dateRange[1]).format('YYYY-MM-DD'),
         days: form.days,
         budget: form.budget,
-        interestTags: form.interestTags,
-        travelStyle: form.travelStyle,
+        interests: form.interestTags,
+        style: form.travelStyle,
         peopleCount: form.peopleCount,
-        region: form.region
+        areas: form.region ? [form.region] : []
       })
 
-      if (res && res.data) {
-        itinerary.value = res.data
+      if (res && res.data?.id) {
+        const detail: any = await request.get(`/itinerary/${res.data.id}`)
+        itinerary.value = normalizeItinerary(detail.data)
         ElMessage.success('行程生成成功！')
         // 滚动到结果区域
         setTimeout(() => {
@@ -274,9 +302,12 @@ const saveItinerary = async () => {
   saving.value = true
   try {
     const res: any = await request.post('/itinerary/save', itinerary.value)
-    if (res && res.data) {
+    if (res && res.code === 200) {
       ElMessage.success('行程保存成功！')
-      router.push(`/itinerary/${res.data}`)
+      router.push({
+        path: '/itinerary/editor',
+        query: { id: itinerary.value.id }
+      })
     }
   } catch (error: any) {
     ElMessage.error(error.message || '保存失败')
@@ -289,8 +320,8 @@ const saveItinerary = async () => {
 const editItinerary = () => {
   // 跳转到编辑页面
   router.push({
-    path: '/itinerary/edit',
-    query: { data: JSON.stringify(itinerary.value) }
+    path: '/itinerary/editor',
+    query: { id: itinerary.value?.id }
   })
 }
 
@@ -572,4 +603,3 @@ const goBack = () => router.back()
   }
 }
 </style>
-

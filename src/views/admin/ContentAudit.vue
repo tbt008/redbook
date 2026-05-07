@@ -161,9 +161,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import dayjs from 'dayjs'
 import request from '@/util/request'
 import { extractDisplayTags } from '@/utils/contentTags'
+import { formatDateTime as formatDateTimeValue, type DateInput } from '@/utils/date'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -243,20 +243,7 @@ const normalizeTextList = (value: unknown): string[] => {
   return [String(value).trim()].filter(Boolean)
 }
 
-const formatDateTime = (value: unknown) => {
-  if (!value) return '--'
-
-  const raw = String(value).trim()
-  if (!raw) return '--'
-
-  const normalized = raw.includes(',') ? raw.replace(/,/g, '-') : raw
-  const parsed = dayjs(normalized)
-  if (parsed.isValid()) {
-    return parsed.format('YYYY-MM-DD HH:mm:ss')
-  }
-
-  return raw.replace(/,/g, '-')
-}
+const formatDateTime = (value: DateInput) => formatDateTimeValue(value, '--')
 
 const getRelatedDisplayList = (content: Record<string, any>) => {
   if (!content) return []

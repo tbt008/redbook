@@ -4,7 +4,7 @@
       <h2 class="page-title">{{ isEditMode ? '编辑题目' : '创建题目' }}</h2>
       <QuestionEditor :id="questionId" @primary="handleSave" @cancel="handleCancel" />
     </div>
-    <OJFooter />
+    <RedbookFooter />
   </div>
 </template>
 
@@ -12,7 +12,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import QuestionEditor from '@/components/questionEditor.vue'
-import OJFooter from '@/components/OJFooter.vue'
+import RedbookFooter from '@/components/RedbookFooter.vue'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()

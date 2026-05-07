@@ -14,6 +14,12 @@ const buildFromParts = (parts: Array<string | number>) => {
   return parsed.isValid() ? parsed : null
 }
 
+const buildFromTimestamp = (value: number) => {
+  const timestamp = Math.abs(value) < 10000000000 ? value * 1000 : value
+  const parsed = dayjs(timestamp)
+  return parsed.isValid() ? parsed : null
+}
+
 const resolveDate = (value: DateValue) => {
   if (value == null || value === '') {
     return null
@@ -29,8 +35,7 @@ const resolveDate = (value: DateValue) => {
   }
 
   if (typeof value === 'number') {
-    const parsed = dayjs(value)
-    return parsed.isValid() ? parsed : null
+    return buildFromTimestamp(value)
   }
 
   const text = String(value).trim()
@@ -53,7 +58,11 @@ const resolveDate = (value: DateValue) => {
     return buildFromParts(text.split(','))
   }
 
-  const parsed = dayjs(text)
+  if (/^-?\d+$/.test(text)) {
+    return buildFromTimestamp(Number(text))
+  }
+
+  const parsed = dayjs(text.includes('T') ? text : text.replace(/-/g, '/'))
   return parsed.isValid() ? parsed : null
 }
 

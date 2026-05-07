@@ -1,6 +1,6 @@
 export const debounce = (fn: Function, delay: number = 300) => {
   // 定义一个定时器变量，保存上一次的定时器ID
-  let timer: number | null = null
+  let timer: ReturnType<typeof setTimeout> | null = null
   // 真正执行的函数
   const _debounce = function (...args: any[]) {
     // 取消上一次的定时器

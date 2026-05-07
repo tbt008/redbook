@@ -84,6 +84,11 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/user/:id',
+      name: 'userProfile',
+      component: () => import('@/views/person/profile.vue')
+    },
+    {
       path: '/publish',
       name: 'publish',
       component: () => import('@/views/PublishContent.vue'),
@@ -148,6 +153,16 @@ const router = createRouter({
       name: 'itineraryEditor',
       component: () => import('@/views/ItineraryEditor.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/itinerary/preview',
+      name: 'itineraryPreview',
+      component: () => import('@/views/ItineraryPreview.vue')
+    },
+    {
+      path: '/itinerary/share/:id',
+      name: 'itineraryShare',
+      component: () => import('@/views/ItineraryPreview.vue')
     },
     {
       path: '/itinerary/list',

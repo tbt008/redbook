@@ -221,6 +221,7 @@ import type { FormInstance } from 'element-plus'
 import { marked } from 'marked'
 import { useIntersectionObserver } from '@vueuse/core'
 import debounce from 'lodash/debounce'
+import { formatDateOnly, type DateInput } from '@/utils/date'
 
 // 状态管理
 const router = useRouter()
@@ -317,15 +318,7 @@ const getArticleTypeLabel = (type: number) => {
   return articleTypes.find(t => t.value === type)?.label || '未知类型'
 }
 
-const formatDate = (dateArray: number[]) => {
-  if (!dateArray) return 'error'
-  const date = new Date(dateArray[0], dateArray[1] - 1, dateArray[2])
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }).format(date)
-}
+const formatDate = (dateArray: DateInput) => formatDateOnly(dateArray, '时间待确认')
 
 // Markdown 渲染
 const renderMarkdown = (content: string) => {

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { RouterView, useRouter, useRoute } from 'vue-router'
 import request from '@/util/request'
 import personMiddle from './personMiddle.vue'
@@ -15,6 +15,10 @@ const userId = localStorage.getItem('uid')
 import { Plus } from '@element-plus/icons-vue'
 const route = useRoute()
 const onSubmit = () => {
+  if (form.phoneNumber && form.phoneNumber.length !== 11) {
+    ElMessage.warning('请输入11位手机号')
+    return
+  }
   request
     .post('/user/update', {
       nickName: form.nickName,
@@ -82,6 +86,8 @@ const beforeAvatarUpload = (rawFile) => {
 }
 import { ElMessage } from 'element-plus'
 import { reactive } from 'vue'
+import { normalizeMobilePhone } from '@/utils/attractionForm'
+import { getFirstImageUrl, normalizeImageUrl } from '@/utils/imageUrl'
 
 const form = reactive({
   nickName: '',
@@ -94,6 +100,27 @@ const form = reactive({
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const userContents = ref([])
+const userContentsLoading = ref(false)
+const merchantResourcesLoading = ref(false)
+const merchantAttractions = ref([])
+const merchantHotels = ref([])
+const merchantFoods = ref([])
+const activeResourceType = ref('attraction')
+const merchantResourceTabs = [
+  { label: '景点', value: 'attraction', empty: '暂无景点' },
+  { label: '酒店', value: 'hotel', empty: '暂无酒店' },
+  { label: '美食', value: 'food', empty: '暂无美食' }
+]
+const merchantResourceMap = computed(() => ({
+  attraction: merchantAttractions.value,
+  hotel: merchantHotels.value,
+  food: merchantFoods.value
+}))
+const activeResourceList = computed(() => merchantResourceMap.value[activeResourceType.value] || [])
+const activeResourceTab = computed(() => {
+  return merchantResourceTabs.find((tab) => tab.value === activeResourceType.value) || merchantResourceTabs[0]
+})
 const getCodeRecord = () => {
   // 判断是否为当前登录用户
   const loginUserId = localStorage.getItem('uid')
@@ -116,7 +143,7 @@ const getCodeRecord = () => {
     })
 }
 const getUserInfo = () => {
-  request.get(`/user/get/${uid.value}`).then((res) => {
+  request.get('/user/info', { params: { userId: uid.value } }).then((res) => {
     if (res.code == 200) {
       userInfo.value = res.data
       form.nickName = res.data.nickName
@@ -140,6 +167,53 @@ const getUserInfo = () => {
 }
 const starArticles = ref([])
 const browseHistory = ref([])
+
+const getUserContents = async () => {
+  if (!uid.value) return
+  userContentsLoading.value = true
+  try {
+    const res = await request.get(`/article/user/list/${uid.value}`)
+    if (res.code === 200) {
+      userContents.value = res.data || []
+    }
+  } catch (error) {
+    console.error('获取用户发布内容失败', error)
+  } finally {
+    userContentsLoading.value = false
+  }
+}
+
+const getPageList = (res) => {
+  const data = res?.data
+  if (Array.isArray(data)) return data
+  if (Array.isArray(data?.list)) return data.list
+  return []
+}
+
+const getMerchantResources = async () => {
+  if (!uid.value) return
+  merchantResourcesLoading.value = true
+  const params = {
+    pageNum: 1,
+    pageSize: 12,
+    merchantId: uid.value
+  }
+
+  try {
+    const [attractionRes, hotelRes, foodRes] = await Promise.all([
+      request.get('/attraction/list', { params }),
+      request.get('/hotel/list', { params }),
+      request.get('/food/list', { params })
+    ])
+    merchantAttractions.value = getPageList(attractionRes)
+    merchantHotels.value = getPageList(hotelRes)
+    merchantFoods.value = getPageList(foodRes)
+  } catch (error) {
+    console.error('获取商家资源失败', error)
+  } finally {
+    merchantResourcesLoading.value = false
+  }
+}
 
 const getStarArticles = () => {
   // 判断是否为当前登录用户
@@ -167,7 +241,7 @@ const getStarArticles = () => {
     if (res.code === 200) {
       starArticles.value = res.data.list || []
     } else {
-      ElMessage.error('获取收藏失败: ' + res.message)
+      ElMessage.error('获取收藏失败: ' + (res.msg || res.message || '请求失败'))
     }
   }).catch((err) => {
     console.error('获取收藏失败', err)
@@ -200,7 +274,7 @@ const getBrowseHistory = () => {
     if (res.code === 200) {
       browseHistory.value = res.data.list || []
     } else {
-      ElMessage.error('获取浏览历史失败: ' + res.message)
+      ElMessage.error('获取浏览历史失败: ' + (res.msg || res.message || '请求失败'))
     }
   }).catch((err) => {
     console.error('获取浏览历史失败', err)
@@ -236,37 +310,73 @@ const getContentTypeName = (item) => {
   return '内容'
 }
 
+const getDetailRoute = (item) => {
+  const id = item.contentId || item.id
+  const rawType = item.contentType ?? item.dataType ?? item.type ?? 1
+  const type = Number(rawType)
+
+  if (item.contentType !== undefined && item.contentType !== null) {
+    const contentTypeRouteMap = {
+      1: `/content/${id}`,
+      4: `/attraction/${id}`,
+      5: `/food/${id}`,
+      6: `/hotel/${id}`
+    }
+    return contentTypeRouteMap[type] || `/content/${id}`
+  }
+
+  const dataTypeRouteMap = {
+    1: `/content/${id}`,
+    2: `/attraction/${id}`,
+    3: `/food/${id}`,
+    4: `/hotel/${id}`,
+    5: `/food/${id}`,
+    6: `/hotel/${id}`
+  }
+  return dataTypeRouteMap[type] || `/content/${id}`
+}
+
 // 处理浏览历史项点击
 const handleBrowseItemClick = (item) => {
-  // 根据类型跳转到不同页面
-  if (item.address && item.rating) {
-    if (item.price && item.price > 100) {
-      router.push(`/hotel/${item.id}`)
-    } else if (item.cuisine) {
-      router.push(`/food/${item.id}`)
-    } else {
-      router.push(`/attraction/${item.id}`)
-    }
-  } else {
-    router.push(`/content/${item.id}`)
-  }
+  router.push(getDetailRoute(item))
 }
 
 // 处理收藏项点击
 const handleCollectionItemClick = (item) => {
-  // 根据类型跳转到不同页面
-  if (item.address && item.rating) {
-    if (item.price && item.price > 100) {
-      router.push(`/hotel/${item.id}`)
-    } else if (item.cuisine) {
-      router.push(`/food/${item.id}`)
-    } else {
-      router.push(`/attraction/${item.id}`)
-    }
-  } else {
-    router.push(`/content/${item.id}`)
-  }
+  router.push(getDetailRoute(item))
 }
+
+const handleContentClick = (item) => {
+  router.push(`/content/${item.id}`)
+}
+
+const handleResourceClick = (type, item) => {
+  router.push(`/${type}/${item.id}`)
+}
+
+const getContentCover = (item) => {
+  if (!item) return ''
+  return normalizeImageUrl(getFirstImageUrl(item.coverImage, item.images), '')
+}
+
+const getResourceCover = (item) => {
+  return normalizeImageUrl(getFirstImageUrl(item?.coverImage, item?.image, item?.images), '')
+}
+
+const getResourcePrice = (type, item) => {
+  if (type === 'attraction') return item.ticketPrice != null ? `¥${item.ticketPrice}起` : '免费/待定'
+  if (type === 'hotel') return item.price != null ? `¥${item.price}/晚起` : '价格待定'
+  return item.avgPrice != null ? `¥${item.avgPrice}/人` : '价格待定'
+}
+
+const getContentSummary = (item) => {
+  return item?.summary || item?.description || item?.content || '暂无内容简介'
+}
+
+const getContentStat = (item, key, legacyKey) => {
+  return item?.[key] ?? item?.[legacyKey] ?? 0
+}
+
 //添加路由参数变化的监听
 watch(
   () => route.params.id,
@@ -275,9 +385,8 @@ watch(
       uid.value = newId
       // 重新获取数据
       getUserInfo()
-      getCodeRecord()
-      getStarArticles()
-      getBrowseHistory()
+      getUserContents()
+      getMerchantResources()
     }
   }
 )
@@ -288,9 +397,8 @@ onMounted(async () => {
   }
   // console.log(uid.value)
   getUserInfo()
-  getCodeRecord()
-  getStarArticles()
-  getBrowseHistory()
+  getUserContents()
+  getMerchantResources()
 })
 const codeRecord = ref([])
 // 分页大小改变处理
@@ -335,8 +443,11 @@ const getArticleTypeName = (type) => {
   return types[type] || '未知类型'
 }
 const formatDate = (dateArray) => {
-  if (!dateArray) return 'error'
-  const date = new Date(dateArray[0], dateArray[1] - 1, dateArray[2])
+  if (!dateArray) return '未知时间'
+  const date = Array.isArray(dateArray)
+    ? new Date(dateArray[0], dateArray[1] - 1, dateArray[2])
+    : new Date(dateArray)
+  if (Number.isNaN(date.getTime())) return '未知时间'
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: 'long',
@@ -365,12 +476,6 @@ const formatDate = (dateArray) => {
               " :style="nowTheme === true ? 'filter: invert(100%);' : 'filter: none;'">
               <span style="font-size: xx-large">{{ userInfo.nickName }}</span>
               <span style="font-size: small; color: gray">{{ userInfo.userName }}</span>
-              <span style="font-size: small; color: black">学号：
-                <span>{{ userInfo.uid }}</span>
-              </span>
-              <span style="font-size: small; color: black">班级：
-                <span>{{ userInfo.className }}</span>
-              </span>
             </div>
           </template>
         </el-skeleton>
@@ -383,10 +488,10 @@ const formatDate = (dateArray) => {
                 <el-skeleton :rows="7"></el-skeleton>
               </template>
               <template #default>
-                <div v-if="userInfo.description" style="font-size: 13px">个人简介:</div>
+                <div style="font-size: 13px">个人简介:</div>
 
-                <span>{{ userInfo.description }}</span>
-                <div style="display: flex; position: relative; gap: 20px; align-items: center">
+                <span>{{ userInfo.description || '这个用户还没有填写个人简介' }}</span>
+                <div v-if="userInfo.email" style="display: flex; position: relative; gap: 20px; align-items: center">
                   <svg t="1737706676789" class="icon" viewBox="0 0 1024 1024" version="1.1"
                     xmlns="http://www.w3.org/2000/svg" p-id="4413" width="1em" height="1em">
                     <path
@@ -395,7 +500,7 @@ const formatDate = (dateArray) => {
                   </svg>
                   <span>{{ userInfo.email }}</span>
                 </div>
-                <div style="display: flex; position: relative; gap: 20px">
+                <div v-if="userInfo.phoneNumber" style="display: flex; position: relative; gap: 20px">
                   <svg t="1739430945673" class="icon" viewBox="0 0 1024 1024" version="1.1"
                     xmlns="http://www.w3.org/2000/svg" p-id="1523" width="1em" height="1em">
                     <path
@@ -403,24 +508,6 @@ const formatDate = (dateArray) => {
                       fill="#000000" p-id="1524"></path>
                   </svg>
                   <span>{{ userInfo.phoneNumber }}</span>
-                </div>
-                <div style="display: flex; position: relative; gap: 20px">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"
-                    fill="currentColor" class="w-full h-full text-label-2 dark:text-dark-label-2">
-                    <path fill-rule="evenodd"
-                      d="M16.008 12.124A1.017 1.017 0 0116 12V7.586l-1.121 1.121a1 1 0 11-1.415-1.414l2.829-2.829a1 1 0 011.414 0l2.828 2.829a1 1 0 11-1.414 1.414L18 7.586V12c0 .042-.003.083-.008.124A4.002 4.002 0 0117 20a4 4 0 01-.992-7.876zm-8.016-.248c.005.04.008.082.008.124v1h2a1 1 0 110 2H8v4a1 1 0 11-2 0v-4H4a1 1 0 110-2h2v-1c0-.042.003-.083.008-.124A4.002 4.002 0 017 4a4 4 0 01.992 7.876zM7 10a2 2 0 100-4 2 2 0 000 4zm10 4a2 2 0 100 4 2 2 0 000-4z"
-                      clip-rule="evenodd"></path>
-                  </svg>
-                  <span>{{ userInfo.sex }}</span>
-                </div>
-                <div style="display: flex; position: relative; gap: 20px">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"
-                    fill="currentColor" class="w-full h-full text-label-2 dark:text-dark-label-2">
-                    <path
-                      d="M13.465 3.862a3 3 0 00-2.957-.048L2.61 8.122a1 1 0 000 1.756L5 11.18v6.27c0 .59.26 1.15.74 1.491 1.216.86 3.75 2.409 6.26 2.409s5.044-1.548 6.26-2.409c.48-.34.74-.901.74-1.491v-6.27l1.4-.98v4.7a.9.9 0 101.8 0V9.572a1 1 0 00-.493-.862l-8.242-4.848zM18.82 9l-5.862 3.198a2 2 0 01-1.916 0L5.18 9l5.862-3.198a2 2 0 011.916 0L18.82 9zM17 16.687a.937.937 0 01-.413.788c-.855.565-2.882 1.774-4.587 1.774-1.705 0-3.732-1.209-4.587-1.774A.936.936 0 017 16.687V12.27l3.562 1.945a3 3 0 002.876 0L17 12.27v4.417z">
-                    </path>
-                  </svg>
-                  <span>{{ '莆田学院🏟️' }}</span>
                 </div>
                 <el-button type="primary" @click="editInfo = !editInfo" plain v-if="userId === uid">编辑信息</el-button>
               </template>
@@ -486,44 +573,19 @@ const formatDate = (dateArray) => {
           <!-- <div class="leidaChart"> -->
           <!-- <radarChart></radarChart> -->
           <!-- </div> -->
-          <div style="font-weight: bold; margin-left: 15px ; margin-bottom:-15px">浏览历史</div>
+          <div style="font-weight: bold; margin-left: 15px ; margin-bottom:-15px">发布内容</div>
           <div class="languageset">
             <div style="padding: 20px">
-              <el-empty v-if="userId !== uid" description="无权查看" />
-              <el-empty v-else-if="browseHistory.length === 0" description="暂无浏览记录" />
+              <el-empty v-if="userContents.length === 0" description="暂无发布内容" />
               <div v-else class="article-list-container">
-                <div v-for="item in browseHistory" :key="item.id" class="article-item"
-                  @click="handleBrowseItemClick(item)">
+                <div v-for="item in userContents.slice(0, 6)" :key="item.id" class="article-item"
+                  @click="handleContentClick(item)">
                   <div class="article-header">
-                    <el-tag :type="getContentTypeTag(item)" class="article-type-tag" effect="light">
-                      {{ getContentTypeName(item) }}
-                    </el-tag>
+                    <el-tag type="danger" class="article-type-tag" effect="light">攻略</el-tag>
                     <div class="article-title">{{ item.title || item.name }}</div>
                   </div>
                   <div class="article-info">
-                    <span class="time">浏览于<br />{{ formatDate(item.createTime) }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="font-weight: bold; margin-left: 15px ; margin-bottom:-15px; margin-top: 20px">收藏的内容</div>
-          <div class="languageset">
-            <div style="padding: 20px">
-              <el-empty v-if="userId !== uid" description="无权查看" />
-              <el-empty v-else-if="starArticles.length === 0" description="暂无收藏内容" />
-              <div v-else class="article-list-container">
-                <div v-for="item in starArticles" :key="item.id" class="article-item"
-                  @click="handleCollectionItemClick(item)">
-                  <div class="article-header">
-                    <el-tag :type="getContentTypeTag(item)" class="article-type-tag" effect="light">
-                      {{ getContentTypeName(item) }}
-                    </el-tag>
-                    <div class="article-title">{{ item.title || item.name }}</div>
-                  </div>
-                  <div class="article-info">
-                    <span class="time">收藏于<br />{{ formatDate(item.createTime) }}</span>
+                    <span class="time">发布于<br />{{ formatDate(item.createTime) }}</span>
                   </div>
                 </div>
               </div>
@@ -549,7 +611,13 @@ const formatDate = (dateArray) => {
               <el-input v-model="form.email" />
             </el-form-item>
             <el-form-item label="手机号">
-              <el-input v-model="form.phoneNumber" />
+              <el-input
+                v-model="form.phoneNumber"
+                maxlength="11"
+                show-word-limit
+                inputmode="numeric"
+                @input="form.phoneNumber = normalizeMobilePhone($event)"
+              />
             </el-form-item>
             <el-form-item label="性别">
               <el-radio-group v-model="form.sex">
@@ -567,57 +635,88 @@ const formatDate = (dateArray) => {
           </el-form>
         </div>
         <div v-else class="bottom-right">
-          <personTop></personTop>
-          <div class="t2">
-            <personMiddle></personMiddle>
-          </div>
-          <div class="t3" v-if="userId == uid">
-
-            <userProfileSubmitRecord></userProfileSubmitRecord>
-          </div>
-
-          <div class="t4">
-            <el-empty v-if="userId !== uid" description="无权查看" />
-            <template v-else>
-              <el-table :data="codeRecord" style="width: 100%" @row-click="goToSubmissionDetail" class="el-codeRecord">
-                <el-table-column label="序号" prop="submitId"> </el-table-column>
-                <el-table-column label="运行状态" prop="runResult">
-                  <template #default="{ row }">
-                    <el-tag v-if="row.runResult == '答案正确'" type="success">答案正确</el-tag>
-                    <el-tag v-else-if="row.runResult == '部分正确'" type="primary">部分正确</el-tag>
-                    <el-tag v-else-if="row.runResult == '答案错误'" type="danger">答案错误</el-tag>
-                    <el-tag v-else-if="row.runResult == '等待判题'" type="danger">等待判题</el-tag>
-                    <el-tag v-else-if="row.runResult == '编译错误'" type="warning">编译错误</el-tag>
-                    <el-tag v-else type="danger">{{ row.runResult }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column label="题目" prop="questionName">
-                  <!-- <template #default="{ row }">
-                  <a :href="`/question?id=${row.questionId}`" class="problem-title">
-                    {{ row.questionName }}
-                  </a>
-                </template> -->
-                </el-table-column>
-                <el-table-column label="语言" prop="language">
-                  <template #default="{ row }">
-                    <div v-if="row.language == 1">C</div>
-                    <div v-if="row.language == 2">C++</div>
-                    <div v-if="row.language == 3">Java</div>
-                    <div v-if="row.language == 4">Python</div>
-                  </template>
-                </el-table-column>
-                <el-table-column label="提交时间" prop="createTime"> </el-table-column>
-                <template #empty>
-                  <el-empty description="没有数据" />
-                </template>
-              </el-table>
-              <!-- elementplus el-pagination: 分页器 -->
-              <div class="pagination-container">
-                <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
-                  :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="handleSizeChange"
-                  @current-change="handleCurrentChange" />
+          <div class="public-content-panel" v-loading="userContentsLoading">
+            <div class="public-content-header">
+              <div>
+                <div class="public-content-title">发布的内容</div>
+                <div class="public-content-subtitle">共 {{ userContents.length }} 篇</div>
               </div>
-            </template>
+            </div>
+
+            <el-empty v-if="userContents.length === 0" description="这个用户还没有发布内容" />
+            <div v-else class="public-content-list">
+              <div
+                v-for="item in userContents"
+                :key="item.id"
+                class="public-content-item"
+                @click="handleContentClick(item)"
+              >
+                <div class="public-cover">
+                  <img v-if="getContentCover(item)" :src="getContentCover(item)" alt="" />
+                  <div v-else class="public-cover-placeholder">攻略</div>
+                </div>
+                <div class="public-content-body">
+                  <div class="public-item-title">{{ item.title || '未命名内容' }}</div>
+                  <div class="public-item-summary">{{ getContentSummary(item) }}</div>
+                  <div class="public-item-meta">
+                    <span>{{ formatDate(item.createTime) }}</span>
+                    <span>阅读 {{ getContentStat(item, 'viewCount', 'articleReads') }}</span>
+                    <span>点赞 {{ getContentStat(item, 'likeCount', 'likeNum') }}</span>
+                    <span>收藏 {{ getContentStat(item, 'collectCount', 'favourNum') }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="merchant-resource-panel" v-loading="merchantResourcesLoading">
+            <div class="public-content-header">
+              <div>
+                <div class="public-content-title">商家发布的景点、酒店、美食</div>
+                <div class="public-content-subtitle">
+                  景点 {{ merchantAttractions.length }} 个 · 酒店 {{ merchantHotels.length }} 个 · 美食 {{ merchantFoods.length }} 个
+                </div>
+              </div>
+            </div>
+
+            <div class="resource-tabs" role="tablist">
+              <button
+                v-for="tab in merchantResourceTabs"
+                :key="tab.value"
+                type="button"
+                class="resource-tab"
+                :class="{ active: activeResourceType === tab.value }"
+                @click="activeResourceType = tab.value"
+              >
+                <span>{{ tab.label }}</span>
+                <span class="resource-tab-count">{{ merchantResourceMap[tab.value].length }}</span>
+              </button>
+            </div>
+
+            <div class="resource-section">
+              <el-empty v-if="activeResourceList.length === 0" :description="activeResourceTab.empty" />
+              <div v-else class="resource-grid">
+                <div
+                  v-for="item in activeResourceList"
+                  :key="`${activeResourceType}-${item.id}`"
+                  class="resource-card"
+                  @click="handleResourceClick(activeResourceType, item)"
+                >
+                  <div class="resource-cover">
+                    <img v-if="getResourceCover(item)" :src="getResourceCover(item)" alt="" />
+                    <div v-else class="resource-cover-placeholder">{{ activeResourceTab.label }}</div>
+                  </div>
+                  <div class="resource-body">
+                    <div class="resource-name">{{ item.name }}</div>
+                    <div class="resource-desc">{{ item.cuisine || item.region || item.address || '暂无地址' }}</div>
+                    <div class="resource-meta">
+                      <span>{{ getResourcePrice(activeResourceType, item) }}</span>
+                      <span v-if="item.rating">评分 {{ item.rating }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -730,7 +829,7 @@ const formatDate = (dateArray) => {
     position: relative;
 
     top: 50px;
-    height: 1400px;
+    min-height: 1400px;
     width: 1200px;
     display: flex;
     flex-direction: column;
@@ -781,7 +880,7 @@ const formatDate = (dateArray) => {
       position: relative;
       width: 100%;
       left: 15px;
-      height: 900px;
+      min-height: 900px;
       gap: 15px;
 
       .bottom-left {
@@ -1031,6 +1130,258 @@ const formatDate = (dateArray) => {
       margin-left: 20px;
       color: #999;
     }
+  }
+}
+
+.public-content-panel {
+  width: 800px;
+  min-height: 360px;
+  padding: 24px;
+  box-sizing: border-box;
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0px 0px 5px 0px #e6e6e6;
+}
+
+.public-content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #eef0f4;
+}
+
+.public-content-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.public-content-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #8c939d;
+}
+
+.public-content-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 18px;
+}
+
+.public-content-item {
+  display: flex;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid #eef0f4;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #c6e2ff;
+    box-shadow: 0 8px 20px rgba(64, 158, 255, 0.12);
+    transform: translateY(-1px);
+  }
+}
+
+.public-cover {
+  width: 132px;
+  height: 96px;
+  flex: 0 0 132px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #f2f6fc;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.public-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #409eff;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ecf5ff, #f0f9eb);
+}
+
+.public-content-body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.public-item-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-item-summary {
+  margin: 8px 0;
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.public-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: #909399;
+  font-size: 12px;
+}
+
+.merchant-resource-panel {
+  width: 800px;
+  padding: 24px;
+  box-sizing: border-box;
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0px 0px 5px 0px #e6e6e6;
+}
+
+.resource-tabs {
+  display: flex;
+  gap: 10px;
+  padding-top: 18px;
+  border-bottom: 1px solid #eef0f4;
+}
+
+.resource-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #606266;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover,
+  &.active {
+    color: #1a5f4a;
+    border-bottom-color: #1a5f4a;
+  }
+}
+
+.resource-tab-count {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #eef8f4;
+  color: #1a5f4a;
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
+}
+
+.resource-section {
+  padding-top: 18px;
+}
+
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.resource-card {
+  overflow: hidden;
+  border: 1px solid #eef0f4;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #c8eadf;
+    box-shadow: 0 8px 20px rgba(26, 95, 74, 0.12);
+    transform: translateY(-1px);
+  }
+}
+
+.resource-cover {
+  height: 118px;
+  background: #f2f6fc;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.resource-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a5f4a;
+  font-weight: 700;
+  background: linear-gradient(135deg, #eef8f4, #fff7e6);
+}
+
+.resource-body {
+  padding: 12px;
+}
+
+.resource-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-desc {
+  margin-top: 7px;
+  min-height: 18px;
+  color: #606266;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  color: #909399;
+  font-size: 12px;
+
+  span:first-child {
+    color: #f56c6c;
+    font-weight: 700;
   }
 }
 </style>

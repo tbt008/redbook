@@ -7,7 +7,6 @@
         </div>
         <div class="header-actions">
           <el-button @click="handleSave" type="primary" :loading="saving">💾 保存</el-button>
-          <el-button @click="handleOptimize" :loading="optimizing">🎯 优化路线</el-button>
           <el-button @click="handlePreview">👁️ 预览</el-button>
           <el-button @click="goBack">返回</el-button>
         </div>
@@ -20,14 +19,11 @@
         <div class="map-section">
           <div class="section-header">
             <h3>🗺️ 地图视图</h3>
-            <el-button-group size="small">
-              <el-button :type="mapMode === 'view' ? 'primary' : ''" @click="mapMode = 'view'">
-                查看
-              </el-button>
-              <el-button :type="mapMode === 'edit' ? 'primary' : ''" @click="mapMode = 'edit'">
-                编辑
-              </el-button>
-            </el-button-group>
+            <el-checkbox-group v-model="visibleTypes" size="small">
+              <el-checkbox-button label="attraction">🏞️ 景点</el-checkbox-button>
+              <el-checkbox-button label="food">🍜 美食</el-checkbox-button>
+              <el-checkbox-button label="hotel">🏨 酒店</el-checkbox-button>
+            </el-checkbox-group>
           </div>
           
           <div class="map-container" ref="mapContainerRef">
@@ -37,18 +33,7 @@
 
           <!-- 地图图例 -->
           <div class="map-legend">
-            <div class="legend-item">
-              <span class="legend-icon">🏞️</span>
-              <span>景点</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-icon">🍜</span>
-              <span>美食</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-icon">🏨</span>
-              <span>酒店</span>
-            </div>
+            <span>💡 点击地图标记，选择天数后添加到行程</span>
           </div>
         </div>
 
@@ -56,17 +41,30 @@
         <div class="timeline-section">
           <div class="section-header">
             <h3>📅 行程安排</h3>
-            <el-button size="small" @click="showItemSelector = true">
-              ➕ 添加项目
-            </el-button>
+            <div class="day-actions">
+              <el-select
+                v-model="selectedDayIndex"
+                size="small"
+                style="width: 108px"
+                aria-label="选择添加到哪一天"
+              >
+                <el-option
+                  v-for="option in dayOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+              <el-button size="small" @click="addDay">+ 添加一天</el-button>
+            </div>
           </div>
 
           <div class="timeline-container">
             <div v-if="itinerary.days.length === 0" class="empty-state">
               <div class="empty-icon">📝</div>
               <div class="empty-text">还没有行程安排</div>
-              <el-button type="primary" @click="showItemSelector = true">
-                开始添加
+              <el-button type="primary" @click="addDay">
+                添加一天
               </el-button>
             </div>
 
@@ -159,19 +157,6 @@
       </div>
     </div>
 
-    <!-- 项目选择器对话框 -->
-    <el-dialog 
-      v-model="showItemSelector" 
-      title="添加项目" 
-      width="900px"
-      :close-on-click-modal="false"
-    >
-      <ItemSelector 
-        @select="handleItemSelect"
-        @close="showItemSelector = false"
-      />
-    </el-dialog>
-
     <!-- 项目编辑对话框 -->
     <el-dialog
       v-model="showItemEditor"
@@ -211,28 +196,58 @@
         <el-button type="primary" @click="saveItemEdit">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 地图标记详情弹窗 -->
+    <el-dialog v-model="showMarkerDialog" title="详情" width="400px">
+      <div v-if="selectedMarker" class="marker-detail">
+        <div class="detail-icon">{{ getItemIcon(selectedMarker.type) }}</div>
+        <h3>{{ selectedMarker.name }}</h3>
+        <p v-if="selectedMarker.address">📍 {{ selectedMarker.address }}</p>
+        <p>💰 {{ formatItemCost(selectedMarker) }}</p>
+        <p v-if="selectedMarker.rating">⭐ 评分 {{ selectedMarker.rating }}</p>
+        <p v-if="selectedMarker.description" class="description">{{ selectedMarker.description }}</p>
+        <div class="dialog-day-selector">
+          <span>添加到</span>
+          <el-select v-model="selectedDayIndex" size="small" style="width: 120px">
+            <el-option
+              v-for="option in dayOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showMarkerDialog = false">取消</el-button>
+        <el-button type="primary" @click="addSelectedMarkerToItinerary">
+          添加到行程
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import ItemSelector from '@/components/ItemSelector.vue'
 import request from '@/util/request'
+import { loadAMapScript } from '@/utils/amap'
+import { normalizeDate, type DateInput } from '@/utils/date'
 
 const router = useRouter()
 const route = useRoute()
 
 const saving = ref(false)
-const optimizing = ref(false)
-const mapMode = ref<'view' | 'edit'>('view')
-const showItemSelector = ref(false)
 const showItemEditor = ref(false)
+const showMarkerDialog = ref(false)
 const selectedItem = ref<any>(null)
+const selectedMarker = ref<any>(null)
 const editingItem = ref<any>(null)
 const mapContainerRef = ref<HTMLElement>()
+const visibleTypes = ref(['attraction', 'food', 'hotel'])
 
 // 高德地图实例
 const realMapInstance = ref<any>(null)
@@ -240,18 +255,41 @@ const realMapMarkers = ref<any[]>([])
 const routePolylines = ref<any[]>([])
 const mapLoadError = ref(false)
 
+const normalizeResourceId = (value: any) => {
+  if (typeof value === 'number') return value
+  if (typeof value !== 'string') return null
+  if (/^\d+$/.test(value)) return Number(value)
+  const match = value.match(/^[a-zA-Z]+-(\d+)(?:-.+)?$/)
+  return match ? Number(match[1]) : null
+}
+
+const getMapItemKey = (type: any, id: any) => {
+  const refId = normalizeResourceId(id)
+  return type && refId ? `${type}:${refId}` : ''
+}
+
+const findMapItem = (item: any) => {
+  const refId = normalizeResourceId(item.refId ?? item.id)
+  if (!refId) return null
+
+  return allMapItems.value.find((mapItem) =>
+    mapItem.type === item.type && normalizeResourceId(mapItem.id) === refId
+  ) || null
+}
+
 // 行程中实际使用的地图项目（根据行程数据筛选）
 const itineraryMapItems = computed(() => {
-  const usedRefIds = new Set<number>()
+  const usedKeys = new Set<string>()
   itinerary.days.forEach(day => {
     day.items.forEach((item: any) => {
-      if (item.refId) {
-        usedRefIds.add(item.refId)
+      const key = getMapItemKey(item.type, item.refId)
+      if (key) {
+        usedKeys.add(key)
       }
     })
   })
   
-  return allMapItems.value.filter(item => usedRefIds.has(item.id))
+  return allMapItems.value.filter(item => usedKeys.has(getMapItemKey(item.type, item.id)))
 })
 
 // 按时间排序获取所有行程项目（用于绘制路线）
@@ -302,6 +340,40 @@ const allMapItems = ref([
   { id: 202, name: '市区商务酒店', type: 'hotel', x: 50, y: 40, cost: 200, longitude: 119.07, latitude: 25.44 }
 ])
 
+const filteredMapItems = computed(() => {
+  return allMapItems.value.filter((item: any) => visibleTypes.value.includes(item.type))
+})
+
+const normalizeMapItem = (item: any) => ({
+  ...item,
+  id: normalizeResourceId(item.id),
+  icon: item.icon,
+  address: item.address || '',
+  rating: item.rating,
+  description: item.description || '',
+  cost: item.cost ?? item.price ?? item.ticketPrice ?? item.avgPrice ?? 0,
+  longitude: item.longitude != null ? Number(item.longitude) : null,
+  latitude: item.latitude != null ? Number(item.latitude) : null
+})
+
+const loadAllMapItems = async () => {
+  try {
+    const res: any = await request.get('/map/markers')
+    const data = res?.data || {}
+    const attractions = (data.attractions || []).map((item: any) => normalizeMapItem({ ...item, type: 'attraction' }))
+    const foods = (data.foods || []).map((item: any) => normalizeMapItem({ ...item, type: 'food' }))
+    const hotels = (data.hotels || []).map((item: any) => normalizeMapItem({ ...item, type: 'hotel' }))
+    const loadedItems = [...attractions, ...foods, ...hotels].filter((item) => item.id)
+
+    if (loadedItems.length > 0) {
+      allMapItems.value = loadedItems
+      console.log(`编辑器地图已加载 ${attractions.length} 个景点、${foods.length} 个美食、${hotels.length} 个酒店`)
+    }
+  } catch (error) {
+    console.error('加载地图资源失败，使用本地默认地图数据:', error)
+  }
+}
+
 // 行程数据
 const itinerary = reactive({
   id: null as number | null,
@@ -309,16 +381,35 @@ const itinerary = reactive({
   days: [] as any[]
 })
 
+const selectedDayIndex = ref(0)
+const dayOptions = computed(() => itinerary.days.map((_, index) => ({
+  label: `第${index + 1}天`,
+  value: index
+})))
+
+const normalizeDayIndex = (dayIndex = selectedDayIndex.value) => {
+  if (!itinerary.days.length) return 0
+  const index = Number(dayIndex)
+  return Number.isInteger(index) && index >= 0 && index < itinerary.days.length
+    ? index
+    : itinerary.days.length - 1
+}
+
+const addDay = () => {
+  const baseDate = normalizeDate(itinerary.days[itinerary.days.length - 1]?.date) || new Date()
+  const nextDate = new Date(baseDate)
+  nextDate.setDate(baseDate.getDate() + (itinerary.days.length > 0 ? 1 : 0))
+
+  itinerary.days.push({
+    dayNumber: itinerary.days.length + 1,
+    date: nextDate.toISOString().split('T')[0],
+    items: []
+  })
+  selectedDayIndex.value = itinerary.days.length - 1
+}
+
 // 初始化高德地图
-const initRealMap = () => {
-  console.log('正在初始化地图, AMap对象:', !!window.AMap)
-
-  if (!window.AMap) {
-    console.error('AMap 对象不存在，地图API可能未加载成功')
-    mapLoadError.value = true
-    return
-  }
-
+const initRealMap = async () => {
   const container = document.getElementById('itinerary-amap-container')
   if (!container) {
     console.error('地图容器不存在')
@@ -332,6 +423,8 @@ const initRealMap = () => {
   }
 
   try {
+    await loadAMapScript()
+
     // 创建地图实例 - 莆田市中心坐标
     const map = new window.AMap.Map('itinerary-amap-container', {
       zoom: 11,
@@ -365,7 +458,7 @@ const createMarkerHtml = (item: any) => {
   const icon = item.type === 'attraction' ? '🏞️' : item.type === 'food' ? '🍜' : '🏨'
   const typeClass = item.type === 'attraction' ? 'attraction' : item.type === 'food' ? 'food' : 'hotel'
   const div = document.createElement('div')
-  div.className = 'itinerary-marker ' + typeClass
+  div.className = `itinerary-marker ${typeClass}${item.selected ? ' selected' : ''}`
   div.innerHTML = `
     <div class="marker-pin">
       <span class="marker-icon">${icon}</span>
@@ -378,31 +471,37 @@ const createMarkerHtml = (item: any) => {
 
 // 地理编码：根据地址获取经纬度
 const geocodeAddress = (address: string): Promise<{ lng: number; lat: number } | null> => {
-  return new Promise((resolve) => {
-    if (!window.AMap || !address) {
+  return new Promise(async (resolve) => {
+    if (!address) {
       resolve(null)
       return
     }
 
-    // 使用高德地图地理编码
-    window.AMap.plugin('AMap.Geocoder', () => {
-      const geocoder = new window.AMap.Geocoder({
-        city: '莆田' // 指定城市
-      })
+    try {
+      await loadAMapScript()
+      // 使用高德地图地理编码
+      window.AMap.plugin('AMap.Geocoder', () => {
+        const geocoder = new window.AMap.Geocoder({
+          city: '莆田' // 指定城市
+        })
 
-      geocoder.getLocation(address, (status: string, result: any) => {
-        if (status === 'complete' && result.info === 'OK' && result.geocodes.length > 0) {
-          const location = result.geocodes[0].location
-          resolve({
-            lng: location.lng,
-            lat: location.lat
-          })
-        } else {
-          console.warn(`地理编码失败: ${address}`)
-          resolve(null)
-        }
+        geocoder.getLocation(address, (status: string, result: any) => {
+          if (status === 'complete' && result.info === 'OK' && result.geocodes.length > 0) {
+            const location = result.geocodes[0].location
+            resolve({
+              lng: location.lng,
+              lat: location.lat
+            })
+          } else {
+            console.warn(`地理编码失败: ${address}`)
+            resolve(null)
+          }
+        })
       })
-    })
+    } catch (error) {
+      console.warn(`地理编码服务加载失败: ${address}`, error)
+      resolve(null)
+    }
   })
 }
 
@@ -417,10 +516,12 @@ const updateMapMarkers = async () => {
   realMapMarkers.value = []
   routePolylines.value = []
 
-  // 直接从行程数据中获取所有项目及其坐标
+  // 从数据库地图资源中展示全部景点、美食、酒店，同时保留行程项目的选中状态。
   const allItineraryItems: any[] = []
+  const itineraryItemKeys = new Set<string>()
   itinerary.days.forEach(day => {
     day.items.forEach((item: any) => {
+      itineraryItemKeys.add(getMapItemKey(item.type, item.refId ?? item.id))
       allItineraryItems.push({
         ...item,
         date: day.date,
@@ -431,20 +532,27 @@ const updateMapMarkers = async () => {
 
   console.log('行程数据中的所有项目:', allItineraryItems)
 
-  if (allItineraryItems.length === 0) {
-    console.log('行程中没有项目，不显示标记')
+  const markerItems = filteredMapItems.value.length > 0
+    ? filteredMapItems.value.map((item) => ({
+      ...item,
+      selected: itineraryItemKeys.has(getMapItemKey(item.type, item.id))
+    }))
+    : allItineraryItems
+
+  if (markerItems.length === 0) {
+    console.log('没有可显示的地图项目')
     return
   }
 
-  // 添加行程项目的标记 - 直接使用行程数据中的坐标
-  for (const item of allItineraryItems) {
+  // 添加地图项目标记。
+  for (const item of markerItems) {
     // 优先使用行程数据中自带的坐标
     let lng = item.longitude != null ? Number(item.longitude) : null
     let lat = item.latitude != null ? Number(item.latitude) : null
 
-    // 如果行程数据中没有坐标，尝试从 allMapItems 查找
+    // 如果行程数据中没有坐标，尝试按类型和 refId 从 allMapItems 查找
     if (lng == null || lat == null) {
-      const mapItem = allMapItems.value.find(m => m.id === item.refId || m.id === item.id)
+      const mapItem = findMapItem(item)
       if (mapItem) {
         lng = mapItem.longitude != null ? Number(mapItem.longitude) : null
         lat = mapItem.latitude != null ? Number(mapItem.latitude) : null
@@ -453,8 +561,8 @@ const updateMapMarkers = async () => {
     }
 
     // 如果还是没有坐标，尝试通过地址地理编码
-    if ((lng == null || lat == null) && item.notes) {
-      const coords = await geocodeAddress(item.notes)
+    if ((lng == null || lat == null) && (item.address || item.notes)) {
+      const coords = await geocodeAddress(item.address || item.notes)
       if (coords) {
         lng = coords.lng
         lat = coords.lat
@@ -558,7 +666,7 @@ const drawRouteLines = () => {
     if (dayItems.length < 2) return
 
     const path: [number, number][] = dayItems.map(item => {
-      const mapItem = allMapItems.value.find(m => m.id === item.refId || m.id === item.id)
+      const mapItem = findMapItem(item)
       if (!mapItem) {
         // 如果找不到匹配，尝试使用行程数据自带的坐标
         const lng = item.longitude != null ? Number(item.longitude) : null
@@ -633,17 +741,14 @@ const drawRouteLines = () => {
   console.log('行程项目列表:', allItems.map((i: any) => ({ name: i.name, refId: i.refId, date: i.date })))
 }
 
+watch(visibleTypes, () => {
+  updateMapMarkers()
+}, { deep: true })
+
 // 处理地图标记点击
 const handleMapMarkerClick = (item: any) => {
-  if (mapMode.value === 'edit') {
-    // 编辑模式：添加到行程
-    if (!isItemSelected(item)) {
-      addItemToItinerary(item)
-    }
-  } else {
-    // 查看模式：显示详情
-    ElMessage.info(`${item.name} - ¥${item.cost}`)
-  }
+  selectedMarker.value = item
+  showMarkerDialog.value = true
 }
 
 // 获取标记样式（保留用于可能的示意图模式）
@@ -699,16 +804,26 @@ const getItemIcon = (type: string) => {
   return getMarkerIcon(type)
 }
 
+const formatItemCost = (item: any) => {
+  const cost = Number(item?.cost || 0)
+  if (item?.type === 'hotel') return `¥${cost}/晚`
+  if (item?.type === 'food') return `¥${cost}/人`
+  return cost === 0 ? '免费' : `¥${cost}`
+}
+
 // 判断项目是否被选中
 const isItemSelected = (mapItem: any) => {
   return itinerary.days.some(day => 
-    day.items.some((item: any) => item.refId === mapItem.id)
+    day.items.some((item: any) => getMapItemKey(item.type, item.refId) === getMapItemKey(mapItem.type, mapItem.id))
   )
 }
 
 // 格式化日期
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('zh-CN', {
+const formatDate = (date: DateInput) => {
+  const parsed = normalizeDate(date)
+  if (!parsed) return '日期待定'
+
+  return parsed.toLocaleDateString('zh-CN', {
     month: '2-digit',
     day: '2-digit',
     weekday: 'short'
@@ -722,33 +837,24 @@ const calculateDayCost = (day: any) => {
 
 // 处理标记点击
 const handleMarkerClick = (mapItem: any) => {
-  if (mapMode.value === 'edit') {
-    // 编辑模式：添加到行程
-    if (!isItemSelected(mapItem)) {
-      addItemToItinerary(mapItem)
-    }
-  } else {
-    // 查看模式：显示详情
-    ElMessage.info(`${mapItem.name} - ¥${mapItem.cost}`)
-  }
+  handleMapMarkerClick(mapItem)
 }
 
 // 添加项目到行程
-const addItemToItinerary = (mapItem: any) => {
+const addItemToItinerary = (mapItem: any, dayIndex = selectedDayIndex.value) => {
   if (itinerary.days.length === 0) {
-    ElMessage.warning('请先创建行程天数')
-    return
+    addDay()
   }
 
   // 为新项目创建默认的开始时间
   const defaultTime = new Date()
   defaultTime.setHours(9, 0, 0, 0)
 
-  // 添加到第一天
-  const firstDay = itinerary.days[0]
+  const targetDayIndex = normalizeDayIndex(dayIndex)
+  const targetDay = itinerary.days[targetDayIndex]
   const newItem = {
-    id: Date.now(),
-    refId: mapItem.id,
+    id: `${mapItem.type || 'item'}-${mapItem.id || Date.now()}-${Date.now()}`,
+    refId: normalizeResourceId(mapItem.id),
     name: mapItem.name,
     type: mapItem.type,
     startTime: defaultTime,
@@ -760,50 +866,23 @@ const addItemToItinerary = (mapItem: any) => {
     latitude: mapItem.latitude
   }
 
-  firstDay.items.push(newItem)
-  ElMessage.success(`已添加 ${mapItem.name}`)
+  targetDay.items.push(newItem)
+  selectedDayIndex.value = targetDayIndex
+  ElMessage.success(`已添加 ${mapItem.name} 到第${targetDayIndex + 1}天`)
 
   // 更新地图显示
   updateMapMarkers()
+}
+
+const addSelectedMarkerToItinerary = () => {
+  if (!selectedMarker.value) return
+  addItemToItinerary(selectedMarker.value)
+  showMarkerDialog.value = false
 }
 
 // 选择时间轴项目
 const selectTimelineItem = (item: any) => {
   selectedItem.value = item
-}
-
-// 处理项目选择
-const handleItemSelect = (item: any, dayIndex: number) => {
-  const day = itinerary.days[dayIndex]
-  if (!day) {
-    ElMessage.error('请先选择添加到哪一天')
-    return
-  }
-
-  // 为新项目创建默认的开始时间（使用当天的日期 + 时间）
-  const defaultTime = new Date()
-  defaultTime.setHours(9, 0, 0, 0)
-
-  const newItem = {
-    id: Date.now(),
-    refId: item.id,
-    name: item.name,
-    type: item.type,
-    startTime: defaultTime,
-    duration: item.duration || 120,
-    cost: item.cost || 0,
-    notes: '',
-    address: item.address || '',
-    longitude: item.longitude,
-    latitude: item.latitude
-  }
-
-  day.items.push(newItem)
-  showItemSelector.value = false
-  ElMessage.success(`已添加 ${item.name}`)
-
-  // 更新地图显示
-  updateMapMarkers()
 }
 
 // 编辑项目
@@ -884,10 +963,11 @@ const handleSave = async () => {
             }
           }
           // 查找原始坐标信息
-          const mapItem = allMapItems.value.find(m => m.id === item.refId)
+          const refId = normalizeResourceId(item.refId)
+          const mapItem = findMapItem(item)
           return {
             type: item.type,
-            refId: item.refId,
+            refId,
             name: item.name,
             startTime: timeStr,
             duration: item.duration || 120,
@@ -912,16 +992,6 @@ const handleSave = async () => {
   }
 }
 
-// 优化路线
-const handleOptimize = () => {
-  optimizing.value = true
-  
-  setTimeout(() => {
-    ElMessage.success('路线优化完成！')
-    optimizing.value = false
-  }, 1500)
-}
-
 // 预览行程
 const handlePreview = () => {
   router.push({
@@ -940,6 +1010,8 @@ const goBack = () => {
 
 // 加载行程数据
 onMounted(async () => {
+  await loadAllMapItems()
+
   const id = route.query.id
 
   if (id) {
@@ -993,7 +1065,13 @@ onMounted(async () => {
             }) : []
           }))
         } else {
-          itinerary.days = []
+          itinerary.days = [
+            {
+              dayNumber: 1,
+              date: new Date().toISOString().split('T')[0],
+              items: []
+            }
+          ]
         }
       }
     } catch (error) {
@@ -1011,6 +1089,8 @@ onMounted(async () => {
       }
     ]
   }
+
+  selectedDayIndex.value = normalizeDayIndex(selectedDayIndex.value)
 
   // 初始化高德地图
   nextTick(() => {
@@ -1081,6 +1161,7 @@ onMounted(async () => {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          gap: 12px;
           margin-bottom: 16px;
           padding-bottom: 16px;
           border-bottom: 2px solid #f0f0f0;
@@ -1089,6 +1170,13 @@ onMounted(async () => {
             margin: 0;
             font-size: 20px;
             color: #333;
+          }
+
+          .day-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
           }
         }
       }
@@ -1176,6 +1264,17 @@ onMounted(async () => {
 
               &.hotel .marker-icon {
                 background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+              }
+
+              &.selected {
+                .marker-icon {
+                  box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.28), 0 3px 10px rgba(0, 0, 0, 0.3);
+                  border-color: #409eff;
+                }
+
+                .marker-label {
+                  background: #1d4ed8;
+                }
               }
             }
           }
@@ -1266,11 +1365,16 @@ onMounted(async () => {
 
         .map-legend {
           display: flex;
-          gap: 20px;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
           margin-top: 16px;
           padding: 12px;
           background: #f8f9fa;
           border-radius: 8px;
+          color: #6b7280;
+          font-size: 14px;
+          font-weight: 500;
 
           .legend-item {
             display: flex;
@@ -1442,6 +1546,51 @@ onMounted(async () => {
       }
     }
   }
+
+  .marker-detail {
+    text-align: center;
+    padding: 10px;
+
+    .detail-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      margin: 0 0 18px;
+      color: #1f2937;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 10px 0;
+      color: #64748b;
+      font-size: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .description {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    .dialog-day-selector {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      color: #4b5563;
+      font-weight: 600;
+    }
+  }
 }
 
 @keyframes dash {
@@ -1450,4 +1599,3 @@ onMounted(async () => {
   }
 }
 </style>
-

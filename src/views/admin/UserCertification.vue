@@ -54,7 +54,11 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="merchantApplyTime" label="申请时间" width="180" />
+        <el-table-column prop="merchantApplyTime" label="申请时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.merchantApplyTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="viewDetail(row)">查看详情</el-button>
@@ -182,6 +186,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
+import { formatDateTime } from '@/util/datetime'
 
 const loading = ref(false)
 const submitting = ref(false)

@@ -291,6 +291,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { View, Star, Pointer, ArrowLeft, Edit, Delete, ChatLineRound, ArrowDown, Link } from '@element-plus/icons-vue'
 import { type Article } from '@/types/article'
 import request from '@/util/request'
+import { formatDateTime, type DateInput } from '@/utils/date'
 const route = useRoute()
 const router = useRouter()
 const loading = ref<boolean>(true)
@@ -492,12 +493,8 @@ const handleEdit = async () => {
   disabled.value = true
 }
 // 格式化日期
-const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleString('zh-CN')
-}
-const formatDateArray = (dateArray: number[]) => {
-  return `${dateArray[0]}年${dateArray[1]}月${dateArray[2]}日`
-}
+const formatDate = (dateString: DateInput): string => formatDateTime(dateString, '时间待确认')
+const formatDateArray = (dateArray: DateInput) => formatDateTime(dateArray, '时间待确认', 'YYYY年MM月DD日 HH:mm')
 // 类型定义
 interface Comment {
   id: number
@@ -506,7 +503,7 @@ interface Comment {
   parentId: number
   avatar: string
   content: string
-  createTime: number[]
+  createTime: DateInput
   children?: Comment[]
 }
 

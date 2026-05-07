@@ -13,7 +13,11 @@
       <!-- 如果需要边框就加 border -->
       <el-table :data="tableData" v-loading="loading" style="width: 100%; margin-top: 20px;">
         <el-table-column prop="fileName" label="文件名" />
-        <el-table-column prop="createTime" label="创建时间" />
+        <el-table-column prop="createTime" label="创建时间">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         <!-- <el-table-column prop="status" label="状态">
           <template #default="scope">
             <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
@@ -43,6 +47,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/util/request'
+import { formatDateTime } from '@/util/datetime'
 
 const tableData = ref([])
 const loading = ref(false)

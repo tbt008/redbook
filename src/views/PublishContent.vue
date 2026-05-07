@@ -74,14 +74,42 @@
           </el-form-item>
 
           <el-form-item label="标签">
-            <el-select v-model="form.tags" multiple placeholder="选择标签" style="width: 100%">
-              <el-option v-for="tag in tagList" :key="tag.id" :label="tag.tagName" :value="tag.id" />
+            <el-select
+              v-model="form.tags"
+              multiple
+              filterable
+              allow-create
+              default-first-option
+              placeholder="输入标签后按回车添加，也可以选择已有标签"
+              class="tag-select"
+            >
+              <el-option v-for="tag in tagList" :key="tag.id" :label="tag.tagName" :value="tag.tagName" />
             </el-select>
           </el-form-item>
 
-          <el-form-item label="关联景点">
-            <el-select v-model="form.attractionId" placeholder="选择关联景点" clearable filterable>
-              <el-option v-for="item in attractionList" :key="item.id" :label="item.name" :value="item.id" />
+          <el-form-item label="关联类型">
+            <el-radio-group v-model="form.relatedType" class="related-type-group">
+              <el-radio-button v-for="option in relatedTypeOptions" :key="option.value" :label="option.value">
+                {{ option.label }}
+              </el-radio-button>
+            </el-radio-group>
+          </el-form-item>
+
+          <el-form-item :label="`关联${currentRelatedType.label}`">
+            <el-select
+              v-model="form.relatedId"
+              :placeholder="`选择关联${currentRelatedType.label}`"
+              clearable
+              filterable
+              :loading="relatedLoading"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="item in currentRelatedList"
+                :key="item.id"
+                :label="getRelatedLabel(item)"
+                :value="item.id"
+              />
             </el-select>
           </el-form-item>
 
@@ -96,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, UploadProps } from 'element-plus'
@@ -108,9 +136,24 @@ const router = useRouter()
 const publishing = ref(false)
 const tagList = ref<any[]>([])
 const attractionList = ref<any[]>([])
+const foodList = ref<any[]>([])
+const hotelList = ref<any[]>([])
+const relatedLoading = ref(false)
 const imageList = ref<any[]>([])
 const formRef = ref<FormInstance>()
 const mavonEditorRef = ref<any>()
+
+type RelatedType = 'attraction' | 'food' | 'hotel'
+
+const relatedTypeOptions: Array<{
+  value: RelatedType
+  label: string
+  endpoint: string
+}> = [
+  { value: 'attraction', label: '景点', endpoint: '/attraction/list' },
+  { value: 'food', label: '美食', endpoint: '/food/list' },
+  { value: 'hotel', label: '酒店', endpoint: '/hotel/list' }
+]
 
 const toolbars = {
   bold: true,
@@ -149,8 +192,23 @@ const form = reactive({
   coverImage: '',
   images: [] as string[],
   content: '',
-  tags: [] as number[],
-  attractionId: null as number | null
+  tags: [] as string[],
+  relatedType: 'attraction' as RelatedType,
+  relatedId: null as number | null
+})
+
+const currentRelatedType = computed(() => {
+  return relatedTypeOptions.find(option => option.value === form.relatedType) || relatedTypeOptions[0]
+})
+
+const currentRelatedList = computed(() => {
+  if (form.relatedType === 'food') return foodList.value
+  if (form.relatedType === 'hotel') return hotelList.value
+  return attractionList.value
+})
+
+const selectedRelatedItem = computed(() => {
+  return currentRelatedList.value.find(item => item.id === form.relatedId)
 })
 
 const rules = {
@@ -171,17 +229,52 @@ const loadTags = async () => {
   }
 }
 
-const loadAttractions = async () => {
+const getListData = (data: any) => {
+  if (Array.isArray(data)) return data
+  return data?.list || data?.records || []
+}
+
+const setRelatedList = (type: RelatedType, list: any[]) => {
+  if (type === 'food') {
+    foodList.value = list
+    return
+  }
+
+  if (type === 'hotel') {
+    hotelList.value = list
+    return
+  }
+
+  attractionList.value = list
+}
+
+const loadRelatedList = async (type: RelatedType = form.relatedType) => {
+  const option = relatedTypeOptions.find(item => item.value === type)
+  if (!option) return
+
+  const cachedList = type === 'food' ? foodList.value : type === 'hotel' ? hotelList.value : attractionList.value
+  if (cachedList.length > 0) return
+
+  relatedLoading.value = true
   try {
-    const res: any = await request.get('/attraction/list', {
+    const res: any = await request.get(option.endpoint, {
       params: { pageNum: 1, pageSize: 100 }
     })
     if (res.code === 200) {
-      attractionList.value = res.data?.list || []
+      setRelatedList(type, getListData(res.data))
     }
   } catch (error) {
-    console.error('加载景点失败', error)
+    console.error(`加载${option.label}失败`, error)
+  } finally {
+    relatedLoading.value = false
   }
+}
+
+const getRelatedLabel = (item: any) => {
+  const parts = [item.name]
+  if (item.region) parts.push(item.region)
+  if (item.address) parts.push(item.address)
+  return parts.filter(Boolean).join(' - ')
 }
 
 const handleCoverSuccess: UploadProps['onSuccess'] = response => {
@@ -211,7 +304,7 @@ const handleEditorImageAdd = async (pos: number, file: File) => {
   formData.append('file', file)
 
   try {
-    const res: any = await request.post('/api/file/upload?directory=content', formData, {
+    const res: any = await request.post('/file/upload?directory=content', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -239,12 +332,27 @@ const handlePublish = async () => {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
 
+  const normalizedTags = [...new Set(form.tags.map(tag => tag.trim()).filter(Boolean))]
+  form.tags = normalizedTags
+
   publishing.value = true
   try {
     const data = {
-      ...form,
+      title: form.title,
+      summary: form.description,
+      description: form.description,
+      content: form.content,
+      contentType: form.images.length > 0 ? 2 : 1,
+      type: form.images.length > 0 ? 2 : 1,
+      coverImage: form.coverImage,
       images: JSON.stringify(form.images),
-      tags: JSON.stringify(form.tags)
+      tags: JSON.stringify(normalizedTags),
+      location: selectedRelatedItem.value?.name || undefined,
+      region: selectedRelatedItem.value?.region || undefined,
+      theme: selectedRelatedItem.value ? currentRelatedType.value.label : undefined,
+      attractionId: form.relatedType === 'attraction' ? form.relatedId : null,
+      foodId: form.relatedType === 'food' ? form.relatedId : null,
+      hotelId: form.relatedType === 'hotel' ? form.relatedId : null
     }
     const res: any = await request.post('/content/add', data)
     if (res.code === 200) {
@@ -263,8 +371,16 @@ const goBack = () => router.back()
 
 onMounted(() => {
   loadTags()
-  loadAttractions()
+  loadRelatedList()
 })
+
+watch(
+  () => form.relatedType,
+  type => {
+    form.relatedId = null
+    loadRelatedList(type)
+  }
+)
 </script>
 
 <style scoped lang="scss">
@@ -348,6 +464,16 @@ onMounted(() => {
   color: #909399;
   font-size: 12px;
   line-height: 1.6;
+}
+
+.tag-select {
+  width: 100%;
+}
+
+.related-type-group {
+  :deep(.el-radio-button__inner) {
+    min-width: 92px;
+  }
 }
 
 .editor-wrapper {

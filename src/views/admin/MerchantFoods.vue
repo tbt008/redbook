@@ -39,7 +39,7 @@
                   <div class="image-slot"><el-icon><Picture /></el-icon></div>
                 </template>
               </el-image>
-              <div class="food-detail">
+              <div class="merchant-food-meta">
                 <div class="name">{{ row.name }}</div>
                 <div class="address">{{ row.region }} - {{ row.address }}</div>
               </div>
@@ -83,7 +83,11 @@
             <el-tag v-else type="danger">下架</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column prop="createTime" label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
@@ -124,14 +128,26 @@
           </el-select>
         </el-form-item>
         <el-form-item label="详细地址" prop="address">
-          <el-input v-model="foodForm.address" placeholder="请输入详细地址" />
+          <MapLocationPicker
+            v-model:address="foodForm.address"
+            v-model:longitude="foodForm.longitude"
+            v-model:latitude="foodForm.latitude"
+            v-model:region="foodForm.region"
+          />
         </el-form-item>
         <el-form-item label="人均消费" prop="avgPrice">
           <el-input-number v-model="foodForm.avgPrice" :min="0" :precision="2" style="width: 200px" />
           <span style="margin-left: 10px">元/人</span>
         </el-form-item>
         <el-form-item label="联系电话" prop="contactPhone">
-          <el-input v-model="foodForm.contactPhone" placeholder="请输入联系电话" />
+          <el-input
+            v-model="foodForm.contactPhone"
+            placeholder="请输入11位手机号"
+            maxlength="11"
+            show-word-limit
+            inputmode="numeric"
+            @input="foodForm.contactPhone = normalizeMobilePhone($event)"
+          />
         </el-form-item>
         <el-form-item label="总桌位数" prop="totalTables">
           <el-input-number v-model="foodForm.totalTables" :min="0" :max="100" style="width: 200px" />
@@ -154,7 +170,7 @@
               </div>
             </div>
           </div>
-          <el-button type="primary" @click="triggerImageUpload">
+          <el-button type="primary" @click="triggerImageUpload" :loading="imageUploading">
             <el-icon><Plus /></el-icon> 添加图片
           </el-button>
           <input type="file" ref="fileInput" accept="image/*" multiple style="display: none" @change="handleImageChange" />
@@ -254,7 +270,7 @@
               <el-icon><Delete /></el-icon>
             </el-button>
           </div>
-          <el-button type="primary" @click="triggerPackageImageUpload" v-else>
+          <el-button type="primary" @click="triggerPackageImageUpload" :loading="packageImageUploading" v-else>
             <el-icon><Plus /></el-icon> 上传图片
           </el-button>
           <input type="file" ref="packageImageInput" accept="image/*" style="display: none" @change="handlePackageImageChange" />
@@ -273,6 +289,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { Picture, Delete, Plus } from '@element-plus/icons-vue'
 import request from '@/util/request'
+import { normalizeMobilePhone, validateMobilePhone } from '@/utils/attractionForm'
+import MapLocationPicker from '@/components/MapLocationPicker.vue'
+import { formatDateTime } from '@/util/datetime'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -282,6 +301,7 @@ const dialogTitle = ref('发布美食')
 const formRef = ref<FormInstance>()
 const fileInput = ref<HTMLInputElement>()
 const isEdit = ref(false)
+const imageUploading = ref(false)
 
 // 套餐相关
 const packageDialogVisible = ref(false)
@@ -290,6 +310,7 @@ const packageLoading = ref(false)
 const packageSubmitting = ref(false)
 const packageFormRef = ref<FormInstance>()
 const packageImageInput = ref<HTMLInputElement>()
+const packageImageUploading = ref(false)
 const packageList = ref<any[]>([])
 const packageFormTitle = ref('添加套餐')
 const currentFoodId = ref<number | null>(null)
@@ -312,6 +333,8 @@ const foodForm = reactive({
   name: '',
   region: '',
   address: '',
+  longitude: null as number | null,
+  latitude: null as number | null,
   avgPrice: 0,
   contactPhone: '',
   description: '',
@@ -328,11 +351,22 @@ const imageList = computed(() => {
   }
 })
 
+const uploadImageFile = async (file: File, directory = 'food') => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const res: any = await request.post('/file/upload', formData, {
+    params: { directory },
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return res.data?.url || ''
+}
+
 const formRules = {
   name: [{ required: true, message: '请输入美食名称', trigger: 'blur' }],
   region: [{ required: true, message: '请选择地区', trigger: 'change' }],
   address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
-  avgPrice: [{ required: true, message: '请输入人均消费', trigger: 'blur' }]
+  avgPrice: [{ required: true, message: '请输入人均消费', trigger: 'blur' }],
+  contactPhone: [{ validator: validateMobilePhone, trigger: 'blur' }]
 }
 
 // 套餐表单
@@ -394,6 +428,8 @@ const handleAdd = () => {
   foodForm.name = ''
   foodForm.region = ''
   foodForm.address = ''
+  foodForm.longitude = null
+  foodForm.latitude = null
   foodForm.avgPrice = 0
   foodForm.contactPhone = ''
   foodForm.description = ''
@@ -410,8 +446,10 @@ const handleEdit = (row: any) => {
   foodForm.name = row.name
   foodForm.region = row.region
   foodForm.address = row.address
+  foodForm.longitude = row.longitude || null
+  foodForm.latitude = row.latitude || null
   foodForm.avgPrice = row.avgPrice
-  foodForm.contactPhone = row.contactPhone || ''
+  foodForm.contactPhone = normalizeMobilePhone(row.contactPhone)
   foodForm.description = row.description || ''
   foodForm.images = row.images || '[]'
   foodForm.totalTables = row.totalTables || 0
@@ -475,22 +513,27 @@ const triggerImageUpload = () => {
   fileInput.value?.click()
 }
 
-const handleImageChange = (event: Event) => {
+const handleImageChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const files = target.files
   if (!files) return
 
-  Array.from(files).forEach(file => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
+  imageUploading.value = true
+  try {
+    for (const file of Array.from(files)) {
+      const imageUrl = await uploadImageFile(file, 'food')
+      if (!imageUrl) continue
       const images = JSON.parse(foodForm.images || '[]')
-      images.push(e.target?.result as string)
+      images.push(imageUrl)
       foodForm.images = JSON.stringify(images)
     }
-    reader.readAsDataURL(file)
-  })
-
-  target.value = ''
+    ElMessage.success('图片上传成功')
+  } catch (error: any) {
+    ElMessage.error(error.message || '图片上传失败')
+  } finally {
+    imageUploading.value = false
+    target.value = ''
+  }
 }
 
 const removeImage = (index: number) => {
@@ -603,17 +646,24 @@ const triggerPackageImageUpload = () => {
   packageImageInput.value?.click()
 }
 
-const handlePackageImageChange = (event: Event) => {
+const handlePackageImageChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (!file) return
 
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    packageForm.image = e.target?.result as string
+  packageImageUploading.value = true
+  try {
+    const imageUrl = await uploadImageFile(file, 'food')
+    if (imageUrl) {
+      packageForm.image = imageUrl
+      ElMessage.success('图片上传成功')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '图片上传失败')
+  } finally {
+    packageImageUploading.value = false
+    target.value = ''
   }
-  reader.readAsDataURL(file)
-  target.value = ''
 }
 
 const handlePackageSubmit = async () => {
@@ -678,7 +728,7 @@ onMounted(() => {
       align-items: center;
       gap: 12px;
 
-      .food-detail {
+      .merchant-food-meta {
         .name {
           font-weight: 600;
           margin-bottom: 4px;

@@ -389,7 +389,7 @@ import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import request from '@/util/request.ts'
 import { useRouter, useRoute } from 'vue-router'
 import GoAi from '@/components/goAi.vue'
-import dayjs from 'dayjs'
+import { formatDateTime } from '@/utils/date'
 const router = useRouter()
 const route = useRoute()
 const constestList = ref([]) // 进行中的比赛
@@ -498,13 +498,7 @@ const inputInfo = (id) => {
 }
 
 // 工具：格式化时间
-const formatDate = (ts) => {
-  try {
-    return dayjs(ts).format('YYYY-MM-DD HH:mm')
-  } catch {
-    return ts
-  }
-}
+const formatDate = (ts) => formatDateTime(ts, '时间待确认', 'YYYY-MM-DD HH:mm')
 
 // 比赛状态
 const getStatus = (c) => {

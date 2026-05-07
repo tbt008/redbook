@@ -17,9 +17,9 @@ onMounted(()=>{
             </div>
         </div>
         <div class="middle">
-            <img src="https://assets.leetcode.cn/aliyun-lc-upload/medal/medalfor2023_50.png" alt="50 天成就勋章" class="h-full w-full cursor-pointer object-contain" data-state="closed" style="width: 70px; height:fit-content"> 
-            <img src="https://assets.leetcode-cn.com/contest/level/Knight_lg.png" alt="Knight" class="h-full w-full cursor-pointer object-contain" data-state="closed " style="width: 70px; height:fit-content">
-            <img src="https://assets.leetcode.cn/aliyun-lc-upload/medal/medalfor2023_100.png" alt="100 天成就勋章" class="h-full w-full cursor-pointer object-contain" data-state="closed" style="width: 70px; height:fit-content">
+            <img src="/local-images/medals/medal-2023-50.png" alt="50 天成就勋章" class="h-full w-full cursor-pointer object-contain" data-state="closed" style="width: 70px; height:fit-content"> 
+            <img src="/local-images/medals/knight-lg.png" alt="Knight" class="h-full w-full cursor-pointer object-contain" data-state="closed " style="width: 70px; height:fit-content">
+            <img src="/local-images/medals/medal-2023-100.png" alt="100 天成就勋章" class="h-full w-full cursor-pointer object-contain" data-state="closed" style="width: 70px; height:fit-content">
         </div>
         <div class="bottom">
             <div style="color:rgb(192, 192, 192); font-size: small; white-space: nowrap;">最近获得</div>

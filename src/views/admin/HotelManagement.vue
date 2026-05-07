@@ -34,7 +34,7 @@
           <span class="search-shortcut">Enter 搜索</span>
         </div>
         <div class="filter-group">
-          <el-select v-model="searchForm.region" placeholder="全部地区" clearable class="filter-select">
+          <el-select v-model="searchForm.region" placeholder="全部地区" clearable class="filter-select" @change="handleSearch">
             <template #prefix>
               <el-icon><Location /></el-icon>
             </template>
@@ -44,7 +44,7 @@
             <el-option label="秀屿区" value="秀屿区" />
             <el-option label="湄洲岛" value="湄洲岛" />
           </el-select>
-          <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="filter-select">
+          <el-select v-model="searchForm.status" placeholder="全部状态" clearable class="filter-select" @change="handleSearch">
             <template #prefix>
               <el-icon><SwitchButton /></el-icon>
             </template>
@@ -106,7 +106,7 @@
         <el-table-column label="酒店信息" width="300">
           <template #default="{ row }">
             <div class="hotel-info">
-              <el-image :src="row.images ? JSON.parse(row.images)[0] : ''" :preview-src-list="row.images ? JSON.parse(row.images) : []" fit="cover" style="width: 80px; height: 60px; border-radius: 4px">
+              <el-image :src="getFirstImage(row.images)" :preview-src-list="parseImageList(row.images)" lazy fit="cover" style="width: 80px; height: 60px; border-radius: 4px">
                 <template #error>
                   <div class="image-slot"><el-icon><Picture /></el-icon></div>
                 </template>
@@ -151,13 +151,16 @@
             {{ formatDateTime(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="warning" size="small" @click="handleManageRooms(row)">房型管理</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)" v-if="row.status !== 4">删除</el-button>
-            <el-button link type="success" size="small" @click="handleStatusChange(row, 1)" v-if="row.status === 0">上架</el-button>
-            <el-button link type="warning" size="small" @click="handleStatusChange(row, 0)" v-if="row.status === 1">下架</el-button>
+            <div class="row-actions">
+              <el-button link type="primary" size="small" @click="handleManageComments(row)">评论</el-button>
+              <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+              <el-button link type="warning" size="small" @click="handleManageRooms(row)">房型管理</el-button>
+              <el-button link type="danger" size="small" @click="handleDelete(row)" v-if="row.status !== 4">删除</el-button>
+              <el-button link type="success" size="small" @click="handleStatusChange(row, 1)" v-if="row.status === 0">上架</el-button>
+              <el-button link type="warning" size="small" @click="handleStatusChange(row, 0)" v-if="row.status === 1">下架</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -190,7 +193,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="详细地址" prop="address">
-          <el-input v-model="hotelForm.address" placeholder="请输入详细地址" />
+          <MapLocationPicker
+            v-model:address="hotelForm.address"
+            v-model:longitude="hotelForm.longitude"
+            v-model:latitude="hotelForm.latitude"
+            v-model:region="hotelForm.region"
+          />
         </el-form-item>
         <el-form-item label="酒店星级" prop="starLevel">
           <el-rate v-model="hotelForm.starLevel" :max="5" />
@@ -200,7 +208,14 @@
           <span style="margin-left: 10px">元/晚</span>
         </el-form-item>
         <el-form-item label="联系电话" prop="contactPhone">
-          <el-input v-model="hotelForm.contactPhone" placeholder="请输入联系电话" />
+          <el-input
+            v-model="hotelForm.contactPhone"
+            placeholder="请输入11位手机号"
+            maxlength="11"
+            show-word-limit
+            inputmode="numeric"
+            @input="hotelForm.contactPhone = normalizeMobilePhone($event)"
+          />
         </el-form-item>
         <el-form-item label="酒店设施">
           <el-checkbox-group v-model="facilitiesList">
@@ -216,8 +231,8 @@
           <el-input v-model="hotelForm.description" type="textarea" :rows="4" placeholder="请输入酒店描述" />
         </el-form-item>
         <el-form-item label="酒店图片">
-          <div class="image-upload-list" v-if="hotelForm.images">
-            <div v-for="(img, index) in JSON.parse(hotelForm.images)" :key="index" class="image-item">
+          <div class="image-upload-list" v-if="parsedHotelImages.length">
+            <div v-for="(img, index) in parsedHotelImages" :key="index" class="image-item">
               <el-image :src="img" fit="cover" style="width: 100px; height: 100px" />
               <div class="image-actions">
                 <el-button type="danger" size="small" circle @click="removeImage(index)">
@@ -269,7 +284,11 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="stock" label="库存" width="80" />
+        <el-table-column label="库存" width="100">
+          <template #default="{ row }">
+            <span>{{ row.remainingCount ?? 0 }}/{{ row.totalCount ?? 0 }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip />
         <el-table-column label="图片" width="80">
           <template #default="{ row }">
@@ -319,8 +338,8 @@
           <el-input-number v-model="roomForm.originalPrice" :min="0" :precision="2" style="width: 200px" />
           <span style="margin-left: 10px">元/晚</span>
         </el-form-item>
-        <el-form-item label="库存" prop="stock">
-          <el-input-number v-model="roomForm.stock" :min="0" :max="999" style="width: 200px" />
+        <el-form-item label="房间数量" prop="totalCount">
+          <el-input-number v-model="roomForm.totalCount" :min="0" :max="999" style="width: 200px" />
           <span style="margin-left: 10px">间</span>
         </el-form-item>
         <el-form-item label="房型描述">
@@ -344,6 +363,8 @@
         <el-button type="primary" @click="handleRoomSubmit" :loading="roomSubmitting">确定</el-button>
       </template>
     </el-dialog>
+
+    <AdminCommentDrawer ref="commentDrawerRef" />
   </div>
 </template>
 
@@ -365,6 +386,9 @@ import {
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { formatDateTime } from '@/util/datetime'
+import { normalizeMobilePhone, validateMobilePhone } from '@/utils/attractionForm'
+import MapLocationPicker from '@/components/MapLocationPicker.vue'
+import AdminCommentDrawer from '@/components/admin/AdminCommentDrawer.vue'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -373,8 +397,17 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('编辑酒店')
 const formRef = ref<FormInstance>()
 const fileInput = ref<HTMLInputElement>()
+const commentDrawerRef = ref<InstanceType<typeof AdminCommentDrawer>>()
 
 const isEdit = ref(false)
+
+const handleManageComments = (row: any) => {
+  commentDrawerRef.value?.open({
+    id: row.id,
+    title: row.name || '未命名酒店',
+    type: 6
+  })
+}
 
 // 房型相关
 const roomDialogVisible = ref(false)
@@ -403,12 +436,15 @@ const pagination = reactive({
 
 const onlineCount = computed(() => hotelList.value.filter((item) => item.status === 1).length)
 const totalViews = computed(() => hotelList.value.reduce((sum, item) => sum + Number(item.viewCount || 0), 0))
+const parsedHotelImages = computed(() => parseImageList(hotelForm.images))
 
 const hotelForm = reactive({
   id: null as number | null,
   name: '',
   region: '',
   address: '',
+  longitude: null as number | null,
+  latitude: null as number | null,
   starLevel: 3,
   price: 0,
   contactPhone: '',
@@ -423,7 +459,8 @@ const formRules = {
   name: [{ required: true, message: '请输入酒店名称', trigger: 'blur' }],
   region: [{ required: true, message: '请选择地区', trigger: 'change' }],
   address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
-  price: [{ required: true, message: '请输入价格', trigger: 'blur' }]
+  price: [{ required: true, message: '请输入价格', trigger: 'blur' }],
+  contactPhone: [{ validator: validateMobilePhone, trigger: 'blur' }]
 }
 
 // 房型表单
@@ -434,7 +471,8 @@ const roomForm = reactive({
   roomType: 1,
   price: 0,
   originalPrice: null as number | null,
-  stock: 0,
+  totalCount: 0,
+  remainingCount: 0,
   description: '',
   image: ''
 })
@@ -443,7 +481,22 @@ const roomFormRules = {
   roomName: [{ required: true, message: '请输入房型名称', trigger: 'blur' }],
   roomType: [{ required: true, message: '请选择房型类型', trigger: 'change' }],
   price: [{ required: true, message: '请输入价格', trigger: 'blur' }],
-  stock: [{ required: true, message: '请输入库存', trigger: 'blur' }]
+  totalCount: [{ required: true, message: '请输入房间数量', trigger: 'blur' }]
+}
+
+const parseImageList = (images?: string | string[]) => {
+  if (!images) return []
+  if (Array.isArray(images)) return images.filter(Boolean)
+  try {
+    const parsed = JSON.parse(images)
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : []
+  } catch {
+    return images ? [images] : []
+  }
+}
+
+const getFirstImage = (images?: string | string[]) => {
+  return parseImageList(images)[0] || ''
 }
 
 const loadHotelList = async () => {
@@ -488,6 +541,8 @@ const handleAdd = () => {
   hotelForm.name = ''
   hotelForm.region = ''
   hotelForm.address = ''
+  hotelForm.longitude = null
+  hotelForm.latitude = null
   hotelForm.starLevel = 3
   hotelForm.price = 0
   hotelForm.contactPhone = ''
@@ -499,28 +554,38 @@ const handleAdd = () => {
   dialogVisible.value = true
 }
 
-const handleEdit = (row: any) => {
+const handleEdit = async (row: any) => {
   isEdit.value = true
   dialogTitle.value = '编辑酒店'
-  hotelForm.id = row.id
-  hotelForm.name = row.name
-  hotelForm.region = row.region
-  hotelForm.address = row.address
-  hotelForm.starLevel = row.starLevel || 3
-  hotelForm.price = row.price
-  hotelForm.contactPhone = row.contactPhone || ''
-  hotelForm.facilities = row.facilities || ''
-  hotelForm.description = row.description || ''
-  hotelForm.images = row.images || '[]'
+  loading.value = true
+  try {
+    const res: any = await request.get(`/hotel/${row.id}`)
+    const detail = res.code === 200 && res.data ? res.data : row
+    hotelForm.id = detail.id
+    hotelForm.name = detail.name
+    hotelForm.region = detail.region
+    hotelForm.address = detail.address
+    hotelForm.longitude = detail.longitude || null
+    hotelForm.latitude = detail.latitude || null
+    hotelForm.starLevel = detail.starLevel || 3
+    hotelForm.price = detail.price
+    hotelForm.contactPhone = normalizeMobilePhone(detail.contactPhone)
+    hotelForm.facilities = detail.facilities || ''
+    hotelForm.description = detail.description || ''
+    hotelForm.images = detail.images || '[]'
 
-  // 解析设施
-  if (row.facilities) {
-    facilitiesList.value = row.facilities.split(',')
-  } else {
-    facilitiesList.value = []
+    if (detail.facilities) {
+      facilitiesList.value = detail.facilities.split(',')
+    } else {
+      facilitiesList.value = []
+    }
+
+    dialogVisible.value = true
+  } catch (error: any) {
+    ElMessage.error(error.message || '加载酒店详情失败')
+  } finally {
+    loading.value = false
   }
-
-  dialogVisible.value = true
 }
 
 const handleDelete = async (row: any) => {
@@ -654,7 +719,8 @@ const handleAddRoom = () => {
   roomForm.roomType = 1
   roomForm.price = 0
   roomForm.originalPrice = null
-  roomForm.stock = 0
+  roomForm.totalCount = 0
+  roomForm.remainingCount = 0
   roomForm.description = ''
   roomForm.image = ''
   roomFormDialogVisible.value = true
@@ -669,7 +735,8 @@ const handleEditRoom = (row: any) => {
   roomForm.roomType = row.roomType
   roomForm.price = row.price
   roomForm.originalPrice = row.originalPrice
-  roomForm.stock = row.stock || 0
+  roomForm.totalCount = row.totalCount ?? row.stock ?? 0
+  roomForm.remainingCount = row.remainingCount ?? roomForm.totalCount
   roomForm.description = row.description || ''
   roomForm.image = row.image || ''
   roomFormDialogVisible.value = true
@@ -719,15 +786,19 @@ const handleRoomSubmit = async () => {
     if (valid) {
       roomSubmitting.value = true
       try {
+        const payload = {
+          ...roomForm,
+          remainingCount: isRoomEdit.value ? roomForm.remainingCount : roomForm.totalCount
+        }
         if (isRoomEdit.value) {
-          const res: any = await request.put('/admin/hotels/rooms', roomForm)
+          const res: any = await request.put('/admin/hotels/rooms', payload)
           if (res.code === 200) {
             ElMessage.success('更新成功')
             roomFormDialogVisible.value = false
             await loadRooms()
           }
         } else {
-          const res: any = await request.post('/admin/hotels/rooms', roomForm)
+          const res: any = await request.post('/admin/hotels/rooms', payload)
           if (res.code === 200) {
             ElMessage.success('添加成功')
             roomFormDialogVisible.value = false
@@ -1092,12 +1163,20 @@ onMounted(() => {
   }
 
   .hotel-table {
+    :deep(.el-table__inner-wrapper::before) {
+      display: none;
+    }
+
     :deep(.el-table__body-wrapper),
     :deep(.el-scrollbar__view),
     :deep(.el-table__body),
     :deep(.el-table__body tbody),
     :deep(.el-table__fixed-body-wrapper tbody) {
       height: auto !important;
+    }
+
+    :deep(.el-table__body) {
+      table-layout: fixed;
     }
 
     :deep(.el-table__header-wrapper th) {
@@ -1108,17 +1187,36 @@ onMounted(() => {
       padding: 14px 0;
     }
 
-    :deep(.el-table__body-wrapper td) {
-      padding: 16px 0;
+    :deep(.el-table__body-wrapper td),
+    :deep(.el-table__fixed-body-wrapper td) {
+      height: 92px !important;
+      padding: 12px 0 !important;
       vertical-align: middle;
     }
 
-    :deep(.el-table__cell) {
+    :deep(.el-table__body .el-table__cell) {
+      height: 92px !important;
       vertical-align: middle;
     }
 
-    :deep(.el-table__row) {
-      height: auto !important;
+    :deep(.el-table__body .cell) {
+      display: flex;
+      align-items: center;
+      min-height: 68px;
+      overflow: hidden;
+    }
+
+    :deep(.el-table__row),
+    :deep(.el-table__row .el-table__cell) {
+      height: 92px !important;
+      max-height: 92px !important;
+    }
+
+    :deep(.el-table-fixed-column--right),
+    :deep(.el-table__fixed-right),
+    :deep(.el-table__fixed-right-patch) {
+      background: #fff;
+      z-index: 3;
     }
 
     :deep(.el-table__row) {
@@ -1133,18 +1231,29 @@ onMounted(() => {
       display: flex;
       align-items: center;
       gap: 12px;
+      width: 100%;
+      height: 68px;
+      overflow: hidden;
 
       .hotel-meta {
+        min-width: 0;
+
         .name {
           font-size: 15px;
           font-weight: 600;
           color: $text-primary;
           margin-bottom: 6px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .address {
           font-size: 12px;
           color: $text-muted;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       }
     }
@@ -1152,6 +1261,19 @@ onMounted(() => {
     .price {
       color: $danger-color;
       font-weight: 700;
+    }
+
+    .row-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      white-space: nowrap;
+
+      :deep(.el-button) {
+        margin-left: 0;
+      }
     }
   }
 
@@ -1257,7 +1379,3 @@ onMounted(() => {
   }
 }
 </style>
-
-
-
-

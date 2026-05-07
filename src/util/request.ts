@@ -27,18 +27,22 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   (response) => {
     const res = response.data
+    const errorMessage = res?.msg || res?.message || '请求失败'
     
     // 如果返回的状态码不是 200，则认为是错误
     if (res.code !== 200) {
-      ElMessage.error(res.message || '请求失败')
+      ElMessage.error(errorMessage)
       
       // 401: 未登录或 token 过期
       if (res.code === 401) {
         localStorage.removeItem('auth-token')
+        localStorage.removeItem('userInfo')
         window.location.href = '/login'
       }
       
-      return Promise.reject(new Error(res.message || '请求失败'))
+      const handledError = new Error(errorMessage) as Error & { messageShown?: boolean }
+      handledError.messageShown = true
+      return Promise.reject(handledError)
     }
     
     return res
@@ -47,24 +51,29 @@ request.interceptors.response.use(
     console.error('请求错误：', error)
     
     if (error.response) {
+      const serverMessage = error.response.data?.msg || error.response.data?.message
+      const handledError = new Error(serverMessage || error.message || '请求失败') as Error & { messageShown?: boolean }
+      handledError.messageShown = true
       switch (error.response.status) {
         case 401:
-          ElMessage.error('未登录或登录已过期，请重新登录')
+          ElMessage.error(serverMessage || '未登录或登录已过期，请重新登录')
           localStorage.removeItem('auth-token')
+          localStorage.removeItem('userInfo')
           window.location.href = '/login'
           break
         case 403:
-          ElMessage.error('没有权限访问')
+          ElMessage.error(serverMessage || '没有权限访问')
           break
         case 404:
-          ElMessage.error('请求的资源不存在')
+          ElMessage.error(serverMessage || '请求的资源不存在')
           break
         case 500:
-          ElMessage.error('服务器错误')
+          ElMessage.error(serverMessage || '服务器错误')
           break
         default:
-          ElMessage.error(error.response.data?.message || '请求失败')
+          ElMessage.error(serverMessage || '请求失败')
       }
+      return Promise.reject(handledError)
     } else if (error.request) {
       ElMessage.error('网络错误，请检查网络连接')
     } else {
