@@ -70,6 +70,42 @@
               </div>
             </div>
 
+            <div class="map-search">
+              <el-input
+                v-model="searchKeyword"
+                clearable
+                placeholder="搜索景点、美食、酒店、区域或地址"
+                @keyup.enter="focusFirstSearchResult"
+              />
+              <div class="search-meta">
+                <span>当前显示 {{ filteredMarkers.length }} / {{ markers.length }} 个资源</span>
+                <el-button v-if="searchKeyword" text size="small" @click="clearMapSearch">清空</el-button>
+              </div>
+              <div v-if="searchKeyword" class="search-results">
+                <div
+                  v-for="marker in searchResults"
+                  :key="buildMarkerKey(marker)"
+                  :class="['search-result-item', marker.type, { active: selectedLocatedMarkerKey === buildMarkerKey(marker) }]"
+                  role="button"
+                  tabindex="0"
+                  @click="locateMarker(marker, true)"
+                  @keyup.enter="locateMarker(marker, true)"
+                >
+                  <span class="result-icon">{{ marker.icon }}</span>
+                  <span class="result-content">
+                    <strong>{{ marker.name }}</strong>
+                    <small>{{ getTypeLabel(marker.type) }} · {{ marker.region || marker.address || '暂无位置' }}</small>
+                  </span>
+                  <el-button size="small" type="primary" @click.stop="addToItinerary(marker)">
+                    加入
+                  </el-button>
+                </div>
+                <div v-if="searchResults.length === 0" class="search-empty">
+                  没有匹配资源
+                </div>
+              </div>
+            </div>
+
             <div class="map-container" ref="mapContainer">
               <!-- 真实地图 -->
               <div class="real-amap-container" id="amap-container">
@@ -227,16 +263,35 @@ const renderMarkdown = (content: string) => {
 const markers = ref([])
 // 筛选类型
 const visibleTypes = ref(['attraction', 'food', 'hotel'])
+const searchKeyword = ref('')
+const selectedLocatedMarkerKey = ref('')
 
 // 默认使用真实地图
 const useRealMap = ref(true)
 const realMapInstance = ref<any>(null)
 const realMapMarkers = ref<any[]>([])
 
+const buildMarkerKey = (marker) => `${marker?.type || 'unknown'}-${marker?.id || ''}`
+
+const normalizeSearchText = (value: any) => String(value || '').trim().toLowerCase()
+
 // 过滤后的标记
 const filteredMarkers = computed(() => {
-  return markers.value.filter(m => visibleTypes.value.includes(m.type))
+  const keyword = normalizeSearchText(searchKeyword.value)
+  return markers.value.filter(m => {
+    if (!visibleTypes.value.includes(m.type)) return false
+    if (!keyword) return true
+    return [
+      m.name,
+      m.address,
+      m.region,
+      m.description,
+      getTypeLabel(m.type)
+    ].some(value => normalizeSearchText(value).includes(keyword))
+  })
 })
+
+const searchResults = computed(() => filteredMarkers.value.slice(0, 8))
 
 // 行程数据
 const itinerary = ref([
@@ -272,6 +327,15 @@ const mapLoadError = ref(false)
 // 消息容器引用
 const messagesRef = ref<HTMLElement | null>(null)
 const panelsContainerRef = ref<HTMLElement | null>(null)
+
+const getTypeLabel = (type: string) => {
+  const labelMap: Record<string, string> = {
+    attraction: '景点',
+    food: '美食',
+    hotel: '酒店'
+  }
+  return labelMap[type] || '资源'
+}
 
 // 路线连线
 const routeLines = ref([])
@@ -430,8 +494,9 @@ const updateRealMapMarkers = () => {
 const createSmallMarkerHtml = (marker) => {
   const icon = marker.icon || (marker.type === 'food' ? '🍜' : marker.type === 'hotel' ? '🏨' : '🏞️')
   const typeClass = marker.type === 'attraction' ? 'attraction' : marker.type === 'food' ? 'food' : 'hotel'
+  const activeClass = selectedLocatedMarkerKey.value === buildMarkerKey(marker) ? ' is-active' : ''
   const div = document.createElement('div')
-  div.className = 'amap-small-marker ' + typeClass
+  div.className = 'amap-small-marker ' + typeClass + activeClass
   div.innerHTML = `
     <div class="amap-small-marker-pin">
       <span class="amap-small-marker-icon">${icon}</span>
@@ -447,6 +512,53 @@ watch(filteredMarkers, () => {
     updateRealMapMarkers()
   }
 }, { deep: true })
+
+watch(selectedLocatedMarkerKey, () => {
+  if (useRealMap.value && realMapInstance.value) {
+    updateRealMapMarkers()
+  }
+})
+
+const clearMapSearch = () => {
+  searchKeyword.value = ''
+  selectedLocatedMarkerKey.value = ''
+}
+
+const focusFirstSearchResult = () => {
+  const first = searchResults.value[0]
+  if (first) {
+    locateMarker(first, true)
+  } else {
+    ElMessage.warning('没有匹配资源')
+  }
+}
+
+const resolveMarkerLngLat = (marker) => {
+  let lng = marker.longitude != null ? Number(marker.longitude) : null
+  let lat = marker.latitude != null ? Number(marker.latitude) : null
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+    lng = 119.0 + (marker.x / 1000) * 0.3
+    lat = 25.4 + (marker.y / 700) * 0.15
+  }
+  return [lng, lat]
+}
+
+const locateMarker = (marker, openDetail = false) => {
+  if (!marker) return
+  selectedLocatedMarkerKey.value = buildMarkerKey(marker)
+  const [lng, lat] = resolveMarkerLngLat(marker)
+  if (useRealMap.value && realMapInstance.value && Number.isFinite(lng) && Number.isFinite(lat)) {
+    if (typeof realMapInstance.value.setZoomAndCenter === 'function') {
+      realMapInstance.value.setZoomAndCenter(15, [lng, lat])
+    } else {
+      realMapInstance.value.setZoom?.(15)
+      realMapInstance.value.setCenter?.([lng, lat])
+    }
+  }
+  if (openDetail) {
+    showMarkerInfo(marker)
+  }
+}
 
 // 滚动到底部
 const scrollToBottom = () => {
@@ -1412,6 +1524,91 @@ const goBack = () => router.back()
   gap: 8px;
 }
 
+.map-search {
+  padding: 10px 14px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+
+  .search-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 24px;
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .search-results {
+    display: grid;
+    gap: 8px;
+    max-height: 230px;
+    overflow: auto;
+    padding-top: 6px;
+  }
+
+  .search-result-item {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+
+    &:hover,
+    &.active {
+      border-color: #4f46e5;
+      background: #eef2ff;
+      box-shadow: 0 6px 16px rgba(79, 70, 229, 0.12);
+    }
+
+    .result-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: #ffffff;
+      font-size: 16px;
+    }
+
+    .result-content {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+
+      strong,
+      small {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      strong {
+        color: #111827;
+        font-size: 13px;
+      }
+
+      small {
+        color: #64748b;
+        font-size: 12px;
+      }
+    }
+  }
+
+  .search-empty {
+    padding: 12px;
+    color: #94a3b8;
+    text-align: center;
+    font-size: 13px;
+  }
+}
+
 .map-container {
   flex: 1;
   position: relative;
@@ -1435,6 +1632,14 @@ const goBack = () => router.back()
       transition: transform 0.2s;
       &:hover {
         transform: translate(-50%, -110%) scale(1.15);
+      }
+      &.is-active {
+        transform: translate(-50%, -118%) scale(1.22);
+        z-index: 20;
+        .amap-small-marker-icon {
+          border-color: #4f46e5;
+          box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.18), 0 8px 18px rgba(0, 0, 0, 0.25);
+        }
       }
       &:active {
         cursor: grabbing;
