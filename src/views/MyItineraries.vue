@@ -57,7 +57,7 @@
             class="itinerary-card"
           >
             <div class="card-cover">
-              <img :src="itinerary.coverImage || '/src/views/imgs/1.jpg'" :alt="itinerary.title" />
+              <img :src="getItineraryCover(itinerary)" :alt="itinerary.title" />
               <div class="card-status" :class="itinerary.statusText || itinerary.status">
                 {{ getStatusText(itinerary.statusText || itinerary.status) }}
               </div>
@@ -170,8 +170,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { authHeaders, parseResultResponse } from '@/util/fetchResult'
+import { getFirstImageUrl } from '@/utils/imageUrl'
 
 const router = useRouter()
+const getItineraryCover = (itinerary: any) => getFirstImageUrl(itinerary.coverImage, itinerary.image, itinerary.images)
 
 const loading = ref(false)
 const searchKeyword = ref('')

@@ -303,12 +303,12 @@
                 </div>
                 <div v-if="comment.images" class="comment-images">
                   <el-image
-                    v-for="(img, idx) in comment.images.split(',')"
+                    v-for="(img, idx) in parseImageList(comment.images)"
                     :key="idx"
                     :src="img"
                     fit="cover"
                     class="comment-img"
-                    :preview-src-list="comment.images.split(',')"
+                    :preview-src-list="parseImageList(comment.images)"
                   />
                 </div>
                 <div v-if="comment.replies?.length" class="reply-list">
@@ -391,7 +391,7 @@
         <div class="step-content">
           <!-- 步骤1：选择门票 -->
           <div v-show="currentStep === 0" class="step-panel">
-            <div class="ticket-select-grid">
+            <div v-if="ticketList.length > 0" class="ticket-select-grid">
               <div
                 v-for="ticket in ticketList"
                 :key="ticket.id"
@@ -406,6 +406,19 @@
                 <div class="ticket-select-price">
                   <span class="currency">¥</span>
                   <span class="amount">{{ ticket.price }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="ticket-select-grid">
+              <div class="ticket-select-card active" @click="orderForm.ticketId = null">
+                <div class="card-check">
+                  <el-icon><Check /></el-icon>
+                </div>
+                <div class="ticket-select-name">{{ fallbackTicketName }}</div>
+                <div class="ticket-select-desc">该景区暂未配置票种，可按景区基础票价下单。</div>
+                <div class="ticket-select-price">
+                  <span class="currency">¥</span>
+                  <span class="amount">{{ fallbackTicketPrice }}</span>
                 </div>
               </div>
             </div>
@@ -476,7 +489,7 @@
                 <h4><el-icon><Ticket /></el-icon>订单信息</h4>
                 <div class="confirm-item">
                   <span class="label">门票类型</span>
-                  <span class="value">{{ selectedTicket?.ticketName }}</span>
+                  <span class="value">{{ selectedTicket?.ticketName || fallbackTicketName }}</span>
                 </div>
                 <div class="confirm-item">
                   <span class="label">游玩日期</span>
@@ -488,7 +501,7 @@
                 </div>
                 <div class="confirm-item">
                   <span class="label">单价</span>
-                  <span class="value">¥{{ selectedTicket?.price }}</span>
+                  <span class="value">¥{{ ticketUnitPrice }}</span>
                 </div>
                 <div class="confirm-item total">
                   <span class="label">总金额</span>
@@ -657,11 +670,14 @@ const commentForm = reactive({
   content: ''
 })
 
+const fallbackTicketName = computed(() => `${attraction.value.name || '景区'}基础门票`)
+const fallbackTicketPrice = computed(() => Number(attraction.value.ticketPrice || 0))
+const ticketUnitPrice = computed(() => {
+  if (selectedTicket.value) return Number(selectedTicket.value.price || 0)
+  return fallbackTicketPrice.value
+})
 const totalAmount = computed(() => {
-  if (selectedTicket.value) {
-    return (selectedTicket.value.price * orderForm.ticketCount).toFixed(2)
-  }
-  return '0.00'
+  return (ticketUnitPrice.value * orderForm.ticketCount).toFixed(2)
 })
 
 // 获取剩余票数
@@ -850,10 +866,6 @@ const selectTicketForOrder = (ticket: any) => {
 }
 
 const showTicketDialog = () => {
-  if (ticketList.value.length === 0) {
-    ElMessage.warning('暂无可购买的门票')
-    return
-  }
   ticketDialogVisible.value = true
   currentStep.value = 0
   payQrCodeUrl.value = ''
@@ -862,7 +874,7 @@ const showTicketDialog = () => {
 }
 
 const nextStep = () => {
-  if (currentStep.value === 0 && !orderForm.ticketId) {
+  if (currentStep.value === 0 && ticketList.value.length > 0 && !orderForm.ticketId) {
     ElMessage.warning('请选择门票类型')
     return
   }
@@ -893,10 +905,11 @@ const createOrder = async () => {
   creating.value = true
   try {
     const res: any = await request.post('/order/create', {
-      ticketId: orderForm.ticketId,
-      ticketName: selectedTicket.value.ticketName,
+      orderType: 1,
+      ticketId: orderForm.ticketId ?? undefined,
+      ticketName: selectedTicket.value ? selectedTicket.value.ticketName : fallbackTicketName.value,
       ticketCount: orderForm.ticketCount,
-      unitPrice: selectedTicket.value.price,
+      unitPrice: ticketUnitPrice.value,
       totalAmount: totalAmount.value,
       visitDate: orderForm.visitDate,
       visitorName: orderForm.visitorName,

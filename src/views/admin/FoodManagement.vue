@@ -106,7 +106,7 @@
         <el-table-column label="美食信息" width="300">
           <template #default="{ row }">
             <div class="food-info">
-              <el-image :src="row.images ? JSON.parse(row.images)[0] : ''" :preview-src-list="row.images ? JSON.parse(row.images) : []" fit="cover" style="width: 80px; height: 60px; border-radius: 4px">
+              <el-image :src="getFirstImage(row.images)" :preview-src-list="parseFoodImages(row.images)" fit="cover" style="width: 80px; height: 60px; border-radius: 4px">
                 <template #error>
                   <div class="image-slot"><el-icon><Picture /></el-icon></div>
                 </template>
@@ -370,6 +370,7 @@ import { normalizeMobilePhone, validateMobilePhone } from '@/utils/attractionFor
 import MapLocationPicker from '@/components/MapLocationPicker.vue'
 import { formatDateTime } from '@/util/datetime'
 import AdminCommentDrawer from '@/components/admin/AdminCommentDrawer.vue'
+import { getFirstImageUrl, parseImageList } from '@/utils/imageUrl'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -381,6 +382,9 @@ const fileInput = ref<HTMLInputElement>()
 const commentDrawerRef = ref<InstanceType<typeof AdminCommentDrawer>>()
 
 const isEdit = ref(false)
+
+const parseFoodImages = (images?: string | string[]) => parseImageList(images)
+const getFirstImage = (images?: string | string[]) => getFirstImageUrl(images)
 
 const handleManageComments = (row: any) => {
   commentDrawerRef.value?.open({

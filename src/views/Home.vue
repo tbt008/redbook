@@ -228,7 +228,7 @@
           >
             <div class="card-image-wrapper">
               <el-image
-                :src="item.coverImage || '/local-images/default-cover.svg'"
+                :src="getHomeCover(item)"
                 fit="cover"
                 class="card-image"
                 loading="lazy"
@@ -435,9 +435,12 @@ import {
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { formatDateTime } from '@/util/datetime'
+import { getFirstImageUrl } from '@/utils/imageUrl'
 
 const router = useRouter()
 const route = useRoute()
+
+const getHomeCover = (item: any) => getFirstImageUrl(item?.coverImage, item?.image, item?.images)
 
 const isScrolled = ref(false)
 const handleScroll = () => {

@@ -18,7 +18,7 @@
             @click="selectItem(item)"
           >
             <div class="item-image">
-              <img :src="item.coverImage || '/src/views/imgs/1.jpg'" :alt="item.name" />
+              <img :src="getItemCover(item, '/src/views/imgs/1.jpg')" :alt="item.name" />
             </div>
             <div class="item-info">
               <h4>{{ item.name }}</h4>
@@ -49,7 +49,7 @@
             @click="selectItem(item)"
           >
             <div class="item-image">
-              <img :src="item.coverImage || '/src/views/imgs/2.jpg'" :alt="item.name" />
+              <img :src="getItemCover(item, '/src/views/imgs/2.jpg')" :alt="item.name" />
             </div>
             <div class="item-info">
               <h4>{{ item.name }}</h4>
@@ -80,7 +80,7 @@
             @click="selectItem(item)"
           >
             <div class="item-image">
-              <img :src="item.coverImage || '/src/views/imgs/3.jpg'" :alt="item.name" />
+              <img :src="getItemCover(item, '/src/views/imgs/3.jpg')" :alt="item.name" />
             </div>
             <div class="item-info">
               <h4>{{ item.name }}</h4>
@@ -113,8 +113,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { getFirstImageUrl } from '@/utils/imageUrl'
 
 const emit = defineEmits(['select', 'close'])
+
+const getItemCover = (item: any, fallback: string) => getFirstImageUrl(item?.coverImage, item?.image, item?.images) || fallback
 
 const activeTab = ref('attraction')
 const searchKeyword = ref('')
@@ -326,18 +329,7 @@ const loadData = async () => {
 
 // 转换景点数据 - 处理后端返回的images JSON数组
 const transformAttraction = (item: any) => {
-  let coverImage = '/src/views/imgs/1.jpg'
-  if (item.images) {
-    try {
-      const images = JSON.parse(item.images)
-      if (Array.isArray(images) && images.length > 0) {
-        coverImage = images[0]
-      }
-    } catch (e) {
-      // 如果解析失败，尝试直接使用
-      coverImage = item.images
-    }
-  }
+  const coverImage = getFirstImageUrl(item.coverImage, item.image, item.images) || '/src/views/imgs/1.jpg'
   return {
     ...item,
     coverImage,
@@ -348,17 +340,7 @@ const transformAttraction = (item: any) => {
 
 // 转换美食数据 - 处理后端返回的images JSON数组
 const transformFood = (item: any) => {
-  let coverImage = '/src/views/imgs/2.jpg'
-  if (item.images) {
-    try {
-      const images = JSON.parse(item.images)
-      if (Array.isArray(images) && images.length > 0) {
-        coverImage = images[0]
-      }
-    } catch (e) {
-      coverImage = item.images
-    }
-  }
+  const coverImage = getFirstImageUrl(item.coverImage, item.image, item.images) || '/src/views/imgs/2.jpg'
   return {
     ...item,
     coverImage,
@@ -369,17 +351,7 @@ const transformFood = (item: any) => {
 
 // 转换酒店数据 - 处理后端返回的images JSON数组和starLevel
 const transformHotel = (item: any) => {
-  let coverImage = '/src/views/imgs/3.jpg'
-  if (item.images) {
-    try {
-      const images = JSON.parse(item.images)
-      if (Array.isArray(images) && images.length > 0) {
-        coverImage = images[0]
-      }
-    } catch (e) {
-      coverImage = item.images
-    }
-  }
+  const coverImage = getFirstImageUrl(item.coverImage, item.image, item.images) || '/src/views/imgs/3.jpg'
   // 将星级转换为房型显示
   const roomTypeMap: Record<number, string> = {
     1: '经济房',

@@ -389,6 +389,7 @@ import { formatDateTime } from '@/util/datetime'
 import { normalizeMobilePhone, validateMobilePhone } from '@/utils/attractionForm'
 import MapLocationPicker from '@/components/MapLocationPicker.vue'
 import AdminCommentDrawer from '@/components/admin/AdminCommentDrawer.vue'
+import { parseImageList as parseStoredImageList } from '@/utils/imageUrl'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -485,14 +486,7 @@ const roomFormRules = {
 }
 
 const parseImageList = (images?: string | string[]) => {
-  if (!images) return []
-  if (Array.isArray(images)) return images.filter(Boolean)
-  try {
-    const parsed = JSON.parse(images)
-    return Array.isArray(parsed) ? parsed.filter(Boolean) : []
-  } catch {
-    return images ? [images] : []
-  }
+  return parseStoredImageList(images)
 }
 
 const getFirstImage = (images?: string | string[]) => {

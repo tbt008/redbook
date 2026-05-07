@@ -344,12 +344,12 @@
                 </div>
                 <div v-if="comment.images" class="comment-images">
                   <el-image
-                    v-for="(img, idx) in comment.images.split(',')"
+                    v-for="(img, idx) in parseImageList(comment.images)"
                     :key="idx"
                     :src="img"
                     fit="cover"
                     class="comment-img"
-                    :preview-src-list="comment.images.split(',')"
+                    :preview-src-list="parseImageList(comment.images)"
                   />
                 </div>
                 <div v-if="comment.replies?.length" class="reply-list">
@@ -418,6 +418,16 @@
                 </el-select>
                 <p class="form-hint">价格随房型变化，以下摘要与订单金额以所选房型为准。</p>
               </el-form-item>
+              <div v-else class="basic-booking-card">
+                <div class="basic-booking-main">
+                  <el-icon><OfficeBuilding /></el-icon>
+                  <div>
+                    <div class="basic-booking-title">标准预订</div>
+                    <div class="basic-booking-desc">该酒店暂未配置房型，可按酒店参考价格预订。</div>
+                  </div>
+                </div>
+                <div class="basic-booking-price">¥{{ hotel.price || 0 }}/晚</div>
+              </div>
               <div class="form-row">
                 <el-form-item label="入住日期" required>
                   <el-date-picker
@@ -543,6 +553,10 @@
                 <div class="confirm-item" v-if="selectedRoomForBooking">
                   <span class="label">房型</span>
                   <span class="value">{{ selectedRoomForBooking.roomName }}</span>
+                </div>
+                <div class="confirm-item" v-else>
+                  <span class="label">预订类型</span>
+                  <span class="value">标准预订</span>
                 </div>
                 <div class="confirm-item">
                   <span class="label">入住日期</span>
@@ -2286,6 +2300,54 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
         font-size: 12px;
         color: $text-muted;
         line-height: 1.4;
+      }
+
+      .basic-booking-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px;
+        margin-bottom: 18px;
+        border: 2px solid $primary;
+        border-radius: 12px;
+        background: rgba(26, 95, 74, 0.03);
+
+        .basic-booking-main {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+
+          .el-icon {
+            flex: 0 0 auto;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(26, 95, 74, 0.1);
+            color: $primary;
+          }
+        }
+
+        .basic-booking-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: $text-primary;
+        }
+
+        .basic-booking-desc {
+          margin-top: 4px;
+          font-size: 13px;
+          line-height: 1.4;
+          color: $text-muted;
+        }
+
+        .basic-booking-price {
+          flex: 0 0 auto;
+          font-size: 18px;
+          font-weight: 700;
+          color: #ff4d4f;
+        }
       }
 
       .form-row {

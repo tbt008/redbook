@@ -38,6 +38,42 @@
             <el-tag v-for="tag in displayTags" :key="tag" type="info">{{ tag }}</el-tag>
           </div>
 
+          <div v-if="associationTarget || associationLoading" class="association-section">
+            <div class="section-title">关联内容</div>
+            <div v-if="associationLoading" class="association-card loading-card">
+              <el-skeleton animated :rows="2" />
+            </div>
+            <div v-else class="association-card" @click="goAssociationDetail">
+              <el-image
+                v-if="associationCover"
+                :src="associationCover"
+                fit="cover"
+                class="association-cover"
+              />
+              <div v-else class="association-cover association-placeholder">
+                <el-icon>
+                  <Location v-if="associationTarget?.type === 'attraction'" />
+                  <Food v-else-if="associationTarget?.type === 'food'" />
+                  <OfficeBuilding v-else />
+                </el-icon>
+              </div>
+              <div class="association-info">
+                <div class="association-label">{{ associationTarget?.label }}</div>
+                <div class="association-name">{{ associationName }}</div>
+                <div class="association-desc">{{ associationDescription }}</div>
+                <div class="association-meta">
+                  <span v-if="associationRegion">
+                    <el-icon><Location /></el-icon>
+                    {{ associationRegion }}
+                  </span>
+                  <span v-if="associationRating">评分 {{ associationRating }}</span>
+                  <span v-if="associationPrice">{{ associationPrice }}</span>
+                </div>
+              </div>
+              <el-icon class="association-arrow"><ArrowRight /></el-icon>
+            </div>
+          </div>
+
           <div class="actions">
             <el-button :icon="isLiked ? StarFilled : Star" @click="toggleLike">
               {{ isLiked ? '已点赞' : '点赞' }} ({{ content.likeCount }})
@@ -158,7 +194,7 @@
             </template>
             <div class="related-list">
               <div v-for="item in relatedList" :key="item.id" class="related-item" @click="goDetail(item.id)">
-                <el-image :src="item.coverImage" fit="cover" style="width: 80px; height: 80px; border-radius: 4px" />
+                <el-image :src="getRelatedCover(item)" fit="cover" style="width: 80px; height: 80px; border-radius: 4px" />
                 <div class="related-info">
                   <div class="related-title">{{ item.title }}</div>
                   <div class="related-stats">
@@ -179,11 +215,25 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Star, StarFilled, ChatDotRound, Share, View, Pointer, Delete, Collection } from '@element-plus/icons-vue'
+import {
+  Star,
+  StarFilled,
+  ChatDotRound,
+  Share,
+  View,
+  Pointer,
+  Delete,
+  Collection,
+  Location,
+  Food,
+  OfficeBuilding,
+  ArrowRight
+} from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { renderMarkdown } from '@/utils/markdown'
 import { extractDisplayTags } from '@/utils/contentTags'
 import { formatDateTime, type DateInput } from '@/utils/date'
+import { getFirstImageUrl, parseImageList } from '@/utils/imageUrl'
 import TourismTopNav from '@/components/TourismTopNav.vue'
 
 const router = useRouter()
@@ -194,6 +244,8 @@ const submitting = ref(false)
 const content = ref<any>({})
 const comments = ref<any[]>([])
 const relatedList = ref<any[]>([])
+const associationResource = ref<any>(null)
+const associationLoading = ref(false)
 const commentText = ref('')
 const replyingTo = ref<any>(null)
 const replyRoot = ref<any>(null)
@@ -203,6 +255,7 @@ const hasMoreComments = ref(false)
 const commentPage = ref(1)
 
 const isLogin = computed(() => !!localStorage.getItem('auth-token'))
+const getRelatedCover = (item: any) => getFirstImageUrl(item.coverImage, item.image, item.images)
 const isAuthor = computed(() => {
   const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
   return userInfo.id === content.value.userId
@@ -210,6 +263,59 @@ const isAuthor = computed(() => {
 
 const renderedContent = computed(() => renderMarkdown(content.value?.content))
 const displayTags = computed(() => extractDisplayTags(content.value, ['tags', 'tagList', 'tagNames', 'labels', 'keywords', 'theme']))
+const associationTarget = computed(() => {
+  if (content.value?.attractionId) {
+    return {
+      type: 'attraction',
+      label: '关联景点',
+      id: content.value.attractionId,
+      api: `/attraction/${content.value.attractionId}`,
+      path: `/attraction/${content.value.attractionId}`
+    }
+  }
+  if (content.value?.foodId) {
+    return {
+      type: 'food',
+      label: '关联美食',
+      id: content.value.foodId,
+      api: `/food/${content.value.foodId}`,
+      path: `/food/${content.value.foodId}`
+    }
+  }
+  if (content.value?.hotelId) {
+    return {
+      type: 'hotel',
+      label: '关联酒店',
+      id: content.value.hotelId,
+      api: `/hotel/${content.value.hotelId}`,
+      path: `/hotel/${content.value.hotelId}`
+    }
+  }
+  return null
+})
+const associationName = computed(() => {
+  const target = associationTarget.value
+  return associationResource.value?.name || associationResource.value?.title || (target ? `${target.label} #${target.id}` : '')
+})
+const associationDescription = computed(() => {
+  const source = associationResource.value || {}
+  return source.description || source.summary || source.address || '点击查看详情'
+})
+const associationRegion = computed(() => associationResource.value?.region || associationResource.value?.location || '')
+const associationRating = computed(() => associationResource.value?.rating || '')
+const associationPrice = computed(() => {
+  const source = associationResource.value || {}
+  if (source.ticketPrice !== undefined && source.ticketPrice !== null) {
+    return Number(source.ticketPrice) > 0 ? `门票 ¥${source.ticketPrice}` : '免费开放'
+  }
+  if (source.avgPrice !== undefined && source.avgPrice !== null) return `人均 ¥${source.avgPrice}`
+  if (source.price !== undefined && source.price !== null) return `¥${source.price}/晚起`
+  return ''
+})
+const associationCover = computed(() => {
+  const source = associationResource.value || {}
+  return getFirstImageUrl(source.coverImage, source.image, source.images)
+})
 
 const getDisplayName = (target: any) => {
   if (!target) return '平台用户'
@@ -249,8 +355,9 @@ const loadContent = async () => {
       }
       // 解析图片和标签
       if (res.data.images) {
-        content.value.images = JSON.parse(res.data.images)
+        content.value.images = parseImageList(res.data.images)
       }
+      loadAssociationResource()
       loadComments()
       loadRelated()
       checkLikeStatus()
@@ -263,6 +370,24 @@ const loadContent = async () => {
     ElMessage.error('加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+const loadAssociationResource = async () => {
+  associationResource.value = null
+  const target = associationTarget.value
+  if (!target) return
+
+  associationLoading.value = true
+  try {
+    const res: any = await request.get(target.api)
+    if (res.code === 200) {
+      associationResource.value = res.data || null
+    }
+  } catch (error) {
+    console.error('加载关联内容失败', error)
+  } finally {
+    associationLoading.value = false
   }
 }
 
@@ -501,6 +626,11 @@ const goDetail = (id: number) => {
   loadContent()
 }
 
+const goAssociationDetail = () => {
+  if (!associationTarget.value) return
+  router.push(associationTarget.value.path)
+}
+
 const goUserProfile = (target: any) => {
   const userId = resolveUserId(target)
   if (!userId) {
@@ -703,6 +833,118 @@ onMounted(() => {
     :deep(.el-tag) {
       border-radius: 999px;
       padding-inline: 12px;
+    }
+  }
+
+  .association-section {
+    margin-bottom: 24px;
+
+    .section-title {
+      margin-bottom: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .association-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px;
+      border: 1px solid #e8edf5;
+      border-radius: 10px;
+      background: #f8fbff;
+      cursor: pointer;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+
+      &:hover {
+        border-color: #8cc5ff;
+        box-shadow: 0 8px 24px rgba(64, 158, 255, 0.12);
+        transform: translateY(-1px);
+      }
+
+      &.loading-card {
+        cursor: default;
+
+        &:hover {
+          border-color: #e8edf5;
+          box-shadow: none;
+          transform: none;
+        }
+      }
+    }
+
+    .association-cover {
+      flex: 0 0 96px;
+      width: 96px;
+      height: 72px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #eef5ff;
+    }
+
+    .association-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #409eff;
+      font-size: 28px;
+    }
+
+    .association-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .association-label {
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: #409eff;
+      font-weight: 700;
+    }
+
+    .association-name {
+      margin-bottom: 6px;
+      font-size: 16px;
+      line-height: 1.35;
+      font-weight: 700;
+      color: #111827;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .association-desc {
+      margin-bottom: 8px;
+      color: #606266;
+      font-size: 13px;
+      line-height: 1.45;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .association-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: #7b8794;
+      font-size: 12px;
+
+      span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+    }
+
+    .association-arrow {
+      flex: 0 0 auto;
+      color: #9aa4b2;
+      font-size: 18px;
     }
   }
 

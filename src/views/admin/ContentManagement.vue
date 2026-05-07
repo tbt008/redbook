@@ -213,6 +213,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import request from '@/util/request'
 import { formatDateTime } from '@/util/datetime'
 import AdminCommentDrawer from '@/components/admin/AdminCommentDrawer.vue'
+import { getFirstImageUrl, parseImageList as parseStoredImageList } from '@/utils/imageUrl'
 
 const contentTypeOptions = [{ label: '纯文字', value: 1 }, { label: '图文', value: 2 }, { label: '视频', value: 3 }, { label: '图文+视频', value: 4 }]
 const statusOptions = [{ label: '草稿', value: 0 }, { label: '待审核', value: 1 }, { label: '已发布', value: 2 }, { label: '已下架', value: 3 }]
@@ -245,16 +246,10 @@ const totalComments = computed(() => contentList.value.reduce((total, item) => t
 const currentContentView = computed(() => currentContent.value || {})
 
 const parseImageList = (images?: string) => {
-  if (!images) return []
-  try {
-    const parsed = JSON.parse(images)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
+  return parseStoredImageList(images)
 }
 
-const getCoverImage = (row: any) => row.coverImage || parseImageList(row.images)[0] || ''
+const getCoverImage = (row: any) => getFirstImageUrl(row.coverImage, row.image, row.images)
 const getPreviewImages = (row: any) => (parseImageList(row.images).length ? parseImageList(row.images) : getCoverImage(row) ? [getCoverImage(row)] : [])
 const getSummary = (row: any) => row.summary || (row.content ? `${String(row.content).slice(0, 42)}...` : '暂无摘要')
 const getContentTypeName = (type: number) => contentTypeOptions.find((item) => item.value === type)?.label || '未知'

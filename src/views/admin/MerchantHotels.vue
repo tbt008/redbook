@@ -34,7 +34,7 @@
         <el-table-column label="酒店信息" width="300">
           <template #default="{ row }">
             <div class="hotel-info">
-              <el-image :src="row.images ? JSON.parse(row.images)[0] : ''" :preview-src-list="row.images ? JSON.parse(row.images) : []" fit="cover" class="hotel-cover">
+              <el-image :src="getFirstImage(row.images)" :preview-src-list="parseResourceImages(row.images)" fit="cover" class="hotel-cover">
                 <template #error>
                   <div class="image-slot"><el-icon><Picture /></el-icon></div>
                 </template>
@@ -311,6 +311,7 @@ import request from '@/util/request'
 import MapLocationPicker from '@/components/MapLocationPicker.vue'
 import { normalizeMobilePhone, validateMobilePhone } from '@/utils/attractionForm'
 import { formatDateTime } from '@/util/datetime'
+import { getFirstImageUrl, parseImageList } from '@/utils/imageUrl'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -320,6 +321,9 @@ const dialogTitle = ref('发布酒店')
 const formRef = ref<FormInstance>()
 const fileInput = ref<HTMLInputElement>()
 const isEdit = ref(false)
+
+const parseResourceImages = (images?: string | string[]) => parseImageList(images)
+const getFirstImage = (images?: string | string[]) => getFirstImageUrl(images)
 
 // 房型相关
 const roomDialogVisible = ref(false)

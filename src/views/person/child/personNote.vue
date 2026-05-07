@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/util/request'
+import { getFirstImageUrl } from '@/utils/imageUrl'
 
 const router = useRouter()
 
@@ -227,7 +228,7 @@ const getTypeTag = (type) => {
           <!-- 封面图 -->
           <div class="item-cover" @click="viewContent(item)">
             <el-image 
-              :src="item.coverImage || item.images?.split(',')[0] || '/src/views/imgs/1.jpg'" 
+              :src="getFirstImageUrl(item.coverImage, item.image, item.images)" 
               fit="cover"
               style="width: 100%; height: 100%"
             >

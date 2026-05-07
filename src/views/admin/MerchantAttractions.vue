@@ -34,7 +34,7 @@
         <el-table-column label="景点信息" width="300">
           <template #default="{ row }">
             <div class="attraction-info">
-              <el-image :src="row.images ? JSON.parse(row.images)[0] : ''" :preview-src-list="row.images ? JSON.parse(row.images) : []" fit="cover" class="attraction-cover">
+              <el-image :src="getFirstImage(row.images)" :preview-src-list="parseResourceImages(row.images)" fit="cover" class="attraction-cover">
                 <template #error>
                   <div class="image-slot"><el-icon><Picture /></el-icon></div>
                 </template>
@@ -271,6 +271,7 @@ import request from '@/util/request'
 import { formatOpenTimeRange, normalizeMobilePhone, parseOpenTimeRange, validateMobilePhone } from '@/utils/attractionForm'
 import MapLocationPicker from '@/components/MapLocationPicker.vue'
 import { formatDateTime } from '@/util/datetime'
+import { getFirstImageUrl, parseImageList } from '@/utils/imageUrl'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -280,6 +281,9 @@ const dialogTitle = ref('发布景点')
 const formRef = ref<FormInstance>()
 const fileInput = ref<HTMLInputElement>()
 const isEdit = ref(false)
+
+const parseResourceImages = (images?: string | string[]) => parseImageList(images)
+const getFirstImage = (images?: string | string[]) => getFirstImageUrl(images)
 
 // 票种相关
 const ticketDialogVisible = ref(false)

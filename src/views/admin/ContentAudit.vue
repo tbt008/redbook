@@ -43,11 +43,11 @@
         <el-table-column label="封面" width="120">
           <template #default="{ row }">
             <el-image
-              v-if="row.coverImage"
-              :src="row.coverImage"
+              v-if="getAuditCover(row)"
+              :src="getAuditCover(row)"
               fit="cover"
               style="width: 80px; height: 60px; border-radius: 8px"
-              :preview-src-list="[row.coverImage]"
+              :preview-src-list="[getAuditCover(row)]"
             />
             <span v-else class="empty-cover">无封面</span>
           </template>
@@ -164,6 +164,7 @@ import { ElMessage } from 'element-plus'
 import request from '@/util/request'
 import { extractDisplayTags } from '@/utils/contentTags'
 import { formatDateTime as formatDateTimeValue, type DateInput } from '@/utils/date'
+import { getFirstImageUrl, parseImageList } from '@/utils/imageUrl'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -244,6 +245,7 @@ const normalizeTextList = (value: unknown): string[] => {
 }
 
 const formatDateTime = (value: DateInput) => formatDateTimeValue(value, '--')
+const getAuditCover = (row: any) => getFirstImageUrl(row.coverImage, row.image, row.images)
 
 const getRelatedDisplayList = (content: Record<string, any>) => {
   if (!content) return []
@@ -344,17 +346,7 @@ const viewContent = (content: any) => {
 }
 
 const parseImages = (images: string | string[] | null | undefined) => {
-  if (!images) return []
-  if (Array.isArray(images)) return images
-  try {
-    const parsed = JSON.parse(images)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return images
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
-  }
+  return parseImageList(images)
 }
 
 onMounted(() => {

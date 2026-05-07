@@ -388,12 +388,12 @@
                 </div>
                 <div v-if="comment.images" class="comment-images">
                   <el-image
-                    v-for="(img, idx) in comment.images.split(',')"
+                    v-for="(img, idx) in parseImageList(comment.images)"
                     :key="idx"
                     :src="img"
                     fit="cover"
                     class="comment-img"
-                    :preview-src-list="comment.images.split(',')"
+                    :preview-src-list="parseImageList(comment.images)"
                   />
                 </div>
                 <div v-if="comment.replies?.length" class="reply-list">
@@ -476,7 +476,7 @@
         <div class="step-content">
           <!-- 步骤1: 选择套餐 -->
           <div v-show="dineinStep === 0" class="step-panel">
-            <div class="package-choose-list">
+            <div v-if="packageList.length > 0" class="package-choose-list">
               <div
                 v-for="pkg in packageList"
                 :key="pkg.id"
@@ -507,7 +507,26 @@
                   <div v-if="pkg.originalPrice" class="original-price">¥{{ pkg.originalPrice }}</div>
                 </div>
               </div>
-              <el-empty v-if="packageList.length === 0" description="该商家暂时没有可选套餐" />
+            </div>
+            <div v-else class="package-choose-list">
+              <div class="package-choose-item selected" @click="dineinForm.packageId = null">
+                <div class="pkg-radio">
+                  <el-radio :model-value="true" />
+                </div>
+                <div class="pkg-no-image">
+                  <el-icon><Food /></el-icon>
+                </div>
+                <div class="pkg-info">
+                  <div class="pkg-type-row">
+                    <el-tag size="small" type="info">到店点餐</el-tag>
+                  </div>
+                  <div class="pkg-name">{{ food.name }}</div>
+                  <div class="pkg-desc">该商家暂未配置套餐，可按人均消费预约到店用餐。</div>
+                </div>
+                <div class="pkg-price">
+                  <div class="current-price">¥{{ food.avgPrice || 0 }}/人</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -566,9 +585,13 @@
                   <span class="label">套餐名称</span>
                   <span class="value">{{ selectedPackage.packageName }}</span>
                 </div>
+                <div class="confirm-item" v-else>
+                  <span class="label">点餐方式</span>
+                  <span class="value">到店点餐</span>
+                </div>
                 <div class="confirm-item">
                   <span class="label">单价</span>
-                  <span class="value">¥{{ selectedPackage ? selectedPackage.price : food.avgPrice }}</span>
+                  <span class="value">¥{{ dineinUnitPrice }}</span>
                 </div>
               </div>
               <el-divider />
@@ -610,7 +633,7 @@
               <el-divider />
               <div class="confirm-total">
                 <span class="total-label">应付金额</span>
-                <span class="total-amount">¥{{ selectedPackage ? selectedPackage.price : food.avgPrice }}</span>
+                <span class="total-amount">¥{{ dineinTotalAmount }}</span>
               </div>
             </div>
           </div>
@@ -671,7 +694,7 @@
         <div class="step-content">
           <!-- 步骤1: 选择商品 -->
           <div v-show="takeoutStep === 0" class="step-panel">
-            <div class="package-tabs-small">
+            <div v-if="packageList.length > 0" class="package-tabs-small">
               <template v-for="tab in packageTabs" :key="tab.value">
                 <div
                   v-if="getPackagesByType(tab.value).length > 0"
@@ -682,7 +705,7 @@
                 </div>
               </template>
             </div>
-            <div class="package-choose-list">
+            <div v-if="packageList.length > 0" class="package-choose-list">
               <div
                 v-for="pkg in filteredPackages"
                 :key="pkg.id"
@@ -714,6 +737,26 @@
                 </div>
               </div>
               <el-empty v-if="filteredPackages.length === 0" description="该分类暂时没有套餐" />
+            </div>
+            <div v-else class="package-choose-list">
+              <div class="package-choose-item selected" @click="takeoutForm.packageId = null">
+                <div class="pkg-radio">
+                  <el-radio :model-value="true" />
+                </div>
+                <div class="pkg-no-image">
+                  <el-icon><Food /></el-icon>
+                </div>
+                <div class="pkg-info">
+                  <div class="pkg-type-row">
+                    <el-tag size="small" type="info">基础商品</el-tag>
+                  </div>
+                  <div class="pkg-name">{{ food.name }}</div>
+                  <div class="pkg-desc">该商家暂未配置套餐，可按店铺人均消费下单。</div>
+                </div>
+                <div class="pkg-price">
+                  <div class="current-price">¥{{ food.avgPrice || 0 }}</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -958,9 +1001,13 @@ const dineinForm = reactive({
 })
 
 const selectedPackage = computed(() => packageList.value.find(p => p.id === dineinForm.packageId))
+const dineinUnitPrice = computed(() => {
+  if (selectedPackage.value) return Number(selectedPackage.value.price || 0)
+  return Number(food.value.avgPrice || 0)
+})
 const dineinTotalAmount = computed(() => {
-  if (selectedPackage.value) return selectedPackage.value.price
-  return food.value.avgPrice
+  if (selectedPackage.value) return dineinUnitPrice.value
+  return Number((dineinUnitPrice.value * (dineinForm.dinerCount || 1)).toFixed(2))
 })
 
 const getTableLabel = (tableId: number) => {

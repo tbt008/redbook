@@ -300,6 +300,55 @@
                   </div>
                   <el-empty v-else description="偏好地区仍在学习中" :image-size="80" />
                 </div>
+
+                <div class="profile-section profile-section-wide">
+                  <div class="profile-section-header">
+                    <div>
+                      <div class="profile-section-title">不感兴趣列表</div>
+                      <div class="profile-section-subtitle">删除后，该内容将重新参与后续推荐筛选</div>
+                    </div>
+                    <el-button size="small" :loading="recommendationDislikeLoading" @click="loadRecommendationDislikes">
+                      刷新
+                    </el-button>
+                  </div>
+                  <div v-loading="recommendationDislikeLoading" class="dislike-list">
+                    <div
+                      v-for="item in recommendationDislikes"
+                      :key="item.id"
+                      class="dislike-list-item"
+                      @click="goDetail(item)"
+                    >
+                      <el-image class="dislike-cover" :src="getItemCover(item)" fit="cover">
+                        <template #error>
+                          <div class="dislike-cover-error">无图</div>
+                        </template>
+                      </el-image>
+                      <div class="dislike-info">
+                        <div class="dislike-title">{{ item.title || '内容已不可用' }}</div>
+                        <div class="dislike-meta">
+                          <el-tag size="small" effect="plain">{{ getDislikeTypeText(item) }}</el-tag>
+                          <span v-if="item.region">{{ item.region }}</span>
+                          <span>{{ formatTime(item.createTime) }}</span>
+                        </div>
+                        <div v-if="item.reason" class="dislike-reason">{{ item.reason }}</div>
+                      </div>
+                      <el-button
+                        type="danger"
+                        link
+                        size="small"
+                        @click.stop="deleteRecommendationDislike(item)"
+                      >
+                        <el-icon><Delete /></el-icon>
+                        删除
+                      </el-button>
+                    </div>
+                    <el-empty
+                      v-if="!recommendationDislikes.length && !recommendationDislikeLoading"
+                      description="还没有设置不感兴趣"
+                      :image-size="80"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             <el-empty v-else description="推荐画像暂不可用" />
@@ -1086,7 +1135,9 @@ const myCollections = ref<any[]>([])
 const browseHistory = ref<any[]>([])
 const myOrders = ref<any[]>([])
 const recommendationProfile = ref<any>(null)
+const recommendationDislikes = ref<any[]>([])
 const recommendationLoading = ref(false)
+const recommendationDislikeLoading = ref(false)
 const orderLoading = ref(false)
 const merchantResourceLoading = ref(false)
 const merchantResourceType = ref<'attractions' | 'foods' | 'hotels'>('attractions')
@@ -1593,15 +1644,58 @@ const loadMerchantResources = async () => {
 const loadRecommendationProfile = async () => {
   recommendationLoading.value = true
   try {
-    const res: any = await request.get('/content/recommend/profile')
-    if (res && res.code === 200) {
-      recommendationProfile.value = res.data || null
+    const [profileRes]: any[] = await Promise.all([
+      request.get('/content/recommend/profile'),
+      loadRecommendationDislikes()
+    ])
+    if (profileRes && profileRes.code === 200) {
+      recommendationProfile.value = profileRes.data || null
     }
   } catch (error) {
     console.error('加载推荐画像失败', error)
     recommendationProfile.value = null
   } finally {
     recommendationLoading.value = false
+  }
+}
+
+const loadRecommendationDislikes = async () => {
+  recommendationDislikeLoading.value = true
+  try {
+    const res: any = await request.get('/content/recommend/dislikes')
+    if (res && res.code === 200) {
+      recommendationDislikes.value = res.data || []
+    }
+    return res
+  } catch (error) {
+    console.error('加载不感兴趣列表失败', error)
+    recommendationDislikes.value = []
+    return null
+  } finally {
+    recommendationDislikeLoading.value = false
+  }
+}
+
+const deleteRecommendationDislike = async (item: any) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定从不感兴趣列表中删除「${item.title || '该内容'}」吗？删除后它可能再次出现在推荐里。`,
+      '删除不感兴趣',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    const res: any = await request.delete(`/content/recommend/dislike/${item.id}`)
+    if (res && res.code === 200) {
+      ElMessage.success('已删除')
+      await loadRecommendationProfile()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error.message || '删除失败')
+    }
   }
 }
 
@@ -2371,6 +2465,25 @@ const getResourceCover = (row: any) => {
 
 const getItemCover = (item: any) => getFirstImageUrl(item.coverImage, item.image, item.images)
 
+const getDislikeTypeText = (item: any) => {
+  if (item.dataType !== undefined && item.dataType !== null) {
+    const dataTypeMap: Record<number, string> = {
+      1: '攻略',
+      2: '景点',
+      3: '美食',
+      4: '酒店'
+    }
+    return dataTypeMap[Number(item.dataType)] || '内容'
+  }
+  const contentTypeMap: Record<number, string> = {
+    1: '攻略',
+    4: '景点',
+    5: '美食',
+    6: '酒店'
+  }
+  return contentTypeMap[Number(item.contentType)] || '内容'
+}
+
 const getResourcePrice = (row: any) => {
   if (merchantResourceType.value === 'attractions') return row.ticketPrice || 0
   if (merchantResourceType.value === 'foods') return row.avgPrice || row.price || 0
@@ -2978,6 +3091,20 @@ onUnmounted(() => {
   font-weight: 700;
 }
 
+.profile-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-section-subtitle {
+  margin-top: 6px;
+  color: #6d7d74;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .profile-panel-desc {
   max-width: 190px;
   margin-top: 8px;
@@ -3062,6 +3189,82 @@ onUnmounted(() => {
       font-weight: 700;
     }
   }
+}
+
+.dislike-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 120px;
+  margin-top: 16px;
+}
+
+.dislike-list-item {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid #edf1eb;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dislike-list-item:hover {
+  border-color: #cad8d0;
+  box-shadow: 0 8px 24px rgba(31, 81, 63, 0.08);
+}
+
+.dislike-cover,
+.dislike-cover-error {
+  width: 92px;
+  height: 68px;
+  border-radius: 10px;
+  background: #f1f5f2;
+  flex: 0 0 auto;
+}
+
+.dislike-cover-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b9a92;
+  font-size: 12px;
+}
+
+.dislike-info {
+  min-width: 0;
+}
+
+.dislike-title {
+  color: #17251e;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dislike-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  color: #7a897f;
+  font-size: 12px;
+}
+
+.dislike-reason {
+  margin-top: 8px;
+  color: #6d7d74;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .settings-panel {
@@ -3611,6 +3814,25 @@ onUnmounted(() => {
 
   .profile-section-wide {
     grid-column: auto;
+  }
+
+  .profile-section-header {
+    flex-direction: column;
+  }
+
+  .dislike-list-item {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .dislike-list-item .el-button {
+    grid-column: 1 / -1;
+    justify-self: flex-start;
+  }
+
+  .dislike-cover,
+  .dislike-cover-error {
+    width: 76px;
+    height: 58px;
   }
 
   .order-filter-card {

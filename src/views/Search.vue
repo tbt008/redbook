@@ -91,7 +91,7 @@
           <article v-for="item in results" :key="`${item.id}-${item.dataType || item.category}`" class="result-card" @click="goDetail(item)">
             <div class="result-card__media">
               <el-image
-                :src="item.coverImage || '/local-images/default-cover.svg'"
+                :src="getResultCover(item)"
                 fit="cover"
                 class="result-card__image"
                 loading="lazy"
@@ -156,6 +156,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Collection, Search, Star, VideoPlay, View } from '@element-plus/icons-vue'
 import request from '@/util/request'
+import { getFirstImageUrl } from '@/utils/imageUrl'
 
 const router = useRouter()
 const route = useRoute()
@@ -169,6 +170,8 @@ const results = ref<any[]>([])
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+
+const getResultCover = (item: any) => getFirstImageUrl(item?.coverImage, item?.image, item?.images)
 
 const CATEGORY_TO_DATA_TYPE: Record<string, number> = {
   guide: 1,

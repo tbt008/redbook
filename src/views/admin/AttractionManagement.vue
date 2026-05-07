@@ -552,6 +552,7 @@ import { formatOpenTimeRange, normalizeMobilePhone, parseOpenTimeRange, validate
 import MapLocationPicker from '@/components/MapLocationPicker.vue'
 import { loadAMapScript, waitForContainerVisible } from '@/utils/amap'
 import AdminCommentDrawer from '@/components/admin/AdminCommentDrawer.vue'
+import { parseImageList as parseStoredImageList } from '@/utils/imageUrl'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -815,14 +816,7 @@ const tableRowClassName = ({ row, rowIndex }: { row: any; rowIndex: number }) =>
 }
 
 const parseImageList = (images?: string | string[]) => {
-  if (!images) return []
-  if (Array.isArray(images)) return images.filter(Boolean)
-  try {
-    const parsed = JSON.parse(images)
-    return Array.isArray(parsed) ? parsed.filter(Boolean) : []
-  } catch {
-    return images ? [images] : []
-  }
+  return parseStoredImageList(images)
 }
 
 const getFirstImage = (images?: string | string[]) => {

@@ -10,11 +10,14 @@ const cleanImageToken = (value: string) => {
   return stripWrappingQuotes(text)
 }
 
+const isBrokenDataImageUrl = (value: string) => /^data:image\//i.test(value) && !value.includes(',')
+
 export const normalizeImageUrl = (value?: unknown, fallback = DEFAULT_COVER): string => {
   if (value == null) return fallback
 
   const raw = cleanImageToken(String(value))
   if (!raw || raw === 'null' || raw === 'undefined') return fallback
+  if (isBrokenDataImageUrl(raw)) return fallback
 
   if (/^(data:image\/|blob:|https?:\/\/)/i.test(raw)) return raw
   if (raw.startsWith('//')) return `${window.location.protocol}${raw}`
@@ -34,6 +37,10 @@ export const parseImageList = (value?: unknown, fallback?: string): string[] => 
 
   const raw = String(value).trim()
   if (!raw) return fallback ? [fallback] : []
+  if (/^data:image\//i.test(raw)) {
+    const image = normalizeImageUrl(raw, '')
+    return image ? [image] : fallback ? [fallback] : []
+  }
 
   try {
     const parsed = JSON.parse(raw)
