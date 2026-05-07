@@ -835,7 +835,7 @@
       <div class="content-edit-body">
         <div class="content-edit-head">
           <h3>编辑发布内容</h3>
-          <p>调整内容的标题、摘要、地区和位置，保存后会同步到个人中心与详情页展示。</p>
+          <p>编辑内容发布页中的标题、描述、图片、正文、标签和关联资源。</p>
         </div>
 
         <el-form :model="editingContent" label-position="top" class="content-edit-form">
@@ -843,45 +843,88 @@
             <el-form-item label="标题" class="full">
               <el-input v-model="editingContent.title" placeholder="请输入标题" maxlength="60" show-word-limit />
             </el-form-item>
-            <el-form-item label="内容" class="full">
-              <el-input
-                v-model="editingContent.content"
-                type="textarea"
-                :rows="8"
-                placeholder="请输入内容"
-                maxlength="3000"
-                show-word-limit
-              />
-            </el-form-item>
-            <el-form-item label="摘要" class="full">
+            <el-form-item label="描述" class="full">
               <el-input
                 v-model="editingContent.summary"
                 type="textarea"
                 :rows="3"
-                placeholder="请输入摘要"
-                maxlength="150"
+                placeholder="请输入描述"
+                maxlength="200"
                 show-word-limit
               />
             </el-form-item>
-            <el-form-item label="地区">
-              <el-select v-model="editingContent.region" placeholder="请选择地区" clearable style="width: 100%">
-                <el-option label="荔城区" value="荔城区" />
-                <el-option label="城厢区" value="城厢区" />
-                <el-option label="涵江区" value="涵江区" />
-                <el-option label="秀屿区" value="秀屿区" />
-                <el-option label="湄洲岛" value="湄洲岛" />
+            <el-form-item label="封面图片" class="full">
+              <div class="content-cover-editor">
+                <el-upload
+                  action="/api/file/upload?directory=content"
+                  :show-file-list="false"
+                  :on-success="handleContentCoverSuccess"
+                >
+                  <el-image v-if="editingContent.coverImage" :src="editingContent.coverImage" fit="cover" class="content-cover-preview" />
+                  <div v-else class="content-cover-uploader"><el-icon><Plus /></el-icon><span>上传封面</span></div>
+                </el-upload>
+                <el-button v-if="editingContent.coverImage" type="danger" plain @click="editingContent.coverImage = ''">移除封面</el-button>
+              </div>
+            </el-form-item>
+            <el-form-item label="内容图片" class="full">
+              <el-upload
+                class="content-images-uploader"
+                action="/api/file/upload?directory=content"
+                list-type="picture-card"
+                :file-list="contentImageFileList"
+                :on-success="handleContentImagesSuccess"
+                :on-remove="handleContentImageRemove"
+                multiple
+              >
+                <el-icon><Plus /></el-icon>
+              </el-upload>
+            </el-form-item>
+            <el-form-item label="正文内容" class="full">
+              <mavon-editor
+                ref="contentEditorRef"
+                v-model="editingContent.content"
+                class="content-markdown-editor"
+                :ishljs="true"
+                :toolbars="contentEditorToolbars"
+                @imgAdd="handleContentEditorImageAdd"
+              />
+            </el-form-item>
+            <el-form-item label="标签" class="full">
+              <el-select
+                v-model="editingContent.tags"
+                multiple
+                filterable
+                allow-create
+                default-first-option
+                placeholder="输入标签后按回车添加，也可以选择已有标签"
+                style="width: 100%"
+              >
+                <el-option v-for="tag in contentTagList" :key="tag.id" :label="tag.tagName" :value="tag.tagName" />
               </el-select>
             </el-form-item>
-            <el-form-item label="主题">
-              <el-input v-model="editingContent.theme" placeholder="例如：住宿、美食、海岛" />
+            <el-form-item label="关联类型">
+              <el-radio-group v-model="editingContent.relatedType" class="content-related-type-group" @change="handleContentRelatedTypeChange">
+                <el-radio-button v-for="option in contentRelatedTypeOptions" :key="option.value" :label="option.value">
+                  {{ option.label }}
+                </el-radio-button>
+              </el-radio-group>
             </el-form-item>
-            <el-form-item label="位置" class="full">
-              <MapLocationPicker
-                v-model:address="editingContent.location"
-                v-model:longitude="contentEditLocation.longitude"
-                v-model:latitude="contentEditLocation.latitude"
-                v-model:region="editingContent.region"
-              />
+            <el-form-item :label="`关联${currentContentRelatedType.label}`">
+              <el-select
+                v-model="editingContent.relatedId"
+                :placeholder="`选择关联${currentContentRelatedType.label}`"
+                clearable
+                filterable
+                :loading="contentRelatedLoading"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in currentContentRelatedList"
+                  :key="item.id"
+                  :label="getContentRelatedLabel(item)"
+                  :value="item.id"
+                />
+              </el-select>
             </el-form-item>
           </div>
         </el-form>
@@ -1113,15 +1156,14 @@
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, type UploadProps, type UploadUserFile } from 'element-plus'
 import { View, Star, Plus, Setting, Edit, Delete, Collection, Promotion, Shop, Calendar, User, House, Ticket, Wallet, Box, Clock, Location } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { formatDateOnly, formatDateTime, type DateInput } from '@/utils/date'
 import { buildPayQrCodeUrl } from '@/utils/payQrCode'
 import { normalizeMobilePhone } from '@/utils/attractionForm'
 import { loadAMapScript, reverseGeocodeLocation, waitForContainerVisible } from '@/utils/amap'
-import { getFirstImageUrl } from '@/utils/imageUrl'
-import MapLocationPicker from '@/components/MapLocationPicker.vue'
+import { getFirstImageUrl, parseImageList } from '@/utils/imageUrl'
 import PaymentMethodCard from '@/components/PaymentMethodCard.vue'
 
 const router = useRouter()
@@ -1150,10 +1192,13 @@ const editDialogVisible = ref(false)
 const passwordDialogVisible = ref(false)
 const contentEditDialogVisible = ref(false)
 const contentEditSaving = ref(false)
-const contentEditLocation = reactive({
-  longitude: null as number | null,
-  latitude: null as number | null
-})
+const contentRelatedLoading = ref(false)
+const contentTagList = ref<any[]>([])
+const contentAttractionList = ref<any[]>([])
+const contentFoodList = ref<any[]>([])
+const contentHotelList = ref<any[]>([])
+const contentImageFileList = ref<UploadUserFile[]>([])
+const contentEditorRef = ref<any>()
 const merchantApplyDialogVisible = ref(false)
 const addressDialogVisible = ref(false)
 const addressLoading = ref(false)
@@ -1184,10 +1229,50 @@ const editingContent = ref<any>({
   id: 0,
   title: '',
   summary: '',
-  region: '',
-  theme: '',
-  location: ''
+  content: '',
+  coverImage: '',
+  images: '[]',
+  tags: [] as string[],
+  contentType: 1,
+  relatedType: 'attraction',
+  relatedId: null
 })
+
+type ContentRelatedType = 'attraction' | 'food' | 'hotel'
+
+const contentRelatedTypeOptions: Array<{ value: ContentRelatedType; label: string; endpoint: string }> = [
+  { value: 'attraction', label: '景点', endpoint: '/attraction/list' },
+  { value: 'food', label: '美食', endpoint: '/food/list' },
+  { value: 'hotel', label: '酒店', endpoint: '/hotel/list' }
+]
+
+const contentEditorToolbars = {
+  bold: true,
+  italic: true,
+  header: true,
+  underline: true,
+  strikethrough: true,
+  mark: true,
+  quote: true,
+  ol: true,
+  ul: true,
+  link: true,
+  imagelink: true,
+  code: true,
+  table: true,
+  fullscreen: true,
+  readmodel: true,
+  htmlcode: true,
+  undo: true,
+  redo: true,
+  trash: true,
+  navigation: true,
+  alignleft: true,
+  aligncenter: true,
+  alignright: true,
+  subfield: true,
+  preview: true
+}
 
 // 判断是否为管理员
 const isAdmin = computed(() => userInfo.value.userType === 4)
@@ -1206,6 +1291,20 @@ const profileRoleText = computed(() => {
   if (isAdmin.value) return '管理员'
   if (isMerchant.value) return '商家'
   return '游客'
+})
+
+const currentContentRelatedType = computed(() => {
+  return contentRelatedTypeOptions.find((option) => option.value === editingContent.value.relatedType) || contentRelatedTypeOptions[0]
+})
+
+const currentContentRelatedList = computed(() => {
+  if (editingContent.value.relatedType === 'food') return contentFoodList.value
+  if (editingContent.value.relatedType === 'hotel') return contentHotelList.value
+  return contentAttractionList.value
+})
+
+const selectedContentRelatedItem = computed(() => {
+  return currentContentRelatedList.value.find((item) => item.id === editingContent.value.relatedId)
 })
 
 const displayName = computed(() => (
@@ -2219,6 +2318,141 @@ const getContentStatusType = (status: number) => {
   return typeMap[status] || 'info'
 }
 
+const getContentListData = (data: any) => {
+  if (Array.isArray(data)) return data
+  return data?.list || data?.records || []
+}
+
+const setContentRelatedList = (type: ContentRelatedType, list: any[]) => {
+  if (type === 'food') {
+    contentFoodList.value = list
+    return
+  }
+  if (type === 'hotel') {
+    contentHotelList.value = list
+    return
+  }
+  contentAttractionList.value = list
+}
+
+const loadContentTags = async () => {
+  try {
+    const res: any = await request.get('/interest-tag/list')
+    if (res.code === 200) contentTagList.value = res.data || []
+  } catch (error) {
+    console.error('加载标签失败', error)
+  }
+}
+
+const loadContentRelatedList = async (type: ContentRelatedType = editingContent.value.relatedType) => {
+  const option = contentRelatedTypeOptions.find((item) => item.value === type)
+  if (!option) return
+  const cachedList = type === 'food' ? contentFoodList.value : type === 'hotel' ? contentHotelList.value : contentAttractionList.value
+  if (cachedList.length > 0) return
+
+  contentRelatedLoading.value = true
+  try {
+    const res: any = await request.get(option.endpoint, { params: { pageNum: 1, pageSize: 100 } })
+    if (res.code === 200) setContentRelatedList(type, getContentListData(res.data))
+  } catch (error) {
+    console.error(`加载${option.label}失败`, error)
+  } finally {
+    contentRelatedLoading.value = false
+  }
+}
+
+const getContentRelatedLabel = (item: any) => {
+  const parts = [item.name]
+  if (item.region) parts.push(item.region)
+  if (item.address) parts.push(item.address)
+  return parts.filter(Boolean).join(' - ')
+}
+
+const getContentRelatedTypeByContent = (content: any): ContentRelatedType => {
+  if (content.foodId) return 'food'
+  if (content.hotelId) return 'hotel'
+  return 'attraction'
+}
+
+const getContentRelatedIdByType = (content: any, type: ContentRelatedType) => {
+  if (type === 'food') return content.foodId || null
+  if (type === 'hotel') return content.hotelId || null
+  return content.attractionId || null
+}
+
+const parseContentTags = (tags: unknown) => {
+  if (Array.isArray(tags)) return tags
+  if (!tags) return []
+  try {
+    const parsed = JSON.parse(String(tags))
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    return String(tags).split(',').map((tag) => tag.trim()).filter(Boolean)
+  }
+}
+
+const syncEditingContentImages = (images: string[]) => {
+  editingContent.value.images = JSON.stringify(images.filter(Boolean))
+}
+
+const getUploadUrl = (file: any) => file?.response?.data?.url || file?.url || ''
+
+const handleContentRelatedTypeChange = (type: ContentRelatedType) => {
+  editingContent.value.relatedId = null
+  loadContentRelatedList(type)
+}
+
+const handleContentCoverSuccess: UploadProps['onSuccess'] = (response: any) => {
+  if (response.code === 200) {
+    editingContent.value.coverImage = response.data.url
+    ElMessage.success('封面上传成功')
+    return
+  }
+  ElMessage.error(response.msg || '封面上传失败')
+}
+
+const handleContentImagesSuccess: UploadProps['onSuccess'] = (response: any, file: any) => {
+  if (response.code === 200) {
+    const imageUrl = response.data.url
+    const images = parseImageList(editingContent.value.images)
+    images.push(imageUrl)
+    syncEditingContentImages(images)
+    contentImageFileList.value.push({ name: file.name || `内容图片${images.length}`, url: imageUrl })
+    ElMessage.success('图片上传成功')
+    return
+  }
+  ElMessage.error(response.msg || '图片上传失败')
+}
+
+const handleContentImageRemove: UploadProps['onRemove'] = (file: any) => {
+  const removedUrl = getUploadUrl(file)
+  syncEditingContentImages(parseImageList(editingContent.value.images).filter((url) => url !== removedUrl))
+  contentImageFileList.value = contentImageFileList.value.filter((item) => item.url !== removedUrl)
+}
+
+const handleContentEditorImageAdd = async (pos: number, file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  try {
+    const res: any = await request.post('/file/upload?directory=content', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    if (res.code === 200) {
+      const imageUrl = res.data.url
+      const images = parseImageList(editingContent.value.images)
+      images.push(imageUrl)
+      syncEditingContentImages(images)
+      contentImageFileList.value.push({ url: imageUrl, name: file.name })
+      contentEditorRef.value?.$img2Url(pos, imageUrl)
+      ElMessage.success('图片上传成功')
+      return
+    }
+    ElMessage.error(res.msg || '图片上传失败')
+  } catch (error) {
+    ElMessage.error('图片上传失败')
+  }
+}
+
 // 编辑内容 - 先查询详情再回显
 const editContent = async (item: any) => {
   try {
@@ -2226,22 +2460,24 @@ const editContent = async (item: any) => {
     const res: any = await request.get(`/content/${item.id}`)
     if (res.code === 200 && res.data) {
       const content = res.data
+      const relatedType = getContentRelatedTypeByContent(content)
+      const images = parseImageList(content.images)
       // 使用 Object.assign 确保响应式更新
       Object.assign(editingContent.value, {
         id: content.id,
         title: content.title || '',
         summary: content.summary || '',
-        region: content.region || '',
-        theme: content.theme || '',
-        location: content.location || '',
         content: content.content || '',
-        images: content.images || '',
-        coverImage: content.coverImage || '',
-        videoUrl: content.videoUrl || '',
-        contentType: content.contentType || 1
+        images: JSON.stringify(images),
+        coverImage: content.coverImage || images[0] || '',
+        tags: parseContentTags(content.tags),
+        contentType: content.contentType || 1,
+        relatedType,
+        relatedId: getContentRelatedIdByType(content, relatedType)
       })
-      contentEditLocation.longitude = content.longitude === null || content.longitude === undefined ? null : Number(content.longitude)
-      contentEditLocation.latitude = content.latitude === null || content.latitude === undefined ? null : Number(content.latitude)
+      contentImageFileList.value = images.map((url, index) => ({ name: `内容图片${index + 1}`, url }))
+      loadContentTags()
+      loadContentRelatedList(relatedType)
       contentEditDialogVisible.value = true
     }
   } catch (error: any) {
@@ -2253,7 +2489,23 @@ const editContent = async (item: any) => {
 const saveContentEdit = async () => {
   contentEditSaving.value = true
   try {
-    const res: any = await request.put('/content/update', editingContent.value)
+    const relatedItem = selectedContentRelatedItem.value
+    const images = parseImageList(editingContent.value.images)
+    const payload = {
+      ...editingContent.value,
+      description: editingContent.value.summary,
+      tags: JSON.stringify([...new Set((editingContent.value.tags || []).map((tag: string) => tag.trim()).filter(Boolean))]),
+      images: JSON.stringify(images),
+      contentType: images.length > 0 ? 2 : 1,
+      type: images.length > 0 ? 2 : 1,
+      location: relatedItem?.name || undefined,
+      region: relatedItem?.region || undefined,
+      theme: relatedItem ? currentContentRelatedType.value.label : undefined,
+      attractionId: editingContent.value.relatedType === 'attraction' ? editingContent.value.relatedId : null,
+      foodId: editingContent.value.relatedType === 'food' ? editingContent.value.relatedId : null,
+      hotelId: editingContent.value.relatedType === 'hotel' ? editingContent.value.relatedId : null
+    }
+    const res: any = await request.put('/content/update', payload)
     if (res.code === 200) {
       ElMessage.success('保存成功')
       contentEditDialogVisible.value = false
@@ -2544,6 +2796,8 @@ onMounted(async () => {
   await loadUserInfo()
   loadStats()
   loadMyContents()
+  loadContentTags()
+  loadContentRelatedList()
   loadMyCollections()
   loadBrowseHistory()
   loadRecommendationProfile()
@@ -3694,6 +3948,60 @@ onUnmounted(() => {
   :deep(.el-input__wrapper.is-focus),
   :deep(.el-textarea__inner:focus) {
     box-shadow: 0 0 0 1px #1f6f5c inset;
+  }
+}
+
+.content-cover-editor {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.content-cover-preview,
+.content-cover-uploader {
+  width: 200px;
+  height: 150px;
+  border-radius: 12px;
+}
+
+.content-cover-uploader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #8ea0b3;
+  border: 1px dashed #b8c7d6;
+  background: #f7fbf9;
+  cursor: pointer;
+}
+
+.content-cover-uploader .el-icon {
+  font-size: 26px;
+}
+
+.content-images-uploader {
+  :deep(.el-upload-list__item),
+  :deep(.el-upload--picture-card) {
+    width: 112px;
+    height: 112px;
+    border-radius: 10px;
+  }
+}
+
+.content-markdown-editor {
+  min-height: 420px;
+
+  :deep(.v-note-wrapper) {
+    min-height: 420px;
+    z-index: 1;
+  }
+}
+
+.content-related-type-group {
+  :deep(.el-radio-button__inner) {
+    min-width: 92px;
   }
 }
 

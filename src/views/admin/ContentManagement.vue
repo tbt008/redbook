@@ -189,14 +189,84 @@
       <el-form ref="formRef" :model="contentForm" :rules="formRules" label-position="top" class="edit-form">
         <div class="form-grid">
           <el-form-item label="标题" prop="title" class="full"><el-input v-model="contentForm.title" maxlength="60" show-word-limit placeholder="请输入内容标题" /></el-form-item>
-          <el-form-item label="摘要" prop="summary" class="full"><el-input v-model="contentForm.summary" type="textarea" :rows="3" maxlength="150" show-word-limit placeholder="请输入内容摘要" /></el-form-item>
+          <el-form-item label="描述" prop="summary" class="full"><el-input v-model="contentForm.summary" type="textarea" :rows="3" maxlength="200" show-word-limit placeholder="请输入内容描述" /></el-form-item>
           <el-form-item label="内容类型" prop="contentType"><el-select v-model="contentForm.contentType" placeholder="请选择内容类型"><el-option v-for="item in contentTypeOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
           <el-form-item label="状态" prop="status"><el-select v-model="contentForm.status" placeholder="请选择状态"><el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
-          <el-form-item label="地区"><el-select v-model="contentForm.region" placeholder="请选择地区" clearable><el-option v-for="item in regionOptions" :key="item" :label="item" :value="item" /></el-select></el-form-item>
           <el-form-item label="推荐状态"><el-select v-model="contentForm.isRecommend" placeholder="请选择推荐状态"><el-option label="普通内容" :value="0" /><el-option label="推荐内容" :value="1" /></el-select></el-form-item>
-          <el-form-item label="主题"><el-input v-model="contentForm.theme" placeholder="例如：海岛、文化、美食" /></el-form-item>
-          <el-form-item label="位置"><el-input v-model="contentForm.location" placeholder="请输入位置描述" /></el-form-item>
-          <el-form-item label="正文内容" prop="content" class="full"><el-input v-model="contentForm.content" type="textarea" :rows="8" maxlength="3000" show-word-limit placeholder="请输入内容正文" /></el-form-item>
+          <el-form-item label="标签" class="full">
+            <el-select
+              v-model="contentForm.tags"
+              multiple
+              filterable
+              allow-create
+              default-first-option
+              placeholder="输入标签后按回车添加，也可以选择已有标签"
+              style="width: 100%"
+            >
+              <el-option v-for="tag in tagList" :key="tag.id" :label="tag.tagName" :value="tag.tagName" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="封面图片" class="full">
+            <div class="cover-editor">
+              <el-upload
+                class="cover-uploader"
+                action="/api/file/upload?directory=content"
+                :show-file-list="false"
+                :on-success="handleCoverUploadSuccess"
+              >
+                <el-image v-if="contentForm.coverImage" :src="contentForm.coverImage" fit="cover" class="cover-preview" />
+                <div v-else class="cover-uploader-placeholder"><el-icon><Plus /></el-icon><span>上传封面</span></div>
+              </el-upload>
+              <el-button v-if="contentForm.coverImage" type="danger" plain @click="contentForm.coverImage = ''">移除封面</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="内容图片" class="full">
+            <el-upload
+              class="images-uploader"
+              action="/api/file/upload?directory=content"
+              list-type="picture-card"
+              :file-list="imageFileList"
+              :on-success="handleImagesUploadSuccess"
+              :on-remove="handleImageRemove"
+              multiple
+            >
+              <el-icon><Plus /></el-icon>
+            </el-upload>
+          </el-form-item>
+          <el-form-item label="正文内容" prop="content" class="full">
+            <mavon-editor
+              ref="mavonEditorRef"
+              v-model="contentForm.content"
+              class="markdown-editor"
+              :ishljs="true"
+              :toolbars="toolbars"
+              @imgAdd="handleEditorImageAdd"
+            />
+          </el-form-item>
+          <el-form-item label="关联类型">
+            <el-radio-group v-model="contentForm.relatedType" class="related-type-group" @change="handleRelatedTypeChange">
+              <el-radio-button v-for="option in relatedTypeOptions" :key="option.value" :label="option.value">
+                {{ option.label }}
+              </el-radio-button>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item :label="`关联${currentRelatedType.label}`">
+            <el-select
+              v-model="contentForm.relatedId"
+              :placeholder="`选择关联${currentRelatedType.label}`"
+              clearable
+              filterable
+              :loading="relatedLoading"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="item in currentRelatedList"
+                :key="item.id"
+                :label="getRelatedLabel(item)"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
         </div>
       </el-form>
       <template #footer><div class="dialog-footer"><el-button @click="editDialogVisible = false">取消</el-button><el-button type="primary" :loading="submitting" @click="handleSubmit">保存修改</el-button></div></template>
@@ -207,8 +277,8 @@
 </template>
 
 <script setup lang="ts">
-import { ChatDotRound, CircleCheck, Delete, Document, Edit, Files, Pointer, RefreshLeft, RefreshRight, Search, Star, SwitchButton, View } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import { ChatDotRound, CircleCheck, Delete, Document, Edit, Files, Plus, Pointer, RefreshLeft, RefreshRight, Search, Star, SwitchButton, View } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, type FormInstance, type UploadProps, type UploadUserFile } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import request from '@/util/request'
 import { formatDateTime } from '@/util/datetime'
@@ -228,10 +298,69 @@ const editDialogVisible = ref(false)
 const dialogTitle = ref('编辑内容')
 const formRef = ref<FormInstance>()
 const commentDrawerRef = ref<InstanceType<typeof AdminCommentDrawer>>()
+const imageFileList = ref<UploadUserFile[]>([])
+const mavonEditorRef = ref<any>()
+const tagList = ref<any[]>([])
+const attractionList = ref<any[]>([])
+const foodList = ref<any[]>([])
+const hotelList = ref<any[]>([])
+const relatedLoading = ref(false)
 
 const searchForm = reactive({ keyword: '', contentType: null as number | null, status: null as number | null, region: '' })
 const pagination = reactive({ pageNum: 1, pageSize: 20, total: 0 })
-const contentForm = reactive({ id: null as number | null, title: '', summary: '', content: '', contentType: 2, region: '', theme: '', location: '', status: 2, isRecommend: 0 })
+const contentForm = reactive({
+  id: null as number | null,
+  title: '',
+  summary: '',
+  content: '',
+  contentType: 2,
+  coverImage: '',
+  images: '[]',
+  tags: [] as string[],
+  region: '',
+  theme: '',
+  location: '',
+  status: 2,
+  isRecommend: 0,
+  relatedType: 'attraction' as RelatedType,
+  relatedId: null as number | null
+})
+
+type RelatedType = 'attraction' | 'food' | 'hotel'
+
+const relatedTypeOptions: Array<{ value: RelatedType; label: string; endpoint: string }> = [
+  { value: 'attraction', label: '景点', endpoint: '/attraction/list' },
+  { value: 'food', label: '美食', endpoint: '/food/list' },
+  { value: 'hotel', label: '酒店', endpoint: '/hotel/list' }
+]
+
+const toolbars = {
+  bold: true,
+  italic: true,
+  header: true,
+  underline: true,
+  strikethrough: true,
+  mark: true,
+  quote: true,
+  ol: true,
+  ul: true,
+  link: true,
+  imagelink: true,
+  code: true,
+  table: true,
+  fullscreen: true,
+  readmodel: true,
+  htmlcode: true,
+  undo: true,
+  redo: true,
+  trash: true,
+  navigation: true,
+  alignleft: true,
+  aligncenter: true,
+  alignright: true,
+  subfield: true,
+  preview: true
+}
 
 const formRules = {
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
@@ -244,13 +373,41 @@ const publishedCount = computed(() => contentList.value.filter((item) => item.st
 const totalViews = computed(() => contentList.value.reduce((total, item) => total + Number(item.viewCount || 0), 0))
 const totalComments = computed(() => contentList.value.reduce((total, item) => total + Number(item.commentCount || 0), 0))
 const currentContentView = computed(() => currentContent.value || {})
+const currentRelatedType = computed(() => relatedTypeOptions.find((option) => option.value === contentForm.relatedType) || relatedTypeOptions[0])
+const currentRelatedList = computed(() => {
+  if (contentForm.relatedType === 'food') return foodList.value
+  if (contentForm.relatedType === 'hotel') return hotelList.value
+  return attractionList.value
+})
+const selectedRelatedItem = computed(() => currentRelatedList.value.find((item) => item.id === contentForm.relatedId))
 
-const parseImageList = (images?: string) => {
+const parseImageList = (images?: unknown) => {
   return parseStoredImageList(images)
 }
 
 const getCoverImage = (row: any) => getFirstImageUrl(row.coverImage, row.image, row.images)
 const getPreviewImages = (row: any) => (parseImageList(row.images).length ? parseImageList(row.images) : getCoverImage(row) ? [getCoverImage(row)] : [])
+const getEditableCoverImage = (row: any) => row.coverImage || row.image || parseImageList(row.images)[0] || ''
+const parseTags = (tags: unknown) => {
+  if (Array.isArray(tags)) return tags
+  if (!tags) return []
+  try {
+    const parsed = JSON.parse(String(tags))
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    return String(tags).split(',').map((tag) => tag.trim()).filter(Boolean)
+  }
+}
+const getRelatedTypeByContent = (content: any): RelatedType => {
+  if (content.foodId) return 'food'
+  if (content.hotelId) return 'hotel'
+  return 'attraction'
+}
+const getRelatedIdByType = (content: any, type: RelatedType) => {
+  if (type === 'food') return content.foodId || null
+  if (type === 'hotel') return content.hotelId || null
+  return content.attractionId || null
+}
 const getSummary = (row: any) => row.summary || (row.content ? `${String(row.content).slice(0, 42)}...` : '暂无摘要')
 const getContentTypeName = (type: number) => contentTypeOptions.find((item) => item.value === type)?.label || '未知'
 const getStatusName = (status: number) => statusOptions.find((item) => item.value === status)?.label || '未知'
@@ -279,6 +436,61 @@ const loadContentList = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const loadTags = async () => {
+  try {
+    const res: any = await request.get('/interest-tag/list')
+    if (res.code === 200) tagList.value = res.data || []
+  } catch (error) {
+    console.error('加载标签失败', error)
+  }
+}
+
+const getListData = (data: any) => {
+  if (Array.isArray(data)) return data
+  return data?.list || data?.records || []
+}
+
+const setRelatedList = (type: RelatedType, list: any[]) => {
+  if (type === 'food') {
+    foodList.value = list
+    return
+  }
+  if (type === 'hotel') {
+    hotelList.value = list
+    return
+  }
+  attractionList.value = list
+}
+
+const loadRelatedList = async (type: RelatedType = contentForm.relatedType) => {
+  const option = relatedTypeOptions.find((item) => item.value === type)
+  if (!option) return
+  const cachedList = type === 'food' ? foodList.value : type === 'hotel' ? hotelList.value : attractionList.value
+  if (cachedList.length > 0) return
+
+  relatedLoading.value = true
+  try {
+    const res: any = await request.get(option.endpoint, { params: { pageNum: 1, pageSize: 100 } })
+    if (res.code === 200) setRelatedList(type, getListData(res.data))
+  } catch (error) {
+    console.error(`加载${option.label}失败`, error)
+  } finally {
+    relatedLoading.value = false
+  }
+}
+
+const getRelatedLabel = (item: any) => {
+  const parts = [item.name]
+  if (item.region) parts.push(item.region)
+  if (item.address) parts.push(item.address)
+  return parts.filter(Boolean).join(' - ')
+}
+
+const handleRelatedTypeChange = (type: RelatedType) => {
+  contentForm.relatedId = null
+  loadRelatedList(type)
 }
 
 const handleSearch = () => {
@@ -310,17 +522,84 @@ const handleManageComments = (row: any) => {
 
 const handleEdit = (row: any) => {
   dialogTitle.value = '编辑内容'
+  const images = parseImageList(row.images)
+  const relatedType = getRelatedTypeByContent(row)
   contentForm.id = row.id
   contentForm.title = row.title || ''
   contentForm.summary = row.summary || ''
   contentForm.content = row.content || ''
   contentForm.contentType = row.contentType || 2
+  contentForm.coverImage = getEditableCoverImage(row)
+  contentForm.images = JSON.stringify(images)
+  contentForm.tags = parseTags(row.tags)
   contentForm.region = row.region || ''
   contentForm.theme = row.theme || ''
   contentForm.location = row.location || ''
   contentForm.status = row.status ?? 2
   contentForm.isRecommend = row.isRecommend ?? 0
+  contentForm.relatedType = relatedType
+  contentForm.relatedId = getRelatedIdByType(row, relatedType)
+  imageFileList.value = images.map((url, index) => ({ name: `内容图片${index + 1}`, url }))
+  loadTags()
+  loadRelatedList(relatedType)
   editDialogVisible.value = true
+}
+
+const getUploadUrl = (file: any) => file?.response?.data?.url || file?.url || ''
+
+const syncContentImages = (images: string[]) => {
+  contentForm.images = JSON.stringify(images.filter(Boolean))
+}
+
+const handleCoverUploadSuccess: UploadProps['onSuccess'] = (response: any) => {
+  if (response.code === 200) {
+    contentForm.coverImage = response.data.url
+    ElMessage.success('封面上传成功')
+    return
+  }
+  ElMessage.error(response.msg || '封面上传失败')
+}
+
+const handleImagesUploadSuccess: UploadProps['onSuccess'] = (response: any, file: any) => {
+  if (response.code === 200) {
+    const imageUrl = response.data.url
+    const images = parseImageList(contentForm.images)
+    images.push(imageUrl)
+    syncContentImages(images)
+    imageFileList.value.push({ name: file.name || `内容图片${images.length}`, url: imageUrl })
+    ElMessage.success('图片上传成功')
+    return
+  }
+  ElMessage.error(response.msg || '图片上传失败')
+}
+
+const handleImageRemove: UploadProps['onRemove'] = (file: any) => {
+  const removedUrl = getUploadUrl(file)
+  syncContentImages(parseImageList(contentForm.images).filter((url) => url !== removedUrl))
+  imageFileList.value = imageFileList.value.filter((item) => item.url !== removedUrl)
+}
+
+const handleEditorImageAdd = async (pos: number, file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  try {
+    const res: any = await request.post('/file/upload?directory=content', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    if (res.code === 200) {
+      const imageUrl = res.data.url
+      const images = parseImageList(contentForm.images)
+      images.push(imageUrl)
+      syncContentImages(images)
+      imageFileList.value.push({ url: imageUrl, name: file.name })
+      mavonEditorRef.value?.$img2Url(pos, imageUrl)
+      ElMessage.success('图片上传成功')
+      return
+    }
+    ElMessage.error(res.msg || '图片上传失败')
+  } catch (error) {
+    ElMessage.error('图片上传失败')
+  }
 }
 
 const handleDelete = async (row: any) => {
@@ -360,7 +639,23 @@ const handleSubmit = async () => {
   if (!valid) return
   submitting.value = true
   try {
-    await request.put('/admin/content/update', { ...contentForm })
+    const relatedItem = selectedRelatedItem.value
+    const images = parseImageList(contentForm.images)
+    const payload = {
+      ...contentForm,
+      description: contentForm.summary,
+      tags: JSON.stringify([...new Set(contentForm.tags.map((tag) => tag.trim()).filter(Boolean))]),
+      images: JSON.stringify(images),
+      contentType: images.length > 0 ? 2 : 1,
+      type: images.length > 0 ? 2 : 1,
+      location: relatedItem?.name || undefined,
+      region: relatedItem?.region || undefined,
+      theme: relatedItem ? currentRelatedType.value.label : undefined,
+      attractionId: contentForm.relatedType === 'attraction' ? contentForm.relatedId : null,
+      foodId: contentForm.relatedType === 'food' ? contentForm.relatedId : null,
+      hotelId: contentForm.relatedType === 'hotel' ? contentForm.relatedId : null
+    }
+    await request.put('/admin/content/update', payload)
     ElMessage.success('内容更新成功')
     editDialogVisible.value = false
     loadContentList()
@@ -371,7 +666,11 @@ const handleSubmit = async () => {
   }
 }
 
-onMounted(loadContentList)
+onMounted(() => {
+  loadContentList()
+  loadTags()
+  loadRelatedList()
+})
 </script>
 
 <style scoped lang="scss">
@@ -537,6 +836,41 @@ onMounted(loadContentList)
 
   .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .full { grid-column: 1 / -1; }
+  .cover-editor { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+  .cover-preview,
+  .cover-uploader-placeholder {
+    width: 180px;
+    height: 120px;
+    border-radius: 12px;
+  }
+  .cover-uploader-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #8ea0b3;
+    border: 1px dashed #b8c7d6;
+    background: #f7fbf9;
+    cursor: pointer;
+  }
+  .cover-uploader-placeholder .el-icon { font-size: 24px; }
+  .images-uploader :deep(.el-upload-list__item),
+  .images-uploader :deep(.el-upload--picture-card) {
+    width: 112px;
+    height: 112px;
+    border-radius: 10px;
+  }
+  .markdown-editor {
+    min-height: 420px;
+  }
+  .markdown-editor :deep(.v-note-wrapper) {
+    min-height: 420px;
+    z-index: 1;
+  }
+  .related-type-group :deep(.el-radio-button__inner) {
+    min-width: 92px;
+  }
   .dialog-footer { display: flex; justify-content: flex-end; gap: 12px; }
 
   @media (max-width: 1200px) {

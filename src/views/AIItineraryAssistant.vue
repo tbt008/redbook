@@ -198,6 +198,7 @@ import { Promotion, Delete, Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { authHeaders, parseResultResponse } from '@/util/fetchResult'
 import request from '@/util/request'
+import { renderMarkdown } from '@/utils/markdown'
 
 const router = useRouter()
 
@@ -473,11 +474,8 @@ const clearChat = () => {
 
 // 格式化消息
 const formatMessage = (content: string) => {
-  return content
-    .replace(/\n/g, '<br>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/第(\d+)天/g, '<strong style="color: #667eea;">第$1天</strong>')
+  if (!content.trim()) return ''
+  return renderMarkdown(content)
 }
 
 // 滚动到底部
@@ -637,7 +635,51 @@ const goToMyItinerary = () => router.push('/itinerary/list')
     border-radius: 16px;
     line-height: 1.6;
     word-wrap: break-word;
+    overflow-wrap: anywhere;
     font-size: 15px;
+
+    :deep(p) {
+      margin: 0 0 10px;
+    }
+
+    :deep(p:last-child) {
+      margin-bottom: 0;
+    }
+
+    :deep(ul),
+    :deep(ol) {
+      margin: 8px 0 12px;
+      padding-left: 22px;
+    }
+
+    :deep(li) {
+      margin: 5px 0;
+      padding-left: 2px;
+    }
+
+    :deep(h1),
+    :deep(h2),
+    :deep(h3),
+    :deep(h4) {
+      margin: 12px 0 8px;
+      font-weight: 700;
+      line-height: 1.35;
+      color: inherit;
+    }
+
+    :deep(h1),
+    :deep(h2) {
+      font-size: 18px;
+    }
+
+    :deep(h3),
+    :deep(h4) {
+      font-size: 16px;
+    }
+
+    :deep(strong) {
+      font-weight: 700;
+    }
   }
 
   .time {

@@ -34,6 +34,14 @@
               class="search-input"
               @keyup.enter="handleSearch"
             />
+            <button
+              v-if="searchKeyword"
+              class="clear-search-btn"
+              title="清空搜索"
+              @click="clearSearch"
+            >
+              <el-icon><Close /></el-icon>
+            </button>
             <button class="search-btn" @click="handleSearch">
               <el-icon><Search /></el-icon>
             </button>
@@ -116,6 +124,15 @@
               class="main-search-input"
               @keyup.enter="handleSearch"
             />
+            <button
+              v-if="searchKeyword"
+              class="main-clear-button"
+              type="button"
+              @click="clearSearch"
+            >
+              <el-icon><Close /></el-icon>
+              清空
+            </button>
             <button class="search-button" @click="handleSearch">
               <el-icon><Search /></el-icon>
               搜索
@@ -407,7 +424,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -823,10 +840,25 @@ const handleSearch = () => {
   }
 }
 
+const clearSearch = () => {
+  if (!searchKeyword.value && !isSearching.value) return
+
+  searchKeyword.value = ''
+  isSearching.value = false
+  currentPage.value = 1
+  loadContents()
+}
+
 const quickSearch = (tag: string) => {
   searchKeyword.value = tag
   handleSearch()
 }
+
+watch(searchKeyword, (keyword) => {
+  if (!keyword.trim() && isSearching.value) {
+    clearSearch()
+  }
+})
 
 const navigateToCategory = (type: string | number) => {
   if (type === 'map') {
@@ -1227,6 +1259,22 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
         }
       }
 
+      .clear-search-btn {
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.72);
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.3s;
+
+        &:hover {
+          color: $primary;
+        }
+      }
+
       .search-btn {
         border: none;
         background: transparent;
@@ -1242,6 +1290,14 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
 
       &:focus-within .search-btn {
         color: $primary;
+      }
+
+      &:focus-within .clear-search-btn {
+        color: $text-muted;
+
+        &:hover {
+          color: $primary;
+        }
       }
 
       &:focus-within .search-input::placeholder {
@@ -1461,6 +1517,26 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
         &:focus {
           border-color: $primary;
           box-shadow: 0 0 0 4px rgba(26, 95, 74, 0.1);
+        }
+      }
+
+      .main-clear-button {
+        border: 1px solid rgba(26, 95, 74, 0.16);
+        border-radius: 12px;
+        padding: 16px 22px;
+        background: rgba(26, 95, 74, 0.08);
+        color: $primary;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+
+        &:hover {
+          background: rgba(26, 95, 74, 0.14);
+          transform: translateY(-2px);
         }
       }
 
@@ -2403,6 +2479,11 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
       background: rgba(255, 255, 255, 0.84);
     }
 
+    .search-form .main-clear-button {
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
     .search-form .search-button {
       border-radius: 18px;
       padding-inline: 36px;
@@ -2607,6 +2688,11 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
 
       .search-form {
         flex-direction: column;
+      }
+
+      .main-clear-button,
+      .search-button {
+        justify-content: center;
       }
     }
 
