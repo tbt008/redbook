@@ -7,7 +7,7 @@
       <!-- 图片画廊 -->
       <section class="gallery-section">
         <div class="gallery-main">
-          <el-carousel height="550px" indicator-position="none" arrow="always" :interval="5000">
+          <el-carousel height="550px" indicator-position="none" arrow="never" :interval="5000">
             <el-carousel-item v-for="(image, index) in imageList" :key="index">
               <el-image :src="image" fit="cover" class="gallery-image" />
             </el-carousel-item>
