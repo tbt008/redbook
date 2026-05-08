@@ -462,13 +462,18 @@
 
           <!-- 步骤3：填写信息 -->
           <div v-show="currentStep === 2" class="step-panel">
-            <el-form :model="orderForm" label-position="top" class="order-form">
-              <el-form-item label="游客姓名" required>
-                <el-input v-model="orderForm.visitorName" placeholder="请输入真实姓名" />
-              </el-form-item>
-              <el-form-item label="身份证号" required>
-                <el-input v-model="orderForm.visitorIdCard" placeholder="请输入身份证号" maxlength="18" />
-              </el-form-item>
+            <el-form :model="orderForm" label-position="top" class="order-form visitor-order-form">
+              <div class="visitor-list">
+                <div v-for="(visitor, index) in visitorList" :key="index" class="visitor-card">
+                  <div class="visitor-card-title">游客 {{ index + 1 }}</div>
+                  <el-form-item label="游客姓名" required>
+                    <el-input v-model="visitor.name" placeholder="请输入真实姓名" />
+                  </el-form-item>
+                  <el-form-item label="身份证号" required>
+                    <el-input v-model="visitor.idCard" placeholder="请输入身份证号" maxlength="18" />
+                  </el-form-item>
+                </div>
+              </div>
               <el-form-item label="联系电话" required>
                 <el-input
                   v-model="orderForm.visitorPhone"
@@ -519,13 +524,9 @@
               <el-divider />
               <div class="confirm-section">
                 <h4><el-icon><User /></el-icon>游客信息</h4>
-                <div class="confirm-item">
-                  <span class="label">姓名</span>
-                  <span class="value">{{ orderForm.visitorName }}</span>
-                </div>
-                <div class="confirm-item">
-                  <span class="label">身份证号</span>
-                  <span class="value">{{ orderForm.visitorIdCard }}</span>
+                <div v-for="(visitor, index) in visitorList" :key="index" class="confirm-item visitor-confirm-item">
+                  <span class="label">游客 {{ index + 1 }}</span>
+                  <span class="value">{{ visitor.name }} / {{ visitor.idCard }}</span>
                 </div>
                 <div class="confirm-item">
                   <span class="label">联系电话</span>
@@ -641,7 +642,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
@@ -749,6 +750,15 @@ const orderForm = reactive({
   specialRequest: ''
 })
 
+type VisitorInfo = {
+  name: string
+  idCard: string
+}
+
+const visitorList = reactive<VisitorInfo[]>([
+  { name: '', idCard: '' }
+])
+
 const commentForm = reactive({
   rating: 5,
   content: ''
@@ -763,6 +773,13 @@ const ticketUnitPrice = computed(() => {
 const totalAmount = computed(() => {
   return (ticketUnitPrice.value * orderForm.ticketCount).toFixed(2)
 })
+
+const normalizedVisitors = computed(() => {
+  return visitorList.slice(0, Math.max(1, orderForm.ticketCount)).map((visitor) => ({
+    name: visitor.name.trim(),
+    idCard: visitor.idCard.trim()
+  }))
+})
 const selectedVisitDateRemaining = computed(() => {
   if (!selectedTicket.value || !orderForm.visitDate) {
     return selectedTicket.value?.remainingCount ?? selectedTicket.value?.totalCount ?? 0
@@ -776,6 +793,26 @@ const maxSelectableTicketCount = computed(() => {
   const remaining = selectedVisitDateRemaining.value
   return Math.max(0, Math.min(10, remaining || 0))
 })
+
+const syncVisitorListWithTicketCount = () => {
+  const targetCount = Math.max(1, Math.min(10, Number(orderForm.ticketCount) || 1))
+  while (visitorList.length < targetCount) {
+    visitorList.push({ name: '', idCard: '' })
+  }
+  while (visitorList.length > targetCount) {
+    visitorList.pop()
+  }
+}
+
+watch(() => orderForm.ticketCount, syncVisitorListWithTicketCount, { immediate: true })
+
+const buildSpecialRequestForTicketOrder = () => {
+  const visitorText = normalizedVisitors.value
+    .map((visitor, index) => `游客${index + 1}: ${visitor.name} ${visitor.idCard}`)
+    .join('；')
+  const requestText = orderForm.specialRequest.trim()
+  return requestText ? `${visitorText}\n特殊需求: ${requestText}` : visitorText
+}
 
 // 获取剩余票数
 const getRemainingTickets = (ticket: any) => {
@@ -1053,8 +1090,13 @@ const nextStep = () => {
     }
   }
   if (currentStep.value === 2) {
-    if (!orderForm.visitorName || !orderForm.visitorIdCard || !orderForm.visitorPhone) {
-      ElMessage.warning('请填写完整的游客信息')
+    const missingIndex = normalizedVisitors.value.findIndex((visitor) => !visitor.name || !visitor.idCard)
+    if (missingIndex >= 0) {
+      ElMessage.warning(`请填写游客${missingIndex + 1}的姓名和身份证号`)
+      return
+    }
+    if (!orderForm.visitorPhone) {
+      ElMessage.warning('请填写联系电话')
       return
     }
     if (orderForm.visitorPhone.length !== 11) {
@@ -1072,6 +1114,7 @@ const prevStep = () => {
 const createOrder = async () => {
   creating.value = true
   try {
+    const primaryVisitor = normalizedVisitors.value[0]
     const res: any = await request.post('/order/create', {
       orderType: 1,
       ticketId: orderForm.ticketId ?? undefined,
@@ -1080,10 +1123,10 @@ const createOrder = async () => {
       unitPrice: ticketUnitPrice.value,
       totalAmount: totalAmount.value,
       visitDate: orderForm.visitDate,
-      visitorName: orderForm.visitorName,
-      visitorIdCard: orderForm.visitorIdCard,
+      visitorName: orderForm.ticketCount > 1 ? `${primaryVisitor.name}等${orderForm.ticketCount}人` : primaryVisitor.name,
+      visitorIdCard: primaryVisitor.idCard,
       visitorPhone: orderForm.visitorPhone,
-      specialRequest: orderForm.specialRequest
+      specialRequest: buildSpecialRequestForTicketOrder()
     })
     if (res && res.data) {
       orderNo.value = res.data
@@ -1207,6 +1250,7 @@ const resetOrderForm = () => {
   orderForm.visitorIdCard = ''
   orderForm.visitorPhone = ''
   orderForm.specialRequest = ''
+  visitorList.splice(0, visitorList.length, { name: '', idCard: '' })
   selectedTicket.value = null
   currentStep.value = 0
   payQrCodeUrl.value = ''
@@ -2181,6 +2225,29 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
           text-align: center;
         }
       }
+
+      &.visitor-order-form {
+        max-width: 560px;
+      }
+
+      .visitor-list {
+        display: grid;
+        gap: 14px;
+      }
+
+      .visitor-card {
+        padding: 16px 16px 4px;
+        border: 1px solid $border;
+        border-radius: 12px;
+        background: #fff;
+      }
+
+      .visitor-card-title {
+        margin-bottom: 12px;
+        font-size: 15px;
+        font-weight: 700;
+        color: $text-primary;
+      }
     }
 
     .order-confirm {
@@ -2201,15 +2268,19 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
         .confirm-item {
           display: flex;
           justify-content: space-between;
+          gap: 24px;
           padding: 10px 0;
 
           .label {
             color: $text-muted;
+            flex: 0 0 auto;
           }
 
           .value {
             color: $text-primary;
             font-weight: 500;
+            text-align: right;
+            word-break: break-all;
 
             &.price {
               color: #ff4d4f;
@@ -2221,6 +2292,10 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
             border-top: 1px dashed $border;
             padding-top: 16px;
             margin-top: 8px;
+          }
+
+          &.visitor-confirm-item {
+            align-items: flex-start;
           }
         }
       }

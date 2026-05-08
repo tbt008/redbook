@@ -472,16 +472,6 @@
                   >
                     取消订单
                   </el-button>
-                  <!-- 已支付/待使用订单 - 门票核销 -->
-                  <el-button
-                    v-if="order.orderStatus === 1 && order.orderType === 1"
-                    type="success"
-                    size="small"
-                    @click.stop="verifyOrder(order.orderNo)"
-                  >
-                    <el-icon><Ticket /></el-icon>
-                    核销
-                  </el-button>
                   <!-- 已支付酒店订单 -->
                   <el-button
                     v-if="order.orderStatus === 1 && order.orderType === 2"
@@ -1993,19 +1983,6 @@ const deleteAddress = async (address: any) => {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '删除地址失败')
     }
-  }
-}
-
-// 核销订单
-const verifyOrder = async (orderNo: string) => {
-  try {
-    const res: any = await request.post(`/order/verify/${orderNo}`)
-    if (res && res.code === 200) {
-      ElMessage.success('核销成功')
-      loadMyOrders()
-    }
-  } catch (error: any) {
-    ElMessage.error(error.message || '核销失败')
   }
 }
 
