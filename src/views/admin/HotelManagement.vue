@@ -133,12 +133,6 @@
             <el-tag type="warning">{{ row.rating || '0.0' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="房型" width="100">
-          <template #default="{ row }">
-            <el-tag type="info" v-if="row.roomCount">{{ row.roomCount }}种</el-tag>
-            <span v-else class="no-data">暂无</span>
-          </template>
-        </el-table-column>
         <el-table-column prop="viewCount" label="浏览量" width="80" />
         <el-table-column label="状态" width="80">
           <template #default="{ row }">

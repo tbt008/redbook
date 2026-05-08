@@ -136,12 +136,6 @@
             <el-tag v-else type="info">不支持</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="套餐" width="100">
-          <template #default="{ row }">
-            <el-tag type="info" v-if="row.packageCount">{{ row.packageCount }}个</el-tag>
-            <span v-else class="no-data">暂无</span>
-          </template>
-        </el-table-column>
         <el-table-column label="座位" width="100">
           <template #default="{ row }">
             <el-tag v-if="row.totalTables" type="success">{{ row.totalTables }}桌</el-tag>
