@@ -23,6 +23,31 @@
           <div class="left-panel-inner">
             <div class="panel-header">
               <h3>🤖 AI助手</h3>
+              <div class="chat-session-actions">
+                <el-button size="small" type="primary" plain @click="startNewSession">+ 新会话</el-button>
+              </div>
+            </div>
+            <div class="chat-session-bar">
+              <el-select
+                v-model="selectedSessionId"
+                size="small"
+                class="session-select"
+                placeholder="选择历史会话"
+                @change="switchSession"
+              >
+                <el-option
+                  v-for="session in chatSessions"
+                  :key="session.id"
+                  :label="session.title"
+                  :value="session.id"
+                >
+                  <div class="session-option">
+                    <span>{{ session.title }}</span>
+                    <small>{{ formatSessionTime(session.updatedAt) }}</small>
+                  </div>
+                </el-option>
+              </el-select>
+              <el-button size="small" text type="danger" @click="deleteCurrentSession">删除</el-button>
             </div>
             <div class="chat-messages" ref="messagesRef">
               <div v-for="(msg, index) in messages" :key="index" :class="['message', msg.role]">
@@ -254,9 +279,20 @@ marked.setOptions({
 })
 
 // 渲染markdown
+const normalizeAiMarkdown = (content: string) => {
+  return String(content || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/([^\n])\s*(#{2,6}\s*)/g, '$1\n\n$2')
+    .replace(/(#{2,6}\s*(?:第\s*\d+\s*天|上午|中午|下午|晚上|住宿|交通|预算|小贴士|建议)[^\n#-—–]*)\s*[-—–]\s*/g, '$1\n\n- ')
+    .replace(/\s*[-—–]\s*(区域|费用|价格|评分|交通|理由|建议|预算|住宿|备注|特色|用时|地址)[:：]/g, '\n  - $1：')
+    .replace(/(第\s*\d+\s*天)\s*(#{2,6})/g, '$1\n\n$2')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 const renderMarkdown = (content: string) => {
   if (!content) return ''
-  return marked(content)
+  return marked(normalizeAiMarkdown(content))
 }
 
 // 地图标记数据（从API加载）
@@ -308,9 +344,17 @@ const draggingId = ref(null)
 const draggingMarker = ref(null)
 
 // AI对话
-const messages = ref([
+const CHAT_SESSION_STORAGE_KEY = 'ai-map-planner-chat-sessions'
+const ACTIVE_CHAT_SESSION_STORAGE_KEY = 'ai-map-planner-active-chat-session'
+const MAX_CHAT_SESSION_COUNT = 30
+const createDefaultMessages = () => [
   { role: 'assistant', content: '你好！我是小莆，你的AI旅游助手。告诉我你的需求，我来帮你规划行程！' }
-])
+]
+const messages = ref(createDefaultMessages())
+const chatSessions = ref([])
+const activeSessionId = ref('')
+const selectedSessionId = ref('')
+const isRestoringSession = ref(false)
 const inputMessage = ref('')
 const loading = ref(false)
 const hasStreamingContent = computed(() => {
@@ -578,6 +622,187 @@ watch(() => messages.value.length, () => {
 watch(() => messages.value[messages.value.length - 1]?.content, () => {
   scrollToBottom()
 }, { deep: true })
+
+watch(messages, () => {
+  if (!isRestoringSession.value) {
+    saveCurrentSession()
+  }
+}, { deep: true })
+
+const createSessionId = () => `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+const cloneMessages = (value) => JSON.parse(JSON.stringify(value || []))
+
+const getSessionTitle = (sessionMessages) => {
+  const firstUserMessage = sessionMessages.find(message => message.role === 'user' && message.content?.trim())
+  if (!firstUserMessage) return '新会话'
+  const text = firstUserMessage.content.trim().replace(/\s+/g, ' ')
+  return text.length > 18 ? `${text.slice(0, 18)}...` : text
+}
+
+const normalizeSession = (session) => ({
+  id: session?.id || createSessionId(),
+  title: session?.title || getSessionTitle(session?.messages || createDefaultMessages()),
+  messages: Array.isArray(session?.messages) && session.messages.length > 0
+    ? session.messages
+    : createDefaultMessages(),
+  createdAt: session?.createdAt || Date.now(),
+  updatedAt: session?.updatedAt || Date.now()
+})
+
+const persistSessions = () => {
+  localStorage.setItem(CHAT_SESSION_STORAGE_KEY, JSON.stringify(chatSessions.value))
+  localStorage.setItem(ACTIVE_CHAT_SESSION_STORAGE_KEY, activeSessionId.value)
+}
+
+const createSessionRecord = (sessionMessages = createDefaultMessages()) => {
+  const now = Date.now()
+  return {
+    id: createSessionId(),
+    title: getSessionTitle(sessionMessages),
+    messages: cloneMessages(sessionMessages),
+    createdAt: now,
+    updatedAt: now
+  }
+}
+
+const loadChatSessions = () => {
+  try {
+    const savedSessions = JSON.parse(localStorage.getItem(CHAT_SESSION_STORAGE_KEY) || '[]')
+    chatSessions.value = Array.isArray(savedSessions)
+      ? savedSessions.map(normalizeSession).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, MAX_CHAT_SESSION_COUNT)
+      : []
+  } catch (error) {
+    console.error('读取AI会话记录失败', error)
+    chatSessions.value = []
+  }
+
+  if (chatSessions.value.length === 0) {
+    chatSessions.value = [createSessionRecord()]
+  }
+
+  const savedActiveId = localStorage.getItem(ACTIVE_CHAT_SESSION_STORAGE_KEY)
+  const activeSession = chatSessions.value.find(session => session.id === savedActiveId) || chatSessions.value[0]
+  activeSessionId.value = activeSession.id
+  selectedSessionId.value = activeSession.id
+  isRestoringSession.value = true
+  messages.value = cloneMessages(activeSession.messages)
+  nextTick(() => {
+    isRestoringSession.value = false
+    scrollToBottom()
+  })
+  persistSessions()
+}
+
+const saveCurrentSession = () => {
+  if (!activeSessionId.value) return
+  const index = chatSessions.value.findIndex(session => session.id === activeSessionId.value)
+  const now = Date.now()
+  const nextSession = {
+    ...(index >= 0 ? chatSessions.value[index] : createSessionRecord()),
+    id: activeSessionId.value,
+    title: getSessionTitle(messages.value),
+    messages: cloneMessages(messages.value),
+    updatedAt: now
+  }
+
+  if (index >= 0) {
+    chatSessions.value.splice(index, 1, nextSession)
+  } else {
+    chatSessions.value.unshift(nextSession)
+  }
+  chatSessions.value = chatSessions.value
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, MAX_CHAT_SESSION_COUNT)
+  persistSessions()
+}
+
+const startNewSession = () => {
+  if (loading.value) {
+    ElMessage.warning('AI回复中，请稍后再新建会话')
+    return
+  }
+  saveCurrentSession()
+  const session = createSessionRecord()
+  chatSessions.value.unshift(session)
+  activeSessionId.value = session.id
+  selectedSessionId.value = session.id
+  isRestoringSession.value = true
+  messages.value = cloneMessages(session.messages)
+  inputMessage.value = ''
+  nextTick(() => {
+    isRestoringSession.value = false
+    scrollToBottom()
+  })
+  persistSessions()
+  ElMessage.success('已新建会话')
+}
+
+const switchSession = (sessionId) => {
+  if (loading.value) {
+    ElMessage.warning('AI回复中，请稍后再切换会话')
+    selectedSessionId.value = activeSessionId.value
+    return
+  }
+  saveCurrentSession()
+  const session = chatSessions.value.find(item => item.id === sessionId)
+  if (!session) {
+    selectedSessionId.value = activeSessionId.value
+    return
+  }
+  activeSessionId.value = session.id
+  selectedSessionId.value = session.id
+  isRestoringSession.value = true
+  messages.value = cloneMessages(session.messages)
+  inputMessage.value = ''
+  nextTick(() => {
+    isRestoringSession.value = false
+    scrollToBottom()
+  })
+  persistSessions()
+}
+
+const deleteCurrentSession = async () => {
+  if (loading.value) {
+    ElMessage.warning('AI回复中，请稍后再删除会话')
+    return
+  }
+  try {
+    await ElMessageBox.confirm('确定删除当前会话记录吗？', '删除会话', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+  } catch (error) {
+    return
+  }
+
+  chatSessions.value = chatSessions.value.filter(session => session.id !== activeSessionId.value)
+  if (chatSessions.value.length === 0) {
+    chatSessions.value = [createSessionRecord()]
+  }
+  const nextSession = chatSessions.value[0]
+  activeSessionId.value = nextSession.id
+  selectedSessionId.value = nextSession.id
+  isRestoringSession.value = true
+  messages.value = cloneMessages(nextSession.messages)
+  nextTick(() => {
+    isRestoringSession.value = false
+    scrollToBottom()
+  })
+  persistSessions()
+  ElMessage.success('会话已删除')
+}
+
+const formatSessionTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  return `${month}-${day} ${hour}:${minute}`
+}
 
 // 格式化价格
 const formatPrice = (marker) => {
@@ -928,6 +1153,7 @@ const sendMessage = async () => {
 
 // 组件挂载时加载数据并初始化地图
 onMounted(async () => {
+  loadChatSessions()
   nextTick(() => {
     initRealMap()
   })
@@ -1313,6 +1539,48 @@ const goBack = () => router.back()
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
+  }
+}
+
+.chat-session-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.chat-session-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #eef2f7;
+  background: #fbfdff;
+
+  .session-select {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.session-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: #94a3b8;
     flex-shrink: 0;
   }
 }

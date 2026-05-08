@@ -43,7 +43,12 @@
             <div v-if="associationLoading" class="association-card loading-card">
               <el-skeleton animated :rows="2" />
             </div>
-            <div v-else class="association-card" @click="goAssociationDetail">
+            <div
+              v-else
+              class="association-card"
+              :class="{ 'is-deleted': associationDeleted }"
+              @click="goAssociationDetail"
+            >
               <el-image
                 v-if="associationCover"
                 :src="associationCover"
@@ -61,7 +66,7 @@
                 <div class="association-label">{{ associationTarget?.label }}</div>
                 <div class="association-name">{{ associationName }}</div>
                 <div class="association-desc">{{ associationDescription }}</div>
-                <div class="association-meta">
+                <div v-if="!associationDeleted" class="association-meta">
                   <span v-if="associationRegion">
                     <el-icon><Location /></el-icon>
                     {{ associationRegion }}
@@ -70,7 +75,7 @@
                   <span v-if="associationPrice">{{ associationPrice }}</span>
                 </div>
               </div>
-              <el-icon class="association-arrow"><ArrowRight /></el-icon>
+              <el-icon v-if="!associationDeleted" class="association-arrow"><ArrowRight /></el-icon>
             </div>
           </div>
 
@@ -215,6 +220,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import axios from 'axios'
 import {
   Star,
   StarFilled,
@@ -245,6 +251,7 @@ const content = ref<any>({})
 const comments = ref<any[]>([])
 const relatedList = ref<any[]>([])
 const associationResource = ref<any>(null)
+const associationDeleted = ref(false)
 const associationLoading = ref(false)
 const commentText = ref('')
 const replyingTo = ref<any>(null)
@@ -295,11 +302,22 @@ const associationTarget = computed(() => {
 })
 const associationName = computed(() => {
   const target = associationTarget.value
+  if (associationDeleted.value && target) return `关联${associationTypeName.value}已被删除`
   return associationResource.value?.name || associationResource.value?.title || (target ? `${target.label} #${target.id}` : '')
 })
 const associationDescription = computed(() => {
+  if (associationDeleted.value) {
+    return `该攻略关联的${associationTypeName.value}不存在或已被删除`
+  }
   const source = associationResource.value || {}
   return source.description || source.summary || source.address || '点击查看详情'
+})
+const associationTypeName = computed(() => {
+  const type = associationTarget.value?.type
+  if (type === 'attraction') return '景点'
+  if (type === 'food') return '美食'
+  if (type === 'hotel') return '酒店'
+  return '内容'
 })
 const associationRegion = computed(() => associationResource.value?.region || associationResource.value?.location || '')
 const associationRating = computed(() => associationResource.value?.rating || '')
@@ -375,17 +393,26 @@ const loadContent = async () => {
 
 const loadAssociationResource = async () => {
   associationResource.value = null
+  associationDeleted.value = false
   const target = associationTarget.value
   if (!target) return
 
   associationLoading.value = true
   try {
-    const res: any = await request.get(target.api)
-    if (res.code === 200) {
-      associationResource.value = res.data || null
+    const res = await axios.get(`/api${target.api}`, {
+      headers: {
+        'auth-token': localStorage.getItem('auth-token') || ''
+      }
+    })
+    const data = res.data
+    if (data?.code === 200 && data.data) {
+      associationResource.value = data.data
+    } else {
+      associationDeleted.value = true
     }
   } catch (error) {
     console.error('加载关联内容失败', error)
+    associationDeleted.value = true
   } finally {
     associationLoading.value = false
   }
@@ -627,7 +654,7 @@ const goDetail = (id: number) => {
 }
 
 const goAssociationDetail = () => {
-  if (!associationTarget.value) return
+  if (!associationTarget.value || associationDeleted.value) return
   router.push(associationTarget.value.path)
 }
 
@@ -870,6 +897,31 @@ onMounted(() => {
           border-color: #e8edf5;
           box-shadow: none;
           transform: none;
+        }
+      }
+
+      &.is-deleted {
+        background: #fafafa;
+        border-color: #e5e7eb;
+        cursor: default;
+
+        &:hover {
+          border-color: #e5e7eb;
+          box-shadow: none;
+          transform: none;
+        }
+
+        .association-placeholder {
+          background: #f1f3f5;
+          color: #a8abb2;
+        }
+
+        .association-label {
+          color: #909399;
+        }
+
+        .association-name {
+          color: #6b7280;
         }
       }
     }

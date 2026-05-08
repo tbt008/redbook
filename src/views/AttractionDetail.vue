@@ -200,6 +200,7 @@
                   </div>
                   <div class="ticket-price">
                     <span class="price">¥{{ ticket.price }}</span>
+                    <span class="buy-btn calendar-btn" @click.stop="openTicketInventoryCalendar(ticket)">日历</span>
                     <span class="buy-btn">购买</span>
                   </div>
                 </div>
@@ -255,7 +256,10 @@
                     <span class="currency">¥</span>
                   <span class="amount">{{ ticket.price }}</span>
                 </div>
-                <el-button type="primary" round @click="selectTicket(ticket)">立即购买</el-button>
+                <div class="ticket-card-actions">
+                  <el-button round @click="openTicketInventoryCalendar(ticket)">库存日历</el-button>
+                  <el-button type="primary" round @click="selectTicket(ticket)">立即购买</el-button>
+                </div>
               </div>
             </div>
           </div>
@@ -433,22 +437,26 @@
                   type="date"
                   placeholder="选择游玩日期"
                   :disabled-date="disabledDate"
-                  style="width: 100%"
-                  format="YYYY-MM-DD"
-                  value-format="YYYY-MM-DD"
-                />
-              </el-form-item>
-              <el-form-item label="购买数量" required>
-                <div class="quantity-selector">
-                  <el-button circle @click="orderForm.ticketCount > 1 && orderForm.ticketCount--">
-                    <el-icon><Minus /></el-icon>
-                  </el-button>
-                  <span class="quantity">{{ orderForm.ticketCount }}</span>
-                  <el-button circle @click="orderForm.ticketCount < 10 && orderForm.ticketCount++">
-                    <el-icon><Plus /></el-icon>
-                  </el-button>
-                </div>
-              </el-form-item>
+	                  style="width: 100%"
+	                  format="YYYY-MM-DD"
+	                  value-format="YYYY-MM-DD"
+	                  @change="handleVisitDateChange"
+	                />
+	              </el-form-item>
+	              <el-form-item label="购买数量" required>
+	                <div class="quantity-selector">
+	                  <el-button circle @click="orderForm.ticketCount > 1 && orderForm.ticketCount--">
+	                    <el-icon><Minus /></el-icon>
+	                  </el-button>
+	                  <span class="quantity">{{ orderForm.ticketCount }}</span>
+	                  <el-button circle :disabled="orderForm.ticketCount >= maxSelectableTicketCount" @click="orderForm.ticketCount < maxSelectableTicketCount && orderForm.ticketCount++">
+	                    <el-icon><Plus /></el-icon>
+	                  </el-button>
+	                </div>
+	                <div v-if="orderForm.visitDate && selectedTicket" class="inventory-inline-tip">
+	                  {{ orderForm.visitDate }} 剩余 {{ selectedVisitDateRemaining }} 张
+	                </div>
+	              </el-form-item>
             </el-form>
           </div>
 
@@ -565,6 +573,56 @@
       </template>
     </el-dialog>
 
+    <el-dialog
+      v-model="ticketCalendarVisible"
+      width="720px"
+      class="inventory-calendar-dialog"
+      custom-class="inventory-calendar-dialog"
+      :title="ticketCalendarTitle"
+      :teleported="false"
+    >
+      <div class="calendar-summary">
+        <div>
+          <div class="calendar-item-name">{{ ticketCalendarTicket?.ticketName || '门票库存' }}</div>
+          <div class="calendar-item-meta">
+            每日总票数 {{ ticketCalendarTicket?.totalCount || 0 }} 张
+            <span v-if="ticketCalendarTicket?.price">¥{{ ticketCalendarTicket.price }}/张</span>
+          </div>
+        </div>
+        <div class="calendar-legend">
+          <span><i class="legend-dot enough"></i>有票</span>
+          <span><i class="legend-dot low"></i>紧张</span>
+          <span><i class="legend-dot empty"></i>售罄</span>
+        </div>
+      </div>
+      <div class="calendar-toolbar">
+        <el-button class="month-nav" circle @click="shiftTicketCalendarMonth(-1)">
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
+        <div class="calendar-month-title">{{ ticketCalendarMonthLabel }}</div>
+        <el-button class="month-nav" circle @click="shiftTicketCalendarMonth(1)">
+          <el-icon><ArrowRight /></el-icon>
+        </el-button>
+      </div>
+      <div v-loading="ticketCalendarLoading" class="inventory-calendar">
+        <div class="calendar-week" v-for="day in calendarWeekdays" :key="day">{{ day }}</div>
+        <div
+          v-for="day in ticketCalendarDays"
+          :key="day.key"
+          class="calendar-day"
+          :class="{ muted: !day.inMonth, today: day.isToday, low: day.inMonth && day.remainingCount > 0 && day.remainingCount <= 10, empty: day.inMonth && day.remainingCount <= 0 }"
+        >
+          <div class="day-number">
+            <span>{{ day.date.date() }}</span>
+            <em v-if="day.isToday && day.inMonth">今天</em>
+          </div>
+          <div v-if="day.inMonth" class="day-stock">
+            {{ day.remainingCount > 0 ? `剩余 ${day.remainingCount} 张` : '售罄' }}
+          </div>
+        </div>
+      </div>
+    </el-dialog>
+
     <!-- 支付成功弹窗 -->
     <el-dialog v-model="paySuccessVisible" title="" width="450px" :close-on-click-modal="false" class="success-dialog">
       <div class="success-content">
@@ -586,6 +644,7 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import dayjs from 'dayjs'
 import {
   Location,
   Clock,
@@ -603,6 +662,7 @@ import {
   User,
   CircleCheck,
   Shop,
+  ArrowLeft,
   ArrowRight,
   ChatDotRound,
   Delete
@@ -652,8 +712,32 @@ const isPollingPay = ref(false)
 const payPollProgress = ref(0)
 const payStatusMessage = ref('')
 let payPollingTimer: any = null
+const calendarWeekdays = ['一', '二', '三', '四', '五', '六', '日']
+const ticketCalendarVisible = ref(false)
+const ticketCalendarLoading = ref(false)
+const ticketCalendarTicket = ref<any>(null)
+const ticketCalendarMonth = ref(dayjs().startOf('month'))
+const ticketCalendarAvailability = ref<Record<string, number>>({})
 
 const dialogTitle = computed(() => currentStep.value === 4 ? '完成支付' : '在线购票')
+const ticketCalendarTitle = computed(() => `${ticketCalendarTicket.value?.ticketName || '门票'}库存日历`)
+const ticketCalendarMonthLabel = computed(() => ticketCalendarMonth.value.format('YYYY年M月'))
+const ticketCalendarDays = computed(() => {
+  const monthStart = ticketCalendarMonth.value.startOf('month')
+  const firstDayOffset = (monthStart.day() + 6) % 7
+  const gridStart = monthStart.subtract(firstDayOffset, 'day')
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = gridStart.add(index, 'day')
+    const dateKey = date.format('YYYY-MM-DD')
+    return {
+      key: dateKey,
+      date,
+      inMonth: date.month() === monthStart.month(),
+      isToday: date.isSame(dayjs(), 'day'),
+      remainingCount: Number(ticketCalendarAvailability.value[dateKey] ?? 0)
+    }
+  })
+})
 
 const orderForm = reactive({
   ticketId: null as number | null,
@@ -679,13 +763,30 @@ const ticketUnitPrice = computed(() => {
 const totalAmount = computed(() => {
   return (ticketUnitPrice.value * orderForm.ticketCount).toFixed(2)
 })
+const selectedVisitDateRemaining = computed(() => {
+  if (!selectedTicket.value || !orderForm.visitDate) {
+    return selectedTicket.value?.remainingCount ?? selectedTicket.value?.totalCount ?? 0
+  }
+  const stock = Array.isArray(selectedTicket.value.dateAvailability)
+    ? selectedTicket.value.dateAvailability.find((item: any) => (item.inventoryDate || item.stayDate) === orderForm.visitDate)
+    : null
+  return Number(stock?.remainingCount ?? selectedTicket.value.remainingCount ?? selectedTicket.value.totalCount ?? 0)
+})
+const maxSelectableTicketCount = computed(() => {
+  const remaining = selectedVisitDateRemaining.value
+  return Math.max(0, Math.min(10, remaining || 0))
+})
 
 // 获取剩余票数
 const getRemainingTickets = (ticket: any) => {
-  if (ticket.totalCount && ticket.soldCount !== undefined) {
-    return ticket.totalCount - ticket.soldCount
+  const todayKey = dayjs().format('YYYY-MM-DD')
+  const todayStock = Array.isArray(ticket.dateAvailability)
+    ? ticket.dateAvailability.find((item: any) => (item.inventoryDate || item.stayDate) === todayKey)
+    : null
+  if (todayStock) {
+    return todayStock.remainingCount
   }
-  return ticket.totalCount || '不限'
+  return ticket.remainingCount ?? ticket.totalCount ?? '不限'
 }
 
 // 加载景点详情
@@ -751,12 +852,71 @@ const initMap = async () => {
 // 加载门票列表
 const loadTicketList = async () => {
   try {
-    const res: any = await request.get(`/ticket/attraction/${attractionId.value}`)
+    const params: Record<string, string> = {}
+    if (orderForm.visitDate) {
+      params.startDate = orderForm.visitDate
+      params.endDate = dayjs(orderForm.visitDate).add(1, 'day').format('YYYY-MM-DD')
+    }
+    const res: any = await request.get(`/ticket/attraction/${attractionId.value}`, { params })
     if (res && res.data) {
       ticketList.value = res.data
+      if (selectedTicket.value?.id) {
+        const refreshed = ticketList.value.find((item: any) => item.id === selectedTicket.value.id)
+        if (refreshed) selectedTicket.value = refreshed
+      }
     }
   } catch (error) {
     console.error('加载门票列表失败', error)
+  }
+}
+
+const handleVisitDateChange = async () => {
+  await loadTicketList()
+  if (orderForm.ticketCount > maxSelectableTicketCount.value) {
+    orderForm.ticketCount = maxSelectableTicketCount.value
+  }
+}
+
+const openTicketInventoryCalendar = async (ticket: any) => {
+  ticketCalendarTicket.value = ticket
+  const baseDate = orderForm.visitDate ? dayjs(orderForm.visitDate) : dayjs()
+  ticketCalendarMonth.value = baseDate.startOf('month')
+  ticketCalendarVisible.value = true
+  await loadTicketInventoryCalendar()
+}
+
+const shiftTicketCalendarMonth = async (offset: number) => {
+  ticketCalendarMonth.value = ticketCalendarMonth.value.add(offset, 'month').startOf('month')
+  await loadTicketInventoryCalendar()
+}
+
+const loadTicketInventoryCalendar = async () => {
+  if (!ticketCalendarTicket.value?.id) return
+  ticketCalendarLoading.value = true
+  try {
+    const startDate = ticketCalendarMonth.value.startOf('month')
+    const endDate = startDate.add(1, 'month')
+    const res: any = await request.get(`/ticket/attraction/${attractionId.value}`, {
+      params: {
+        startDate: startDate.format('YYYY-MM-DD'),
+        endDate: endDate.format('YYYY-MM-DD')
+      }
+    })
+    const tickets = Array.isArray(res?.data) ? res.data : []
+    const ticket = tickets.find((item: any) => item.id === ticketCalendarTicket.value.id)
+    const availability: Record<string, number> = {}
+    if (ticket && Array.isArray(ticket.dateAvailability)) {
+      ticket.dateAvailability.forEach((item: any) => {
+        availability[item.inventoryDate || item.stayDate] = Number(item.remainingCount || 0)
+      })
+    }
+    ticketCalendarAvailability.value = availability
+  } catch (error) {
+    console.error('加载门票库存日历失败', error)
+    ticketCalendarAvailability.value = {}
+    ElMessage.error('加载门票库存日历失败')
+  } finally {
+    ticketCalendarLoading.value = false
   }
 }
 
@@ -881,6 +1041,14 @@ const nextStep = () => {
   if (currentStep.value === 1) {
     if (!orderForm.visitDate) {
       ElMessage.warning('请选择游玩日期')
+      return
+    }
+    if (selectedTicket.value && selectedVisitDateRemaining.value <= 0) {
+      ElMessage.warning('所选日期暂无余票')
+      return
+    }
+    if (selectedTicket.value && orderForm.ticketCount > selectedVisitDateRemaining.value) {
+      ElMessage.warning(`所选日期仅剩${selectedVisitDateRemaining.value}张票`)
       return
     }
   }
@@ -2225,6 +2393,159 @@ $shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
 
   .ticket-dialog .dialog-content .ticket-select-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+.ticket-card-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.calendar-btn {
+  margin-right: 8px;
+  background: rgba(49, 130, 206, 0.1);
+  color: #2563eb;
+}
+
+.inventory-inline-tip {
+  margin-top: 8px;
+  color: $text-muted;
+  font-size: 13px;
+}
+
+.inventory-calendar-dialog {
+  .calendar-summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #edf2f7;
+  }
+
+  .calendar-item-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  .calendar-item-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+    color: $text-muted;
+    font-size: 13px;
+  }
+
+  .calendar-legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: $text-muted;
+    font-size: 13px;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #16a34a;
+
+    &.low { background: #f59e0b; }
+    &.empty { background: #ef4444; }
+  }
+
+  .calendar-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin: 18px 0;
+  }
+
+  .month-nav {
+    width: 34px;
+    height: 34px;
+  }
+
+  .calendar-month-title {
+    min-width: 120px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .inventory-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .calendar-week {
+    text-align: center;
+    color: $text-muted;
+    font-size: 13px;
+    padding: 6px 0;
+  }
+
+  .calendar-day {
+    min-height: 76px;
+    border: 1px solid #dce8df;
+    border-radius: 8px;
+    padding: 8px;
+    background: #f8fffb;
+
+    &.muted {
+      opacity: 0.35;
+      background: #f8fafc;
+    }
+
+    &.today {
+      border-color: $primary;
+    }
+
+    &.low {
+      background: #fffbeb;
+      border-color: #facc15;
+    }
+
+    &.empty {
+      background: #fff1f2;
+      border-color: #fecdd3;
+    }
+  }
+
+  .day-number {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+
+    em {
+      font-style: normal;
+      color: $primary;
+      font-size: 12px;
+    }
+  }
+
+  .day-stock {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #166534;
+  }
+
+  .calendar-day.low .day-stock {
+    color: #92400e;
+  }
+
+  .calendar-day.empty .day-stock {
+    color: #be123c;
   }
 }
 </style>

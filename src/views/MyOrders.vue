@@ -76,7 +76,16 @@
                   <span class="order-no">订单号 {{ order.orderNo }}</span>
                   <span class="order-time">创建于 {{ formatTime(order.createTime) }}</span>
                 </div>
-                <h3 class="order-title">{{ getOrderTitle(order) }}</h3>
+                <button
+                  v-if="canViewContentHome(order)"
+                  type="button"
+                  class="order-title order-title-button"
+                  :title="`进入${getOrderTypeText(order.orderType)}主页`"
+                  @click="viewContentHome(order)"
+                >
+                  {{ getOrderTitle(order) }}
+                </button>
+                <h3 v-else class="order-title">{{ getOrderTitle(order) }}</h3>
                 <p class="order-summary">{{ getOrderSummary(order) }}</p>
               </div>
 
@@ -250,6 +259,8 @@ type OrderRecord = {
   deliveryStatus?: number
   deliveryAddress?: string
   ticketName?: string
+  ticketId?: number | string
+  attractionId?: number | string
   hotelName?: string
   foodName?: string
   hotelId?: number | string
@@ -379,6 +390,40 @@ const getOrderTitle = (order: OrderRecord) => {
   if (order.orderType === 2) return order.hotelName || '酒店订单'
   if (order.orderType === 3) return order.foodName || '美食订单'
   return order.ticketName || '门票订单'
+}
+
+const getContentHomePath = (order: OrderRecord) => {
+  if (order.orderType === 2 && order.hotelId) return `/hotel/${order.hotelId}`
+  if (order.orderType === 3 && order.foodId) return `/food/${order.foodId}`
+  if (order.orderType === 1 && order.attractionId) return `/attraction/${order.attractionId}`
+  return ''
+}
+
+const canViewContentHome = (order: OrderRecord) =>
+  Boolean(getContentHomePath(order) || (order.orderType === 1 && order.ticketId))
+
+const viewContentHome = async (order: OrderRecord) => {
+  const path = getContentHomePath(order)
+  if (path) {
+    router.push(path)
+    return
+  }
+
+  if (order.orderType === 1 && order.ticketId) {
+    try {
+      const res: any = await request.get(`/ticket/${order.ticketId}`)
+      const attractionId = res?.data?.attractionId
+      if (attractionId) {
+        order.attractionId = attractionId
+        router.push(`/attraction/${attractionId}`)
+        return
+      }
+    } catch (error) {
+      console.error('加载门票关联景点失败', error)
+    }
+  }
+
+  ElMessage.info('暂未找到对应内容主页')
 }
 
 const getOrderSummary = (order: OrderRecord) => {
@@ -611,12 +656,9 @@ const viewHotelDetail = (order: OrderRecord) => {
 }
 
 const viewDetail = (order: OrderRecord) => {
-  if (order.orderType === 2 && order.hotelId) {
-    router.push(`/hotel/${order.hotelId}`)
-    return
-  }
-  if (order.orderType === 3 && order.foodId) {
-    router.push(`/food/${order.foodId}`)
+  const contentHomePath = getContentHomePath(order)
+  if (contentHomePath) {
+    router.push(contentHomePath)
     return
   }
   if (order.orderType === 1) {
@@ -962,6 +1004,31 @@ onUnmounted(() => {
   font-size: 30px;
   line-height: 1.15;
   color: #18362e;
+}
+
+.order-title-button {
+  display: inline;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.order-title-button:hover,
+.order-title-button:focus-visible {
+  color: #1f6f5f;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+.order-title-button:focus-visible {
+  outline: 2px solid rgba(31, 111, 95, 0.35);
+  outline-offset: 4px;
+  border-radius: 6px;
 }
 
 .order-summary {

@@ -337,9 +337,10 @@
             <div class="table-card" v-if="food.totalTables && food.totalTables > 0">
               <h4><el-icon><Tickets /></el-icon>座位信息</h4>
               <div class="table-status">
-                <span class="available">{{ food.totalTables - (food.reservedTables || 0) }}个可用</span>
+                <span class="available">按日期查看可约桌数</span>
                 <span class="total">共 {{ food.totalTables }} 桌</span>
               </div>
+              <el-button class="table-calendar-btn" size="small" @click="openTableInventoryCalendar">库存日历</el-button>
             </div>
           </div>
         </div>
@@ -539,32 +540,37 @@
                   type="date"
                   placeholder="请选择用餐日期"
                   :disabled-date="disablePastDate"
-                  style="width: 100%"
-                  format="YYYY-MM-DD"
-                  value-format="YYYY-MM-DD"
-                />
-              </el-form-item>
-              <el-form-item label="用餐时段" required>
-                <el-radio-group v-model="dineinForm.mealTime">
-                  <el-radio-button label="午餐" />
-                  <el-radio-button label="晚餐" />
-                </el-radio-group>
-              </el-form-item>
-              <el-form-item label="用餐人数" required>
-                <el-select v-model="dineinForm.dinerCount" placeholder="请选择人数" style="width: 100%">
-                  <el-option v-for="n in 12" :key="n" :label="`${n}人`" :value="n" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="预约桌位" v-if="tableList.length > 0">
-                <el-select v-model="dineinForm.tableId" placeholder="请选择桌位（可选）" clearable style="width: 100%">
-                  <el-option
-                    v-for="t in tableList"
-                    :key="t.id"
-                    :label="`${t.tableName || ''} - ${t.tableNumber}桌 (${t.capacity}人位)`"
-                    :value="t.id"
-                  />
-                </el-select>
-              </el-form-item>
+	                  style="width: 100%"
+	                  format="YYYY-MM-DD"
+	                  value-format="YYYY-MM-DD"
+	                  @change="handleDineinInventoryChange"
+	                />
+	              </el-form-item>
+	              <el-form-item label="用餐时段" required>
+	                <el-radio-group v-model="dineinForm.mealTime" @change="handleDineinInventoryChange">
+	                  <el-radio-button label="午餐" />
+	                  <el-radio-button label="晚餐" />
+	                </el-radio-group>
+	              </el-form-item>
+	              <el-form-item label="用餐人数" required>
+	                <el-select v-model="dineinForm.dinerCount" placeholder="请选择人数" style="width: 100%" @change="handleDineinInventoryChange">
+	                  <el-option v-for="n in 12" :key="n" :label="`${n}人`" :value="n" />
+	                </el-select>
+	              </el-form-item>
+	              <el-form-item label="预约桌位" v-if="tableList.length > 0" required>
+	                <el-select v-model="dineinForm.tableId" placeholder="请选择可用桌位" clearable style="width: 100%">
+	                  <el-option
+	                    v-for="t in tableList"
+	                    :key="t.id"
+	                    :label="formatTableOption(t)"
+	                    :value="t.id"
+	                  />
+	                </el-select>
+	                <div class="inventory-inline-tip">已按当前日期、餐段和人数筛选，仅展示可预约桌位</div>
+	              </el-form-item>
+	              <el-form-item v-else-if="dineinForm.bookingDate && dineinForm.mealTime && dineinForm.dinerCount" label="预约桌位">
+	                <div class="inventory-empty-tip">当前日期餐段暂无可用桌位</div>
+	              </el-form-item>
               <el-form-item label="备注">
                 <el-input
                   v-model="dineinForm.remark"
@@ -886,6 +892,70 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="tableCalendarVisible"
+      width="720px"
+      class="inventory-calendar-dialog"
+      custom-class="inventory-calendar-dialog"
+      title="餐位库存日历"
+      :teleported="false"
+    >
+      <div class="calendar-summary">
+        <div>
+          <div class="calendar-item-name">{{ food.name || '餐厅' }}</div>
+          <div class="calendar-item-meta">
+            {{ tableCalendarMealTime }} · {{ tableCalendarTableLabel || '全部可用桌位' }}
+            <span>按有效订单实时计算</span>
+          </div>
+        </div>
+        <div class="calendar-legend">
+          <span><i class="legend-dot enough"></i>可约</span>
+          <span><i class="legend-dot low"></i>紧张</span>
+          <span><i class="legend-dot empty"></i>约满</span>
+        </div>
+      </div>
+      <div class="calendar-filters">
+        <el-radio-group v-model="tableCalendarMealTime" @change="loadTableInventoryCalendar">
+          <el-radio-button label="午餐" />
+          <el-radio-button label="晚餐" />
+        </el-radio-group>
+        <el-select v-model="tableCalendarTableId" placeholder="请选择桌位" style="width: 280px" @change="loadTableInventoryCalendar">
+          <el-option
+            v-for="t in tableList"
+            :key="t.id"
+            :label="formatTableOption(t)"
+            :value="t.id"
+          />
+        </el-select>
+      </div>
+      <div class="calendar-toolbar">
+        <el-button class="month-nav" circle @click="shiftTableCalendarMonth(-1)">
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
+        <div class="calendar-month-title">{{ tableCalendarMonthLabel }}</div>
+        <el-button class="month-nav" circle @click="shiftTableCalendarMonth(1)">
+          <el-icon><ArrowRight /></el-icon>
+        </el-button>
+      </div>
+      <div v-loading="tableCalendarLoading" class="inventory-calendar">
+        <div class="calendar-week" v-for="day in calendarWeekdays" :key="day">{{ day }}</div>
+        <div
+          v-for="day in tableCalendarDays"
+          :key="day.key"
+          class="calendar-day"
+          :class="{ muted: !day.inMonth, today: day.isToday, low: day.inMonth && day.remainingCount > 0 && day.remainingCount <= 3, empty: day.inMonth && day.remainingCount <= 0 }"
+        >
+          <div class="day-number">
+            <span>{{ day.date.date() }}</span>
+            <em v-if="day.isToday && day.inMonth">今天</em>
+          </div>
+          <div v-if="day.inMonth" class="day-stock">
+            {{ day.remainingCount > 0 ? `剩余 ${day.remainingCount} 张` : '约满' }}
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -893,12 +963,14 @@
 import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import dayjs from 'dayjs'
 import {
   Location, Money, Phone, Star, StarFilled,
   Clock, Ticket, Present, Edit, User,
   CircleCheck,
   Food, Grid, Shop, ShoppingBag,
-  Ticket as Tickets, Calendar, ChatDotRound, Delete
+  Ticket as Tickets, Calendar, ChatDotRound, Delete,
+  ArrowLeft, ArrowRight
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
 import { extractDisplayTags } from '@/utils/contentTags'
@@ -990,6 +1062,14 @@ const isPollingPay = ref(false)
 const payPollProgress = ref(0)
 const payStatusMessage = ref('')
 let payPollingTimer: any = null
+const calendarWeekdays = ['一', '二', '三', '四', '五', '六', '日']
+const tableCalendarVisible = ref(false)
+const tableCalendarLoading = ref(false)
+const tableCalendarMonth = ref(dayjs().startOf('month'))
+const tableCalendarMealTime = ref('午餐')
+const tableCalendarDinerCount = ref(2)
+const tableCalendarTableId = ref<number | null>(null)
+const tableCalendarAvailability = ref<Record<string, number>>({})
 
 const dineinForm = reactive({
   packageId: null as number | null,
@@ -1009,11 +1089,39 @@ const dineinTotalAmount = computed(() => {
   if (selectedPackage.value) return dineinUnitPrice.value
   return Number((dineinUnitPrice.value * (dineinForm.dinerCount || 1)).toFixed(2))
 })
+const tableCalendarMonthLabel = computed(() => tableCalendarMonth.value.format('YYYY年M月'))
+const tableCalendarTable = computed(() => tableList.value.find(t => t.id === tableCalendarTableId.value))
+const tableCalendarTableLabel = computed(() => tableCalendarTable.value ? formatTableOption(tableCalendarTable.value) : '')
+const tableCalendarDays = computed(() => {
+  const monthStart = tableCalendarMonth.value.startOf('month')
+  const firstDayOffset = (monthStart.day() + 6) % 7
+  const gridStart = monthStart.subtract(firstDayOffset, 'day')
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = gridStart.add(index, 'day')
+    const dateKey = date.format('YYYY-MM-DD')
+    return {
+      key: dateKey,
+      date,
+      inMonth: date.month() === monthStart.month(),
+      isToday: date.isSame(dayjs(), 'day'),
+      remainingCount: Number(tableCalendarAvailability.value[dateKey] ?? 0)
+    }
+  })
+})
 
 const getTableLabel = (tableId: number) => {
   const t = tableList.value.find(t => t.id === tableId)
   if (!t) return ''
-  return `${t.tableName || ''} - ${t.tableNumber}桌 (${t.capacity}人位)`
+  return formatTableOption(t)
+}
+
+const formatTableOption = (table: any) => {
+  const name = table.tableName ? `${table.tableName} - ` : ''
+  const remainingCount = table.remainingCount ?? table.quantity
+  const stockText = dineinForm.bookingDate && dineinForm.mealTime
+    ? ` · 剩余 ${remainingCount || 0} 张`
+    : ''
+  return `${name}${table.tableNumber}桌 (${table.capacity}人位，共${table.quantity || 1}张)${stockText}`
 }
 
 const disablePastDate = (date: Date) => {
@@ -1045,12 +1153,76 @@ const openDineinDialog = async () => {
 
 const loadTables = async () => {
   try {
-    const res: any = await request.get(`/food/table/list/${foodId.value}`)
+    const hasBookingInfo = dineinForm.bookingDate && dineinForm.mealTime && dineinForm.dinerCount
+    const res: any = hasBookingInfo
+      ? await request.get('/food/table/available', {
+          params: {
+            foodId: foodId.value,
+            bookingDate: dineinForm.bookingDate,
+            mealTime: dineinForm.mealTime,
+            dinerCount: dineinForm.dinerCount
+          }
+        })
+      : await request.get(`/food/table/list/${foodId.value}`)
     if (res && res.code === 200) {
       tableList.value = res.data || []
+      if (dineinForm.tableId && !tableList.value.some(t => t.id === dineinForm.tableId)) {
+        dineinForm.tableId = null
+      }
     }
   } catch (e) {
     tableList.value = []
+  }
+}
+
+const handleDineinInventoryChange = async () => {
+  dineinForm.tableId = null
+  await loadTables()
+}
+
+const openTableInventoryCalendar = async () => {
+  await loadTables()
+  tableCalendarMealTime.value = dineinForm.mealTime || '午餐'
+  tableCalendarTableId.value = dineinForm.tableId || tableList.value[0]?.id || null
+  tableCalendarDinerCount.value = tableCalendarTable.value?.capacity || dineinForm.dinerCount || 1
+  const baseDate = dineinForm.bookingDate ? dayjs(dineinForm.bookingDate) : dayjs()
+  tableCalendarMonth.value = baseDate.startOf('month')
+  tableCalendarVisible.value = true
+  await loadTableInventoryCalendar()
+}
+
+const shiftTableCalendarMonth = async (offset: number) => {
+  tableCalendarMonth.value = tableCalendarMonth.value.add(offset, 'month').startOf('month')
+  await loadTableInventoryCalendar()
+}
+
+const loadTableInventoryCalendar = async () => {
+  tableCalendarLoading.value = true
+  try {
+    const startDate = tableCalendarMonth.value.startOf('month')
+    const endDate = startDate.add(1, 'month')
+    const res: any = await request.get('/food/table/availability', {
+      params: {
+        foodId: foodId.value,
+        startDate: startDate.format('YYYY-MM-DD'),
+        endDate: endDate.format('YYYY-MM-DD'),
+        mealTime: tableCalendarMealTime.value,
+        dinerCount: tableCalendarTable.value?.capacity || tableCalendarDinerCount.value,
+        tableId: tableCalendarTableId.value || undefined
+      }
+    })
+    const availability: Record<string, number> = {}
+    const list = Array.isArray(res?.data) ? res.data : []
+    list.forEach((item: any) => {
+      availability[item.inventoryDate || item.stayDate] = Number(item.remainingCount || 0)
+    })
+    tableCalendarAvailability.value = availability
+  } catch (error) {
+    console.error('加载餐位库存日历失败', error)
+    tableCalendarAvailability.value = {}
+    ElMessage.error('加载餐位库存日历失败')
+  } finally {
+    tableCalendarLoading.value = false
   }
 }
 
@@ -1058,7 +1230,7 @@ const prevDineinStep = () => {
   if (dineinStep.value > 0) dineinStep.value--
 }
 
-const nextDineinStep = () => {
+const nextDineinStep = async () => {
   if (dineinStep.value === 0 && !dineinForm.packageId && packageList.value.length > 0) {
     ElMessage.warning('请选择一个套餐')
     return
@@ -1067,6 +1239,9 @@ const nextDineinStep = () => {
     if (!dineinForm.bookingDate) { ElMessage.warning('请选择用餐日期'); return }
     if (!dineinForm.mealTime) { ElMessage.warning('请选择用餐时段'); return }
     if (!dineinForm.dinerCount) { ElMessage.warning('请选择用餐人数'); return }
+    await loadTables()
+    if ((food.value.totalTables || 0) > 0 && tableList.value.length === 0) { ElMessage.warning('所选日期餐段暂无可用桌位'); return }
+    if (tableList.value.length > 0 && !dineinForm.tableId) { ElMessage.warning('请选择预约桌位'); return }
   }
   dineinStep.value++
 }
@@ -1665,6 +1840,7 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
 .table-status { display: flex; justify-content: space-between; align-items: center; }
 .table-status .available { font-size: 16px; font-weight: 600; color: $primary; }
 .table-status .total { font-size: 13px; color: $text-muted; }
+.table-calendar-btn { margin-top: 14px; width: 100%; }
 .comments-section { padding: 40px 0; margin-top: 24px; background: $white; }
 .section-container { max-width: 1400px; margin: 0 auto; padding: 0 40px; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
@@ -1739,6 +1915,8 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
 .confirm-total { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; }
 .total-label { font-size: 15px; font-weight: 600; }
 .total-amount { font-size: 28px; font-weight: 800; color: #f5576c; }
+.inventory-inline-tip { margin-top: 8px; color: $text-muted; font-size: 13px; }
+.inventory-empty-tip { width: 100%; padding: 14px 16px; border: 1px dashed $border; border-radius: 10px; color: $text-muted; background: $bg-light; }
 .payment-panel { text-align: center; padding: 40px 20px; }
 .success-icon { width: 80px; height: 80px; background: linear-gradient(135deg,rgba(82,196,26,0.1),rgba(82,196,26,0.05)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 40px; color: #52c41a; }
 .payment-panel h3 { font-size: 22px; margin: 0 0 8px; }
@@ -1748,6 +1926,141 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
 .payment-amount .amount { font-size: 42px; font-weight: 700; color: #f5576c; }
 .pay-btn { width: 200px; height: 48px; font-size: 16px; border-radius: 24px; background: linear-gradient(135deg,#ff9a56,#ff6b6b); border: none; }
 .pay-tip { font-size: 13px; color: $text-muted; margin-top: 12px; }
+
+.inventory-calendar-dialog {
+  .calendar-summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #edf2f7;
+  }
+
+  .calendar-item-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  .calendar-item-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+    color: $text-muted;
+    font-size: 13px;
+  }
+
+  .calendar-legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: $text-muted;
+    font-size: 13px;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #16a34a;
+
+    &.low { background: #f59e0b; }
+    &.empty { background: #ef4444; }
+  }
+
+  .calendar-filters,
+  .calendar-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin: 18px 0;
+  }
+
+  .month-nav {
+    width: 34px;
+    height: 34px;
+  }
+
+  .calendar-month-title {
+    min-width: 120px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .inventory-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .calendar-week {
+    text-align: center;
+    color: $text-muted;
+    font-size: 13px;
+    padding: 6px 0;
+  }
+
+  .calendar-day {
+    min-height: 76px;
+    border: 1px solid #dce8df;
+    border-radius: 8px;
+    padding: 8px;
+    background: #f8fffb;
+
+    &.muted {
+      opacity: 0.35;
+      background: #f8fafc;
+    }
+
+    &.today {
+      border-color: $primary;
+    }
+
+    &.low {
+      background: #fffbeb;
+      border-color: #facc15;
+    }
+
+    &.empty {
+      background: #fff1f2;
+      border-color: #fecdd3;
+    }
+  }
+
+  .day-number {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+
+    em {
+      font-style: normal;
+      color: $primary;
+      font-size: 12px;
+    }
+  }
+
+  .day-stock {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #166534;
+  }
+
+  .calendar-day.low .day-stock {
+    color: #92400e;
+  }
+
+  .calendar-day.empty .day-stock {
+    color: #be123c;
+  }
+}
 
 @media (max-width: 1200px) {
   .info-container { grid-template-columns: 1fr; }

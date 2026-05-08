@@ -199,9 +199,9 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="库存" width="100">
+        <el-table-column label="数量" width="100">
           <template #default="{ row }">
-            <span>{{ row.remainingCount || 0 }}/{{ row.totalCount || 0 }}</span>
+            <span>{{ row.totalCount || 0 }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="maxOccupancy" label="入住人数" width="80" />

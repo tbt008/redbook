@@ -131,7 +131,7 @@
                   v-for="room in roomList"
                   :key="room.id"
                   class="room-type-card"
-                  :class="{ active: bookingForm.hotelRoomId === room.id }"
+                  :class="{ active: bookingForm.hotelRoomId === room.id, unavailable: isRoomUnavailableForSelectedRange(room) }"
                   @click="bookingForm.hotelRoomId = room.id"
                 >
                   <div class="room-card-media" v-if="room.image">
@@ -161,10 +161,25 @@
                         </span>
                       </div>
                       <div class="room-stock-actions">
-                        <span v-if="room.remainingCount != null" class="remain">
-                          剩余 {{ room.remainingCount }} 间
-                        </span>
-                        <el-button type="primary" round @click.stop="openBookingWithRoom(room.id)">
+                        <div class="room-stock-info">
+                          <button
+                            v-if="room.remainingCount != null"
+                            type="button"
+                            class="remain"
+                            @click.stop="openInventoryCalendar(room)"
+                          >
+                            {{ roomStockText(room) }}
+                          </button>
+                          <span v-if="roomUnavailableSummary(room)" class="unavailable-hint">
+                            {{ roomUnavailableSummary(room) }}
+                          </span>
+                        </div>
+                        <el-button
+                          type="primary"
+                          round
+                          :disabled="isRoomUnavailableForSelectedRange(room)"
+                          @click.stop="openBookingWithRoom(room.id)"
+                        >
                           订此房型
                         </el-button>
                       </div>
@@ -462,6 +477,26 @@
                 </div>
               </el-form-item>
 
+              <div v-if="selectedRoomForBooking" class="inventory-panel" :class="{ warning: selectedRoomShortageDates.length > 0 }">
+                <div class="inventory-title">
+                  <el-icon><Calendar /></el-icon>
+                  <span>{{ selectedRoomInventoryTitle }}</span>
+                </div>
+                <div v-if="selectedRoomShortageDates.length > 0" class="inventory-warning">
+                  {{ selectedRoomShortageDates.map(formatStockDate).join('、') }} 房量不足，请调整日期或房间数量。
+                </div>
+                <div v-if="selectedRoomForBooking.dateAvailability?.length" class="inventory-days">
+                  <span
+                    v-for="item in selectedRoomForBooking.dateAvailability"
+                    :key="item.stayDate"
+                    class="inventory-day"
+                    :class="{ empty: Number(item.remainingCount || 0) < bookingForm.roomCount }"
+                  >
+                    {{ formatStockDate(item.stayDate) }}：剩余 {{ item.remainingCount || 0 }} 间
+                  </span>
+                </div>
+              </div>
+
               <div class="price-summary" v-if="stayDays > 0">
                 <div class="summary-row" v-if="selectedRoomForBooking">
                   <span>房型</span>
@@ -644,6 +679,57 @@
       </template>
     </el-dialog>
 
+    <el-dialog
+      v-model="inventoryCalendarVisible"
+      width="720px"
+      class="inventory-calendar-dialog"
+      custom-class="inventory-calendar-dialog"
+      modal-class="inventory-calendar-modal"
+      :title="inventoryCalendarTitle"
+      :teleported="false"
+    >
+      <div class="calendar-summary">
+        <div>
+          <div class="calendar-room-name">{{ inventoryCalendarRoom?.roomName || '房型库存' }}</div>
+          <div class="calendar-room-meta">
+            {{ inventoryCalendarRoom ? roomTypeLabel(inventoryCalendarRoom.roomType) : '' }}
+            <span v-if="inventoryCalendarRoom?.price">¥{{ inventoryCalendarRoom.price }}/晚起</span>
+          </div>
+        </div>
+        <div class="calendar-legend">
+          <span><i class="legend-dot enough"></i>有房</span>
+          <span><i class="legend-dot low"></i>紧张</span>
+          <span><i class="legend-dot empty"></i>无房</span>
+        </div>
+      </div>
+      <div class="calendar-toolbar">
+        <el-button class="month-nav" circle @click="shiftInventoryMonth(-1)">
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
+        <div class="calendar-month-title">{{ inventoryMonthLabel }}</div>
+        <el-button class="month-nav" circle @click="shiftInventoryMonth(1)">
+          <el-icon><ArrowRight /></el-icon>
+        </el-button>
+      </div>
+      <div v-loading="inventoryCalendarLoading" class="inventory-calendar">
+        <div class="calendar-week" v-for="day in calendarWeekdays" :key="day">{{ day }}</div>
+        <div
+          v-for="day in inventoryCalendarDays"
+          :key="day.key"
+          class="calendar-day"
+          :class="{ muted: !day.inMonth, today: day.isToday, low: day.inMonth && day.remainingCount > 0 && day.remainingCount <= 3, empty: day.inMonth && day.remainingCount <= 0 }"
+        >
+          <div class="day-number">
+            <span>{{ day.date.date() }}</span>
+            <em v-if="day.isToday && day.inMonth">今天</em>
+          </div>
+          <div v-if="day.inMonth" class="day-stock">
+            {{ day.remainingCount > 0 ? `剩余 ${day.remainingCount} 间` : '无房' }}
+          </div>
+        </div>
+      </div>
+    </el-dialog>
+
     <!-- 支付成功对话框 -->
     <el-dialog v-model="paySuccessVisible" title="" width="450px" :close-on-click-modal="false" class="success-dialog">
       <div class="success-content">
@@ -687,7 +773,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
@@ -711,6 +797,7 @@ import {
   Clock,
   SuccessFilled,
   ArrowRight,
+  ArrowLeft,
   ChatDotRound,
 } from '@element-plus/icons-vue'
 import request from '@/util/request'
@@ -735,6 +822,11 @@ const commentList = ref<any[]>([])
 const isCollected = ref(false)
 const bookingDialogVisible = ref(false)
 const commentDialogVisible = ref(false)
+const inventoryCalendarVisible = ref(false)
+const inventoryCalendarLoading = ref(false)
+const inventoryCalendarRoom = ref<any>(null)
+const inventoryCalendarMonth = ref(dayjs().startOf('month'))
+const inventoryCalendarAvailability = ref<Record<string, number>>({})
 const submittingComment = ref(false)
 const replyingTo = ref<any>(null)
 const replyRoot = ref<any>(null)
@@ -789,6 +881,77 @@ const roomTypeLabel = (t: number | null | undefined) => {
 const selectedRoomForBooking = computed(() => {
   if (!bookingForm.hotelRoomId) return null
   return roomList.value.find((r) => r.id === bookingForm.hotelRoomId) || null
+})
+
+const hasFullDateRange = computed(() => Boolean(bookingForm.checkInDate && bookingForm.checkOutDate && stayDays.value > 0))
+
+const formatStockDate = (date: string) => dayjs(date).format('M月D日')
+
+const getShortageDates = (room: any, requiredCount = 1) => {
+  if (!room || !Array.isArray(room.dateAvailability)) return []
+  return room.dateAvailability
+    .filter((item: any) => Number(item.remainingCount || 0) < requiredCount)
+    .map((item: any) => item.stayDate)
+}
+
+const isRoomUnavailableForSelectedRange = (room: any) => {
+  if (!hasFullDateRange.value) return false
+  return getShortageDates(room, 1).length > 0
+}
+
+const roomStockText = (room: any) => {
+  const remaining = Number(room.minRemainingCount ?? room.remainingCount ?? 0)
+  if (hasFullDateRange.value) {
+    return `该日期段最少剩余 ${remaining} 间`
+  }
+  const stockDate = bookingForm.checkInDate ? formatStockDate(bookingForm.checkInDate) : '今天'
+  return `${stockDate}剩余 ${remaining} 间`
+}
+
+const roomUnavailableSummary = (room: any) => {
+  if (!hasFullDateRange.value) return ''
+  const dates = getShortageDates(room, 1)
+  if (dates.length === 0) return ''
+  if (dates.length === 1) return `${formatStockDate(dates[0])}无房`
+  return `${formatStockDate(dates[0])}等${dates.length}天无房`
+}
+
+const selectedRoomShortageDates = computed(() => getShortageDates(selectedRoomForBooking.value, bookingForm.roomCount))
+
+const selectedRoomInventoryTitle = computed(() => {
+  if (!selectedRoomForBooking.value) return ''
+  if (hasFullDateRange.value) {
+    const remaining = Number(selectedRoomForBooking.value.minRemainingCount ?? selectedRoomForBooking.value.remainingCount ?? 0)
+    return `该日期段最少剩余 ${remaining} 间`
+  }
+  const stockDate = bookingForm.checkInDate ? formatStockDate(bookingForm.checkInDate) : '今天'
+  return `${stockDate}剩余 ${selectedRoomForBooking.value.remainingCount ?? 0} 间`
+})
+
+const calendarWeekdays = ['一', '二', '三', '四', '五', '六', '日']
+
+const inventoryCalendarTitle = computed(() => {
+  const roomName = inventoryCalendarRoom.value?.roomName || '房型'
+  return `${roomName}库存日历`
+})
+
+const inventoryMonthLabel = computed(() => inventoryCalendarMonth.value.format('YYYY年M月'))
+
+const inventoryCalendarDays = computed(() => {
+  const monthStart = inventoryCalendarMonth.value.startOf('month')
+  const firstDayOffset = (monthStart.day() + 6) % 7
+  const gridStart = monthStart.subtract(firstDayOffset, 'day')
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = gridStart.add(index, 'day')
+    const dateKey = date.format('YYYY-MM-DD')
+    return {
+      key: dateKey,
+      date,
+      inMonth: date.month() === monthStart.month(),
+      isToday: date.isSame(dayjs(), 'day'),
+      remainingCount: Number(inventoryCalendarAvailability.value[dateKey] ?? 0),
+    }
+  })
 })
 
 const unitPricePerNight = computed(() => {
@@ -860,7 +1023,10 @@ const loadHotelDetail = async () => {
 
 const loadHotelRooms = async () => {
   try {
-    const res: any = await request.get(`/hotel/${hotelId.value}/rooms`)
+    const params: Record<string, string> = {}
+    if (bookingForm.checkInDate) params.checkInDate = bookingForm.checkInDate
+    if (bookingForm.checkOutDate) params.checkOutDate = bookingForm.checkOutDate
+    const res: any = await request.get(`/hotel/${hotelId.value}/rooms`, { params })
     if (res && res.data) {
       roomList.value = Array.isArray(res.data) ? res.data : []
     }
@@ -869,6 +1035,56 @@ const loadHotelRooms = async () => {
     roomList.value = []
   }
 }
+
+const openInventoryCalendar = async (room: any) => {
+  inventoryCalendarRoom.value = room
+  const baseDate = bookingForm.checkInDate ? dayjs(bookingForm.checkInDate) : dayjs()
+  inventoryCalendarMonth.value = baseDate.startOf('month')
+  inventoryCalendarVisible.value = true
+  await loadInventoryCalendar()
+}
+
+const shiftInventoryMonth = async (offset: number) => {
+  inventoryCalendarMonth.value = inventoryCalendarMonth.value.add(offset, 'month').startOf('month')
+  await loadInventoryCalendar()
+}
+
+const loadInventoryCalendar = async () => {
+  if (!inventoryCalendarRoom.value?.id) return
+  inventoryCalendarLoading.value = true
+  try {
+    const startDate = inventoryCalendarMonth.value.startOf('month')
+    const endDate = startDate.add(1, 'month')
+    const res: any = await request.get(`/hotel/${hotelId.value}/rooms`, {
+      params: {
+        checkInDate: startDate.format('YYYY-MM-DD'),
+        checkOutDate: endDate.format('YYYY-MM-DD'),
+      }
+    })
+    const rooms = Array.isArray(res?.data) ? res.data : []
+    const room = rooms.find((item: any) => item.id === inventoryCalendarRoom.value.id)
+    const availability: Record<string, number> = {}
+    if (room && Array.isArray(room.dateAvailability)) {
+      room.dateAvailability.forEach((item: any) => {
+        availability[item.stayDate] = Number(item.remainingCount || 0)
+      })
+    }
+    inventoryCalendarAvailability.value = availability
+  } catch (error) {
+    console.error('加载库存日历失败', error)
+    inventoryCalendarAvailability.value = {}
+    ElMessage.error('加载库存日历失败')
+  } finally {
+    inventoryCalendarLoading.value = false
+  }
+}
+
+watch(
+  () => [bookingForm.checkInDate, bookingForm.checkOutDate],
+  () => {
+    loadHotelRooms()
+  }
+)
 
 // 鍒濆鍖栧湴鍥?
 const initMap = async () => {
@@ -1054,6 +1270,10 @@ const nextStep = () => {
       ElMessage.warning('退房日期必须晚于入住日期')
       return
     }
+    if (selectedRoomShortageDates.value.length > 0) {
+      ElMessage.warning(`${selectedRoomShortageDates.value.map(formatStockDate).join('、')} 房量不足，请调整日期或房间数量`)
+      return
+    }
   }
   if (currentStep.value === 1) {
     const validGuestNames = bookingForm.guestNames.filter((name: string) => name.trim() !== '')
@@ -1073,6 +1293,10 @@ const nextStep = () => {
 
 // 创建订单
 const createOrder = async () => {
+  if (selectedRoomShortageDates.value.length > 0) {
+    ElMessage.warning(`${selectedRoomShortageDates.value.map(formatStockDate).join('、')} 房量不足，请调整日期或房间数量`)
+    return
+  }
   const validGuestNames = bookingForm.guestNames.filter((name: string) => name.trim() !== '')
 
   creating.value = true
@@ -1649,6 +1873,11 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
         box-shadow: 0 0 0 3px rgba(26, 95, 74, 0.12);
       }
 
+      &.unavailable {
+        border-color: #f0d5d5;
+        background: #fffafa;
+      }
+
       .room-card-media {
         flex-shrink: 0;
         width: 160px;
@@ -1738,12 +1967,296 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
         align-items: center;
         gap: 12px;
 
-        .remain {
-          font-size: 12px;
-          color: $text-muted;
+        .room-stock-info {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+
+          .remain {
+            padding: 0;
+            border: 0;
+            background: transparent;
+            font-size: 12px;
+            color: $text-muted;
+            cursor: pointer;
+
+            &:hover {
+              color: $primary;
+              text-decoration: underline;
+              text-underline-offset: 3px;
+            }
+          }
+
+          .unavailable-hint {
+            font-size: 12px;
+            color: #d93026;
+            font-weight: 600;
+          }
         }
       }
     }
+  }
+
+  .inventory-panel {
+    margin: 4px 0 18px;
+    padding: 12px 14px;
+    border: 1px solid rgba(26, 95, 74, 0.18);
+    border-radius: 8px;
+    background: #f7fbf9;
+
+    &.warning {
+      border-color: #f0c7c7;
+      background: #fff8f8;
+    }
+
+    .inventory-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: $text-primary;
+      margin-bottom: 8px;
+    }
+
+    .inventory-warning {
+      font-size: 13px;
+      color: #d93026;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .inventory-days {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .inventory-day {
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: $white;
+      color: $text-secondary;
+      font-size: 12px;
+      border: 1px solid $border;
+
+      &.empty {
+        border-color: #f0c7c7;
+        background: #fff1f0;
+        color: #d93026;
+      }
+    }
+  }
+
+  .inventory-calendar-dialog {
+    :deep(.el-dialog) {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    :deep(.el-dialog__header) {
+      padding: 22px 26px 12px;
+      margin-right: 0;
+      border-bottom: 0;
+    }
+
+    :deep(.el-dialog__title) {
+      font-size: 18px;
+      font-weight: 800;
+      color: $text-primary;
+    }
+
+    :deep(.el-dialog__body) {
+      padding: 0 26px 26px;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
+    }
+  }
+
+  .calendar-summary {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(26, 95, 74, 0.12);
+    border-radius: 8px;
+    background: $white;
+    box-shadow: 0 8px 22px rgba(26, 95, 74, 0.06);
+  }
+
+  .calendar-room-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: $text-primary;
+    margin-bottom: 6px;
+  }
+
+  .calendar-room-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 13px;
+    color: $text-muted;
+  }
+
+  .calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    font-size: 12px;
+    color: $text-secondary;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+
+    &.enough {
+      background: $primary;
+    }
+
+    &.low {
+      background: #e8a838;
+    }
+
+    &.empty {
+      background: #d93026;
+    }
+  }
+
+  .calendar-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    margin-bottom: 18px;
+
+    .month-nav {
+      border-color: rgba(26, 95, 74, 0.18);
+      color: $primary;
+      background: $white;
+
+      &:hover {
+        border-color: $primary;
+        background: #eef8f4;
+      }
+    }
+  }
+
+  .calendar-month-title {
+    min-width: 120px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  .inventory-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid rgba(26, 95, 74, 0.12);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .calendar-week {
+    padding: 4px 0 8px;
+    background: transparent;
+    color: $text-secondary;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .calendar-day {
+    min-height: 82px;
+    padding: 10px 9px;
+    border: 1px solid #edf1ef;
+    border-radius: 8px;
+    background: $white;
+    transition: transform 0.16s, box-shadow 0.16s, border-color 0.16s;
+
+    &:hover:not(.muted) {
+      transform: translateY(-2px);
+      border-color: rgba(26, 95, 74, 0.24);
+      box-shadow: 0 10px 22px rgba(26, 95, 74, 0.1);
+    }
+
+    &.muted {
+      background: transparent;
+      border-color: transparent;
+      color: #c0c4cc;
+    }
+
+    &.today {
+      border-color: rgba(26, 95, 74, 0.48);
+      box-shadow: 0 0 0 3px rgba(26, 95, 74, 0.1);
+    }
+
+    &.low {
+      background: #fffaf0;
+      border-color: #f4dfaa;
+
+      .day-stock {
+        color: #9a6500;
+        background: #fff0c2;
+      }
+    }
+
+    &.empty {
+      background: #fff7f7;
+      border-color: #f4caca;
+
+      .day-stock {
+        color: #d93026;
+        background: #fff1f0;
+      }
+    }
+  }
+
+  .day-number {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: 8px;
+
+    em {
+      padding: 1px 5px;
+      border-radius: 999px;
+      background: #eef8f4;
+      color: $primary;
+      font-size: 10px;
+      font-style: normal;
+      font-weight: 700;
+    }
+  }
+
+  .day-stock {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #eef8f4;
+    color: $primary;
+    font-size: 12px;
+    font-weight: 600;
   }
 
   @media (max-width: 768px) {
@@ -2604,5 +3117,198 @@ $shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
   .booking-dialog .dialog-content .booking-form .form-row {
     grid-template-columns: 1fr;
   }
+}
+
+:global(.inventory-calendar-dialog.el-dialog) {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+:global(.inventory-calendar-dialog .el-dialog__header) {
+  padding: 22px 26px 12px;
+  margin-right: 0;
+}
+
+:global(.inventory-calendar-dialog .el-dialog__title) {
+  color: #1a1a1a;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+:global(.inventory-calendar-dialog .el-dialog__body) {
+  padding: 0 26px 26px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
+}
+
+:global(.inventory-calendar-dialog .calendar-summary) {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(26, 95, 74, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(26, 95, 74, 0.06);
+}
+
+:global(.inventory-calendar-dialog .calendar-room-name) {
+  margin-bottom: 6px;
+  color: #1a1a1a;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+:global(.inventory-calendar-dialog .calendar-room-meta) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #999;
+  font-size: 13px;
+}
+
+:global(.inventory-calendar-dialog .calendar-legend) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  color: #666;
+  font-size: 12px;
+}
+
+:global(.inventory-calendar-dialog .calendar-legend span) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+:global(.inventory-calendar-dialog .legend-dot) {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+:global(.inventory-calendar-dialog .legend-dot.enough) {
+  background: #1a5f4a;
+}
+
+:global(.inventory-calendar-dialog .legend-dot.low) {
+  background: #e8a838;
+}
+
+:global(.inventory-calendar-dialog .legend-dot.empty) {
+  background: #d93026;
+}
+
+:global(.inventory-calendar-dialog .calendar-toolbar) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  margin-bottom: 18px;
+}
+
+:global(.inventory-calendar-dialog .month-nav) {
+  color: #1a5f4a;
+  border-color: rgba(26, 95, 74, 0.18);
+  background: #ffffff;
+}
+
+:global(.inventory-calendar-dialog .calendar-month-title) {
+  min-width: 120px;
+  color: #1a1a1a;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+:global(.inventory-calendar-dialog .inventory-calendar) {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(26, 95, 74, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+:global(.inventory-calendar-dialog .calendar-week) {
+  padding: 4px 0 8px;
+  color: #666;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+:global(.inventory-calendar-dialog .calendar-day) {
+  min-height: 82px;
+  padding: 10px 9px;
+  border: 1px solid #edf1ef;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+:global(.inventory-calendar-dialog .calendar-day.muted) {
+  background: transparent;
+  border-color: transparent;
+  color: #c0c4cc;
+}
+
+:global(.inventory-calendar-dialog .calendar-day.today) {
+  border-color: rgba(26, 95, 74, 0.48);
+  box-shadow: 0 0 0 3px rgba(26, 95, 74, 0.1);
+}
+
+:global(.inventory-calendar-dialog .calendar-day.low) {
+  background: #fffaf0;
+  border-color: #f4dfaa;
+}
+
+:global(.inventory-calendar-dialog .calendar-day.empty) {
+  background: #fff7f7;
+  border-color: #f4caca;
+}
+
+:global(.inventory-calendar-dialog .day-number) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+:global(.inventory-calendar-dialog .day-number em) {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: #eef8f4;
+  color: #1a5f4a;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+:global(.inventory-calendar-dialog .day-stock) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #eef8f4;
+  color: #1a5f4a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+:global(.inventory-calendar-dialog .calendar-day.low .day-stock) {
+  color: #9a6500;
+  background: #fff0c2;
+}
+
+:global(.inventory-calendar-dialog .calendar-day.empty .day-stock) {
+  color: #d93026;
+  background: #fff1f0;
 }
 </style>

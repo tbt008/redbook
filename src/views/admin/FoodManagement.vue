@@ -142,6 +142,12 @@
             <span v-else class="no-data">暂无</span>
           </template>
         </el-table-column>
+        <el-table-column label="座位" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.totalTables" type="success">{{ row.totalTables }}桌</el-tag>
+            <span v-else class="no-data">未配置</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <el-tag v-if="row.status === 1" type="success">上架</el-tag>
@@ -158,6 +164,7 @@
             <el-button link type="primary" size="small" @click="handleManageComments(row)">评论</el-button>
             <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button link type="warning" size="small" @click="handleManagePackages(row)">套餐管理</el-button>
+            <el-button link type="success" size="small" @click="handleManageTables(row)">座位管理</el-button>
             <el-button link type="info" size="small" @click="handleTakeoutToggle(row)">
               {{ row.isTakeout === 1 ? '关闭外卖' : '开启外卖' }}
             </el-button>
@@ -344,6 +351,81 @@
       </template>
     </el-dialog>
 
+    <!-- 座位管理对话框 -->
+    <el-dialog v-model="tableDialogVisible" :title="`${currentFoodName} - 座位管理`" width="820px">
+      <div class="package-header">
+        <el-button type="primary" @click="handleAddTable">
+          <el-icon><Plus /></el-icon> 添加座位
+        </el-button>
+      </div>
+
+      <el-table :data="tableList" v-loading="tableLoading" stripe style="margin-top: 15px">
+        <el-table-column prop="tableName" label="座位名称" min-width="160">
+          <template #default="{ row }">
+            {{ row.tableName || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="tableNumber" label="桌号" width="140" />
+        <el-table-column prop="capacity" label="容纳人数" width="110">
+          <template #default="{ row }">
+            {{ row.capacity || 0 }}人位
+          </template>
+        </el-table-column>
+        <el-table-column prop="quantity" label="座位数量" width="110">
+          <template #default="{ row }">
+            {{ row.quantity || 1 }}张
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.status === 1" type="success">可用</el-tag>
+            <el-tag v-else type="info">停用</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="handleEditTable(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDeleteTable(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <template #footer>
+        <el-button @click="tableDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 添加/编辑座位对话框 -->
+    <el-dialog v-model="tableFormDialogVisible" :title="tableFormTitle" width="520px">
+      <el-form :model="tableForm" :rules="tableFormRules" ref="tableFormRef" label-width="100px">
+        <el-form-item label="座位名称" prop="tableName">
+          <el-input v-model="tableForm.tableName" placeholder="例如：大厅1号桌、家庭包间1号" />
+        </el-form-item>
+        <el-form-item label="桌号" prop="tableNumber">
+          <el-input v-model="tableForm.tableNumber" placeholder="例如：A13、B02" />
+        </el-form-item>
+        <el-form-item label="座位数量" prop="quantity">
+          <el-input-number v-model="tableForm.quantity" :min="1" :max="100" style="width: 180px" />
+          <span style="margin-left: 10px">张</span>
+          <div class="form-tip">同一座类可预约的桌位数量，不会批量生成多条座位记录</div>
+        </el-form-item>
+        <el-form-item label="容纳人数" prop="capacity">
+          <el-input-number v-model="tableForm.capacity" :min="1" :max="50" style="width: 180px" />
+          <span style="margin-left: 10px">人</span>
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-radio-group v-model="tableForm.status">
+            <el-radio-button :label="1">可用</el-radio-button>
+            <el-radio-button :label="0">停用</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="tableFormDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleTableSubmit" :loading="tableSubmitting">确定</el-button>
+      </template>
+    </el-dialog>
+
     <AdminCommentDrawer ref="commentDrawerRef" />
   </div>
 </template>
@@ -407,6 +489,16 @@ const currentFoodId = ref<number | null>(null)
 const currentFoodName = ref('')
 const isPackageEdit = ref(false)
 
+// 座位相关
+const tableDialogVisible = ref(false)
+const tableFormDialogVisible = ref(false)
+const tableLoading = ref(false)
+const tableSubmitting = ref(false)
+const tableFormRef = ref<FormInstance>()
+const tableList = ref<any[]>([])
+const tableFormTitle = ref('添加座位')
+const isTableEdit = ref(false)
+
 const searchForm = reactive({
   keyword: '',
   region: '',
@@ -460,6 +552,23 @@ const packageFormRules = {
   packageName: [{ required: true, message: '请输入套餐名称', trigger: 'blur' }],
   packageType: [{ required: true, message: '请选择套餐类型', trigger: 'change' }],
   price: [{ required: true, message: '请输入价格', trigger: 'blur' }]
+}
+
+const tableForm = reactive({
+  id: null as number | null,
+  foodId: null as number | null,
+  tableName: '',
+  tableNumber: '',
+  quantity: 1,
+  capacity: 2,
+  status: 1
+})
+
+const tableFormRules = {
+  tableName: [{ required: true, message: '请输入座位名称', trigger: 'blur' }],
+  tableNumber: [{ required: true, message: '请输入桌号', trigger: 'blur' }],
+  quantity: [{ required: true, message: '请输入座位数量', trigger: 'change' }],
+  capacity: [{ required: true, message: '请输入容纳人数', trigger: 'blur' }]
 }
 
 const loadFoodList = async () => {
@@ -783,6 +892,111 @@ const handlePackageSubmit = async () => {
   })
 }
 
+// 座位管理相关方法
+const handleManageTables = async (row: any) => {
+  currentFoodId.value = row.id
+  currentFoodName.value = row.name
+  tableDialogVisible.value = true
+  await loadTables()
+}
+
+const loadTables = async () => {
+  if (!currentFoodId.value) return
+  tableLoading.value = true
+  try {
+    const res: any = await request.get(`/admin/merchant/foods/${currentFoodId.value}/tables`, {
+      params: { pageNum: 1, pageSize: 100 }
+    })
+    if (res.code === 200) {
+      tableList.value = res.data?.list || res.data?.records || []
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '加载座位失败')
+  } finally {
+    tableLoading.value = false
+  }
+}
+
+const handleAddTable = () => {
+  isTableEdit.value = false
+  tableFormTitle.value = '添加座位'
+  tableForm.id = null
+  tableForm.foodId = currentFoodId.value
+  tableForm.tableName = ''
+  tableForm.tableNumber = ''
+  tableForm.quantity = 1
+  tableForm.capacity = 2
+  tableForm.status = 1
+  tableFormDialogVisible.value = true
+}
+
+const handleEditTable = (row: any) => {
+  isTableEdit.value = true
+  tableFormTitle.value = '编辑座位'
+  tableForm.id = row.id
+  tableForm.foodId = currentFoodId.value
+  tableForm.tableName = row.tableName || ''
+  tableForm.tableNumber = row.tableNumber || ''
+  tableForm.quantity = row.quantity || 1
+  tableForm.capacity = row.capacity || 2
+  tableForm.status = row.status ?? 1
+  tableFormDialogVisible.value = true
+}
+
+const handleDeleteTable = async (row: any) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除座位"${row.tableName || row.tableNumber}"吗？`, '确认删除', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const res: any = await request.delete(`/admin/merchant/tables/${row.id}`)
+    if (res.code === 200) {
+      ElMessage.success('删除成功')
+      await loadTables()
+      await loadFoodList()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
+}
+
+const handleTableSubmit = async () => {
+  if (!tableFormRef.value) return
+
+  await tableFormRef.value.validate(async (valid) => {
+    if (valid) {
+      tableSubmitting.value = true
+      try {
+        if (isTableEdit.value) {
+          const res: any = await request.put('/admin/merchant/tables', tableForm)
+          if (res.code === 200) {
+            ElMessage.success('更新成功')
+            tableFormDialogVisible.value = false
+            await loadTables()
+            await loadFoodList()
+          }
+        } else {
+          const res: any = await request.post('/admin/merchant/tables', tableForm)
+          if (res.code === 200) {
+            ElMessage.success('添加成功')
+            tableFormDialogVisible.value = false
+            await loadTables()
+            await loadFoodList()
+          }
+        }
+      } catch (error: any) {
+        ElMessage.error(error.message || '操作失败')
+      } finally {
+        tableSubmitting.value = false
+      }
+    }
+  })
+}
+
 onMounted(() => {
   loadFoodList()
 })
@@ -883,6 +1097,13 @@ onMounted(() => {
       letter-spacing: 1px;
       text-transform: uppercase;
     }
+  }
+
+  .form-tip {
+    margin-top: 6px;
+    color: $text-muted;
+    font-size: 12px;
+    line-height: 1.5;
   }
 
   .header-actions {
